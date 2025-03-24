@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+/* Custom styles for layout */
+.min-h-screen {
+  min-height: 100vh;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.h-screen {
+  height: 100vh;
+}

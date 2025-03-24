@@ -1,0 +1,37 @@
+:root {
+  /* Primary Colors */
+  --primary-50: #ebf1fc;
+  --primary-100: #c2d3f4;
+  --primary-200: #a4beef;
+  --primary-300: #7ba1e8;
+  --primary-400: #618ee3;
+  --primary-500: #3a72dc;
+  --primary-600: #3568c8;
+  --primary-700: #29519c;
+  --primary-800: #203f79;
+  --primary-900: #18305c;
+
+  /* Secondary Colors */
+  --secondary-50: #f2f6fe;
+  --secondary-100: #d8e4fc;
+  --secondary-200: #c5d7fa;
+  --secondary-300: #aac5f8;
+  --secondary-400: #99b9f6;
+  --secondary-500: #80a8f4;
+  --secondary-600: #7499de;
+  --secondary-700: #5b77ad;
+  --secondary-800: #465c86;
+  --secondary-900: #364766;
+
+  /* Accent Colors */
+  --accent-50: #edf3ff;
+  --accent-100: #c6d9fe;
+  --accent-200: #aac7fe;
+  --accent-300: #83adfe;
+  --accent-400: #6b9dfd;
+  --accent-500: #4685fd;
+  --accent-600: #4079e6;
+  --accent-700: #325eb4;
+  --accent-800: #27498b;
+  --accent-900: #1d386a;
+}
