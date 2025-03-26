@@ -7,6 +7,7 @@ export const patientData = [
       gender: "L",
       dob: "03-03-2002",
       age: 23,
+      year:"2023",
       months: Array(12).fill("-"), // Default semua bulan kosong
     },
     {
@@ -17,6 +18,7 @@ export const patientData = [
       gender: "P",
       dob: "03-03-2000",
       age: 25,
+      year: "2023",
       months: ["-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-"],
     },
     {
@@ -27,6 +29,7 @@ export const patientData = [
       gender: "L",
       dob: "01-02-2001",
       age: 24,
+      year: "2023",
       months: ["-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-"],
     },
     {
@@ -37,6 +40,7 @@ export const patientData = [
         gender: "L",
         dob: "01-02-2001",
         age: 24,
+        year: "2023",
         months: ["-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-"],
       },
       {
@@ -47,6 +51,7 @@ export const patientData = [
         gender: "L",
         dob: "01-02-2001",
         age: 24,
+        year: "2023",
         months: ["-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-"],
       },
       {
@@ -57,6 +62,7 @@ export const patientData = [
         gender: "L",
         dob: "01-02-2001",
         age: 24,
+        year: "2023",
         months: ["-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-"],
       },
       {
@@ -67,6 +73,7 @@ export const patientData = [
         gender: "L",
         dob: "01-02-2001",
         age: 24,
+        year: "2023",
         months: ["-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-"],
       },
       {
@@ -77,6 +84,7 @@ export const patientData = [
         gender: "L",
         dob: "01-02-2001",
         age: 24,
+        year: "2023",
         months: ["-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-"],
       },
       {
@@ -87,6 +95,7 @@ export const patientData = [
         gender: "L",
         dob: "01-02-2001",
         age: 24,
+        year: "2023",
         months: ["-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-"],
       },
       {
@@ -97,6 +106,18 @@ export const patientData = [
         gender: "L",
         dob: "01-02-2001",
         age: 24,
+        year: "2023",
+        months: ["-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-"],
+      },
+      {
+        id: 11,
+        name: "Tria Wahyudi",
+        nik: "306331200393881",
+        bpjs: "123456789",
+        gender: "L",
+        dob: "01-02-2001",
+        age: 24,
+        year: "2023",
         months: ["-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-"],
       },
   ];
