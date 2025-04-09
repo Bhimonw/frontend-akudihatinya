@@ -89,6 +89,7 @@ export default {
   flex-grow: 1;
   overflow-y: auto; /* Aktifkan scrolling hanya pada content */
   padding: 26px;
+  padding-top: 0;
   background-color: #f7f8f9;
   box-sizing: border-box;
 }

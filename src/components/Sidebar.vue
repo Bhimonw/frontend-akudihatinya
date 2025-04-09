@@ -5,13 +5,29 @@
       <div class="profile-placeholder">
         <div class="circle"></div>
       </div>
-      <h3 v-if="isSidebarOpen" class="username">Akudihatinya</h3>
+      <h3 v-if="isSidebarOpen" class="app-name">Akudihatinya</h3>
     </div>
 
     <!-- Menu Items -->
     <ul class="menu-list">
+      <!-- Dashboard Menu Item -->
       <li
-        v-for="(item, index) in menuItems"
+        class="menu-item"
+        :class="{ active: activeMenu === 'dashboard' }"
+        @click="navigate(menuItems[0])"
+      >
+        <font-awesome-icon :icon="['fas', 'chart-line']" class="menu-icon" />
+        <span v-if="isSidebarOpen" class="menu-text">Dashboard</span>
+      </li>
+      
+      <!-- Section Label -->
+      <li v-if="isSidebarOpen" class="section-label">
+        <span>Laporan Pemantauan</span>
+      </li>
+      
+      <!-- Disease Menu Items -->
+      <li
+        v-for="(item, index) in diseaseItems"
         :key="index"
         class="menu-item"
         :class="{ active: activeMenu === item.key }"
@@ -37,6 +53,8 @@ export default {
       activeMenu: 'dashboard',
       menuItems: [
         { key: 'dashboard', label: 'Dashboard', icon: 'chart-line' },
+      ],
+      diseaseItems: [
         { key: 'diabetes-mellitus', label: 'Diabetes Mellitus', icon: 'disease' },
         { key: 'hipertensi', label: 'Hipertensi', icon: 'heart-pulse' },
       ],
@@ -118,12 +136,12 @@ export default {
   background: #f0f0f0;
 }
 
-.username {
+.app-name {
   font-family: 'Poppins', sans-serif;
   font-weight: 700;
   font-size: 20px;
   line-height: 30px;
-  color: #3a72dc;
+  color:  var(--primary-500);
   white-space: nowrap; /* Prevent text wrapping */
 }
 
@@ -154,7 +172,7 @@ export default {
 }
 
 .menu-item:hover {
-  background: #d8e4fc;
+  background: #f2f9f9;
 }
 
 .menu-item.active {
@@ -186,6 +204,20 @@ export default {
   color: var(--primary-500);
 }
 
+/* Section Label */
+.section-label {
+  width: 100%;
+  font-size: 10px;
+}
+
+.section-label span {
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  color: #6e6e6e;
+}
+
 /* Adjustments for Collapsed State */
 .sidebar.collapsed .menu-list {
   align-items: center; /* Center items horizontally when collapsed */
@@ -198,5 +230,9 @@ export default {
 
 .sidebar.collapsed .menu-text {
   display: none; /* Hide text labels when collapsed */
+}
+
+.sidebar.collapsed .section-label {
+  display: none; /* Hide section labels when collapsed */
 }
 </style>

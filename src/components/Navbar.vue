@@ -141,7 +141,7 @@ export default {
 }
 
 .menu-icon {
-  color: #4685fd; /* Warna ikon biru */
+  color: var(--accent-500); /* Warna ikon biru */
   font-size: 24px; /* Ukuran ikon */
   transition: transform 0.3s ease; /* Animasi halus saat hover */
 }

@@ -4,29 +4,48 @@
     <div class="page-container">
       <!-- Toolbar -->
       <div class="toolbar">
-        <!-- Dropdown Tahun -->
-        <div class="dropdown-container-year">
-          <select class="dropdown-select" v-model="selectedYear">
-            <option v-for="year in years" :key="year" :value="year">{{ year }}</option>
-            <font-awesome-icon :icon="['fas', 'chevron-down']" class="dropdown-icon" />
-          </select>
+        <!-- Bagian Kiri -->
+        <div class="left-section">
+          <!-- Bagian Dropdown Tahun -->
+          <div class="dropdown-container-year">
+            <select id="yearPicker" class="dropdown-select" v-model="selectedYear">
+              <option v-for="year in years" :key="year" :value="String(year)">{{ year }}</option>
+            </select>
+          </div>
+
+          <!-- Tombol Tambah Data Peserta (with click handler to open modal) -->
+          <button class="add-data-button" @click="openAddPatientModal">
+            <font-awesome-icon :icon="['fas', 'plus']" />
+            Tambah Pasien
+          </button>
+
+          <!-- Tombol Download Laporan dengan Dropdown -->
+          <div class="download-dropdown">
+            <button class="download-report-button" @click="toggleDownloadMenu">
+              <font-awesome-icon :icon="['fas', 'download']" />
+              Unduh Data
+              <font-awesome-icon :icon="['fas', 'caret-down']" />
+            </button>
+            <div class="download-menu" v-show="isDownloadMenuOpen">
+              <button class="download-option" @click="downloadExcel">
+                <font-awesome-icon :icon="['fas', 'file-excel']" />
+                Unduh Excel
+              </button>
+              <button class="download-option" @click="downloadPDF">
+                <font-awesome-icon :icon="['fas', 'file-pdf']" />
+                Unduh PDF
+              </button>
+            </div>
+          </div>
         </div>
 
-        <!-- Search Bar dan Tombol Tambah Data -->
+        <!-- Bagian Kanan -->
         <div class="right-section">
           <!-- Search Bar -->
           <div class="search-container">
+            <font-awesome-icon :icon="['fas', 'search']" class="search-icon" />
             <input type="text" placeholder="Search..." class="search-input" v-model="searchQuery" />
-            <button class="search-button">
-              <font-awesome-icon :icon="['fas', 'search']" />
-            </button>
           </div>
-
-          <!-- Tombol Tambah Data -->
-          <button class="add-data-button">
-            <font-awesome-icon :icon="['fas', 'plus']" />
-            Tambah Data
-          </button>
         </div>
       </div>
 
@@ -35,44 +54,19 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th rowspan="2">Aksi</th>
-              <th rowspan="2">No</th>
-              <th rowspan="2">Nama Pasien</th>
-              <th rowspan="2">NIK</th>
-              <th rowspan="2">Nomor BPJS</th>
-              <th rowspan="2">Jenis Kelamin</th>
-              <th rowspan="2">Tanggal Lahir</th>
-              <th rowspan="2">Umur</th>
-              <th rowspan="2">Alamat</th>
-              <th colspan="13">Bulan</th>
-            </tr>
-            <tr>
-              <th>Jan</th>
-              <th>Feb</th>
-              <th>Mar</th>
-              <th>Apr</th>
-              <th>Mei</th>
-              <th>Jun</th>
-              <th>Jul</th>
-              <th>Agu</th>
-              <th>Sep</th>
-              <th>Okt</th>
-              <th>Nov</th>
-              <th>Des</th>
+              <th>No</th>
+              <th>Nama Pasien</th>
+              <th>NIK</th>
+              <th>Nomor BPJS</th>
+              <th>Jenis Kelamin</th>
+              <th>Tanggal Lahir</th>
+              <th>Umur</th>
+              <th>Alamat</th>
+              <th>Aksi</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(patient, index) in paginatedPatients" :key="patient.id">
-              <td>
-                <div class="action-buttons">
-                  <button class="action-button edit" @click="editPatient(patient.id)">
-                    <font-awesome-icon :icon="['fas', 'edit']" />
-                  </button>
-                  <button class="action-button delete" @click="deletePatient(patient.id)">
-                    <font-awesome-icon :icon="['fas', 'trash']" />
-                  </button>
-              </div>
-              </td>
               <td>{{ index + 1 }}</td>
               <td>{{ patient.name }}</td>
               <td>{{ patient.nik }}</td>
@@ -81,7 +75,11 @@
               <td>{{ patient.dob }}</td>
               <td>{{ patient.age }}</td>
               <td>{{ patient.address }}</td>
-              <td v-for="(month, idx) in patient.months" :key="idx">{{ month }}</td>
+              <td>
+                <button class="action-button detail" @click="viewPatientDetails(patient.id)">
+                  Lihat Detail
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -143,47 +141,54 @@
         </div>
       </div>
     </div>
+    
+    <!-- Import the modal from separate file but don't define its content here -->
+    <AddPatientModal 
+      v-if="showAddPatientModal" 
+      @close="closeAddPatientModal"
+      @submit="handlePatientSubmit"
+    />
   </div>
 </template>
 
 <script>
 import { patientData } from "../../data/dummyData.js";
+import AddPatientModal from "../../components/modals/AddPatientModal.vue";
 
 export default {
   name: "DiabetesMellitus",
+  components: {
+    AddPatientModal
+  },
   data() {
+    const currentYear = new Date().getFullYear();
+    const startYear = 2000;
+    const years = Array.from({ length: currentYear - startYear + 1 }, (_, i) => startYear + i).reverse();
+
     return {
-      patients: patientData, // Data pasien dari sumber dummy
-      currentPage: 1, // Halaman saat ini
-      pageSize: 10, // Jumlah item per halaman
-      searchQuery: "", // Query pencarian
-      selectedYear: "2023", // Tahun terpilih di dropdown
-      years: ["2023", "2022", "2021"], // Daftar tahun
+      patients: patientData,
+      currentPage: 1,
+      pageSize: 10,
+      searchQuery: "",
+      selectedYear: String(currentYear),
+      years: years,
+      isDownloadMenuOpen: false,
+      showAddPatientModal: false
     };
   },
-  methods: {
-    resetPagination() {
-      this.currentPage = 1;
-    },
-  },
   computed: {
-    // Total jumlah pasien
     totalPatients() {
       return this.filteredPatients.length;
     },
-    // Total jumlah halaman berdasarkan ukuran halaman
     totalPages() {
       return Math.ceil(this.totalPatients / this.pageSize);
     },
-    // Indeks item pertama di halaman saat ini
     firstItemIndex() {
       return (this.currentPage - 1) * this.pageSize;
     },
-    // Indeks item terakhir di halaman saat ini
     lastItemIndex() {
       return Math.min(this.currentPage * this.pageSize, this.totalPatients);
     },
-    // Data pasien yang difilter berdasarkan query pencarian dan tahun
     filteredPatients() {
       return this.patients.filter((patient) => {
         const matchesSearch = patient.name.toLowerCase().includes(this.searchQuery.toLowerCase());
@@ -191,37 +196,70 @@ export default {
         return matchesSearch && matchesYear;
       });
     },
-    // Data pasien yang ditampilkan di halaman saat ini
     paginatedPatients() {
       return this.filteredPatients.slice(this.firstItemIndex, this.lastItemIndex);
     },
   },
   methods: {
-    // Pindah ke halaman sebelumnya
+    openAddPatientModal() {
+      this.showAddPatientModal = true;
+    },
+    closeAddPatientModal() {
+      this.showAddPatientModal = false;
+    },
+    handlePatientSubmit(formData) {
+      console.log("Data yang disimpan:", formData);
+      alert("Data berhasil disimpan!");
+      this.closeAddPatientModal();
+    },
     prevPage() {
       if (this.currentPage > 1) {
         this.currentPage--;
       }
     },
-    // Pindah ke halaman berikutnya
     nextPage() {
       if (this.currentPage < this.totalPages) {
         this.currentPage++;
       }
     },
-    // Pindah ke halaman tertentu
     goToPage(page) {
       this.currentPage = page;
     },
-    // Simulasi hapus pasien
-    deletePatient(id) {
-      console.log(`Pasien dengan ID ${id} telah dihapus.`);
+    resetPagination() {
+      this.currentPage = 1;
     },
-    // Simulasi edit pasien
-    editPatient(id) {
-      console.log(`Pasien dengan ID ${id} sedang diedit.`);
+    viewPatientDetails(id) {
+      this.$router.push({ name: "DetailPasien", params: { id }});
+    },
+    toggleDownloadMenu() {
+      this.isDownloadMenuOpen = !this.isDownloadMenuOpen;
+      if (this.isDownloadMenuOpen) {
+        setTimeout(() => {
+          document.addEventListener('click', this.closeDownloadMenu);
+        }, 0);
+      }
+    },
+    closeDownloadMenu(event) {
+      const downloadContainer = document.querySelector('.download-dropdown');
+      if (downloadContainer && !downloadContainer.contains(event.target)) {
+        this.isDownloadMenuOpen = false;
+        document.removeEventListener('click', this.closeDownloadMenu);
+      }
+    },
+    downloadExcel() {
+      console.log("Mengunduh data dalam format Excel...");
+      alert("Mengunduh data dalam format Excel");
+      this.isDownloadMenuOpen = false;
+    },
+    downloadPDF() {
+      console.log("Mengunduh data dalam format PDF...");
+      alert("Mengunduh data dalam format PDF");
+      this.isDownloadMenuOpen = false;
     },
   },
+  beforeDestroy() {
+    document.removeEventListener('click', this.closeDownloadMenu);
+  }
 };
 </script>
 
@@ -239,12 +277,12 @@ export default {
 /* Page Container */
 .page-container {
   width: 100%;
-  max-width: 1400px; /* Lebar maksimal saat layar besar */
+  max-width: 1400px;
   background: #ffffff;
   border-radius: 10px;
   padding: 26px;
   box-shadow: 0px 4px 16px rgba(0, 0, 0, 0.1);
-  overflow-x: auto; /* Aktifkan scroll horizontal jika konten melebihi lebar */
+  overflow-x: auto;
 }
 
 /* Toolbar */
@@ -253,88 +291,67 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  flex-wrap: wrap; /* Izinkan toolbar membungkus elemen jika layar sempit */
+  flex-wrap: wrap;
 }
 
-/* Right Section */
+/* Bagian Kiri */
+.left-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* Bagian Kanan */
 .right-section {
   display: flex;
   align-items: center;
   gap: 16px;
-  flex-wrap: wrap; /* Izinkan search bar dan tombol tambah data membungkus */
+  flex-wrap: wrap;
 }
 
-
-/* Dropdown */
+/* Dropdown Tahun */
 .dropdown-container-year {
   position: relative;
-  width: 147px; /* Sesuaikan dengan lebar dropdown */
+  width: 147px;
 }
 
-.dropdown-container-year::after {
-  content: "▼"; /* Simbol panah bawah */
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 12px;
-  color: #9aa0a8;
-  pointer-events: none; /* Pastikan tidak bisa diklik */
-}
-
-/* Dropdown Icon (Chevron Down) */
-.dropdown-icon-year {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 12px;
-  color: #9aa0a8;
-  pointer-events: none; /* Pastikan tidak bisa diklik */
-}
-
-/* Search Container */
-.search-container {
-  display: flex;
-  align-items: center;
-  position: relative;
-}
-
-.search-input {
-  width: 251px;
+.dropdown-select {
+  width: 100%;
   height: 42px;
-  padding: 10px;
-  border: 1px solid #cdcfD4;
+  padding: 8px;
+  border: 1px solid #eaeaea;
   border-radius: 10px;
   font-family: "Inter", sans-serif;
   font-size: 14px;
-  color: #4f5867;
+  color: #000000;
+  background: #ffffff;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
   outline: none;
 }
 
-.search-button {
+/* Dropdown Icon (Chevron Down) */
+.dropdown-container-year::after {
+  content: "▼";
   position: absolute;
   right: 10px;
   top: 50%;
   transform: translateY(-50%);
-  background: transparent;
-  border: none;
-  cursor: pointer;
+  font-size: 12px;
   color: #9aa0a8;
+  pointer-events: none;
 }
 
-.search-button:hover {
-  color: #3a72dc;
-}
-
-/* Add Data Button */
+/* Tombol Tambah Data Peserta */
 .add-data-button {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
   padding: 10px 20px;
-  background: #3a72dc;
+  background: var(--primary-500);
   color: #ffffff;
   font-family: "Inter", sans-serif;
   font-size: 14px;
@@ -346,213 +363,115 @@ export default {
 }
 
 .add-data-button:hover {
-  background: #2a5dbd;
+  background: var(--primary-700);
 }
 
-/* Table Container */
-.table-container {
-  overflow-x: auto; /* Aktifkan scroll horizontal jika tabel melebihi lebar */
-  margin-bottom: 20px;
+/* Dropdown untuk tombol download/unduh */
+.download-dropdown {
+  position: relative;
 }
 
-/* Data Table */
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  color: #5f5f5f;
-  table-layout: auto;
-  min-width: 1200px; /* Pastikan tabel memiliki lebar minimum */
-}
-
-/* Header dan Data Cell */
-.data-table th,
-.data-table td {
-  padding: 12px;
-  text-align: center; /* Default rata kiri untuk data */
-  border: 1px solid #d7d7d7; /* Garis vertikal dan horizontal */
-  word-wrap: break-word;
-}
-
-
-/* Kolom Nama Pasien */
-.data-table tr:first-child th:nth-child(3),
-.data-table tr:first-child td:nth-child(3) {
-  min-width: 250px;
-}
-/* Kolom Alamat */
-.data-table tr:first-child th:nth-child(9),
-.data-table tr:first-child td:nth-child(9) {
-  min-width: 250px;
-}
-
-.data-table tr:last-child th,
-.data-table tr:last-child td {
-  min-width: 50px;
-  max-width: 50px;
-}
-
-
-/* Action Buttons */
-.action-button {
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font-size: 16px;
-  margin: 0 4px;
-  transition: color 0.3s ease;
-}
-
-.action-button.delete {
-  color: #dc2626; /* Merah untuk delete */
-}
-
-.action-button.edit {
-  color: #4ade80; /* Hijau untuk edit */
-}
-
-.action-button.delete:hover {
-  color: #b91c1c; /* Warna lebih gelap saat hover */
-}
-
-.action-button.edit:hover {
-  color: #22c55e; /* Warna lebih gelap saat hover */
-}
-
-/* Pagination */
-/* Pagination Container */
-.pagination-container {
-  background-color: #ffffff;
-  border-radius: 8px;
-}
-
-/* Pagination Buttons */
-.pagination-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px; /* Lebar tetap untuk angka halaman */
-  height: 40px; /* Tinggi tetap untuk angka halaman */
-  padding: 0;
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  color: #9aa0a8; /* Warna teks default abu-abu */
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: color 0.3s ease; /* Animasi warna teks */
-}
-
-.pagination-button:hover {
-  color: #3a72dc; /* Warna biru saat hover */
-}
-
-/* Halaman Aktif */
-.pagination-button.active {
-  color: #3a72dc; /* Teks biru untuk halaman aktif */
-  font-weight: 600; /* Teks lebih tebal */
-}
-
-/* Tombol Previous dan Next */
-.pagination-button.prev,
-.pagination-button.next {
-  background-color: #3a72dc; /* Background biru */
-  color: #ffffff; /* Teks putih */
-  width: auto; /* Lebar otomatis */
-  padding: 10px 16px; /* Padding tambahan untuk ikon */
-  font-size: 16px; /* Ukuran ikon lebih besar */
-}
-
-.pagination-button.prev:hover,
-.pagination-button.next:hover {
-  background-color: #2a5dbd; /* Background lebih gelap saat hover */
-}
-
-/* Tombol Disabled */
-.pagination-button:disabled {
-  background-color: #9aa0a8; /* Background abu-abu */
-  color: #ffffff; /* Teks putih */
-  cursor: not-allowed; /* Ubah kursor menjadi tidak aktif */
-}
-
-/* Dropdown Baris Per Halaman */
-.rows-per-page {
+/* Tombol download Laporan */
+.download-report-button {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.rows-per-page label {
+  padding: 10px 20px;
+  background: var(--primary-500);
+  color: #ffffff;
   font-family: "Inter", sans-serif;
   font-size: 14px;
-  color: #5f5f5f;
+  font-weight: 500;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
-.rows-per-page select {
-  width: 80px;
+.download-report-button:hover {
+  background: var(--primary-700);
+}
+
+/* Menu dropdown untuk download */
+.download-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
+  margin-top: 5px;
+  z-index: 100;
+  min-width: 180px;
+  overflow: hidden;
+}
+
+/* Opsi download */
+.download-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  color: #4f5867;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.download-option:hover {
+  background-color: #f3f4f6;
+  color: var(--primary-500);
+}
+
+/* Separator antara opsi */
+.download-option:not(:last-child) {
+  border-bottom: 1px solid #eaeaea;
+}
+
+/* Kolom Pencarian */
+.search-container {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  color: #9aa0a8;
+  font-size: 16px;
+  pointer-events: none;
+}
+
+.search-input {
+  width: 251px;
   height: 42px;
-  padding: 8px;
-  border: 1px solid #eaeaea;
+  padding: 10px 40px 10px 40px;
+  border: 1px solid #cdcfD4;
   border-radius: 10px;
   font-family: "Inter", sans-serif;
   font-size: 14px;
-  color: #000000;
-  background: #ffffff;
-  cursor: pointer;
+  color: #4f5867;
+  outline: none;
 }
 
-/* Container untuk Dropdown */
-.dropdown-container {
-  position: relative;
-  width: 80px; /* Lebar dropdown */
+.search-input:hover {
+  border-color: var(--primary-500);
 }
 
-/* Dropdown Select */
-.dropdown-select {
-  width: 100%;
-  height: 42px;
-  padding: 8px;
-  border: 1px solid #eaeaea; /* Border tipis */
-  border-radius: 8px; /* Sudut melengkung */
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  color: #000000;
-  background: #ffffff;
-  cursor: pointer;
-  appearance: none; /* Hilangkan tampilan default dropdown */
-  -webkit-appearance: none; /* Untuk browser Webkit */
-  -moz-appearance: none; /* Untuk browser Mozilla */
-  outline: none; /* Hilangkan outline saat fokus */
-  transition: border-color 0.3s ease; /* Animasi saat hover */
-}
-
-/* Hover Effect untuk Dropdown */
-.dropdown-select:hover {
-  border-color: #3a72dc; /* Warna border saat hover */
-}
-
-/* Arrow Icon untuk Dropdown */
-.dropdown-container::after {
-  content: "▼"; /* Simbol panah bawah */
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 12px;
-  color: #9aa0a8;
-  pointer-events: none; /* Pastikan tidak bisa diklik */
-}
-
-/* Media Query untuk Layar Kecil */
-@media (max-width: 768px) {
+@media (max-width: 992px) {
   .toolbar {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
   }
 
+  .left-section,
   .right-section {
     flex-direction: column;
     align-items: flex-start;
@@ -567,41 +486,155 @@ export default {
     width: 100%;
   }
 
-  .add-data-button {
+  .add-data-button,
+  .download-report-button {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+  
+  .download-menu {
     width: 100%;
   }
 }
 
-/* Container tombol aksi */
-.action-buttons {
+/* Table Container */
+.table-container {
+  overflow-x: auto;
+  margin-bottom: 20px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+/* Data Table */
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  color: #333333;
+  background: #ffffff;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* Header */
+.data-table thead th {
+  background: #f3f4f6;
+  color: #333333;
+  font-weight: 600;
+  text-align: center;
+  padding: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* Data Rows */
+.data-table tbody tr:hover {
+  background: #f9fafb;
+  transition: background-color 0.3s ease;
+}
+
+/* Data Cell */
+.data-table td {
+  text-align: center;
+  padding: 20px;
+}
+
+.data-table tr {
+  height: 60px;
+}
+
+/* Action Button */
+.action-button.detail {
+  padding: 8px 16px;
+  border: 1px solid var(--primary-300);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  background: var(--secondary-100);
+  color: var(--primary-500);
+  transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.action-button.detail:hover {
+  background: var(--secondary-300);
+}
+
+/* Scrollbar Styling */
+.table-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+/* Pagination */
+.pagination-container {
+  background-color: #ffffff;
+  border-radius: 8px;
+}
+
+/* Pagination Buttons */
+.pagination-button {
   display: flex;
   align-items: center;
-  gap: 8px;
-}
-/* Action Buttons */
-.action-button {
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #9aa0a8;
   border: none;
-  background: transparent;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 16px;
-  margin: 0 4px;
   transition: color 0.3s ease;
 }
 
-.action-button.delete {
-  color: #dc2626; /* Merah untuk delete */
+.pagination-button:hover {
+  color: var(--primary-500);
 }
 
-.action-button.edit {
-  color: #4ade80; /* Hijau untuk edit */
+/* Halaman Aktif */
+.pagination-button.active {
+  color: var(--primary-500);
+  font-weight: 600;
 }
 
-.action-button.delete:hover {
-  color: #b91c1c; /* Warna lebih gelap saat hover */
+/* Tombol Previous dan Next */
+.pagination-button.prev,
+.pagination-button.next {
+  background-color: var(--primary-500);
+  color: #ffffff;
+  width: auto;
+  padding: 10px 16px;
+  font-size: 16px;
 }
 
-.action-button.edit:hover {
-  color: #22c55e; /* Warna lebih gelap saat hover */
+.pagination-button.prev:hover,
+.pagination-button.next:hover {
+  background-color: var(--primary-700);
 }
 
+/* Tombol Disabled */
+.pagination-button:disabled {
+  background-color: #9aa0a8;
+  color: #ffffff;
+  cursor: not-allowed;
+}
+
+/* Dropdown Container */
+.dropdown-container {
+  position: relative;
+  width: 80px;
+}
 </style>
