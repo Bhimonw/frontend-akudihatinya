@@ -112,28 +112,25 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { login as authLogin, getAuthState } from '../../stores/auth.js';
+import Swal from 'sweetalert2';
 
 export default {
   setup() {
     const router = useRouter();
-
     const credentials = ref({
       username: '',
       password: '',
     });
-
     const isUsernameActive = ref(false);
     const isPasswordActive = ref(false);
     const showPassword = ref(false);
     const toggleHover = ref(false);
     const isLoading = ref(false);
-
     const errors = ref({
       username: '',
       password: '',
       general: '',
     });
-
     const currentYear = new Date().getFullYear();
 
     const resetErrors = () => {
@@ -147,28 +144,33 @@ export default {
     const validateForm = () => {
       resetErrors();
       let isValid = true;
-
       if (!credentials.value.username.trim()) {
         errors.value.username = 'Username tidak boleh kosong';
         isValid = false;
       }
-
       if (!credentials.value.password) {
         errors.value.password = 'Password tidak boleh kosong';
         isValid = false;
       }
-
       return isValid;
     };
 
     const handleLogin = async () => {
       if (!validateForm()) return;
-
       isLoading.value = true;
 
       try {
         // Panggil fungsi login dari utils/auth.js
         await authLogin(credentials.value.username, credentials.value.password);
+
+        // Tampilkan notifikasi login berhasil
+        Swal.fire({
+          title: 'Berhasil!',
+          text: 'Anda telah berhasil login.',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false,
+        });
 
         // Redirect berdasarkan nilai isadmin
         const { isadmin } = getAuthState();
@@ -178,7 +180,15 @@ export default {
           router.push('/user/dashboard'); // User dashboard
         }
       } catch (error) {
-        errors.value.general = error.message || 'Terjadi kesalahan saat login';
+        // Reset pesan error umum
+        errors.value.general = '';
+
+        // Tangkap respons error dari server
+        if (error.response && error.response.data && error.response.data.message) {
+          errors.value.general = error.response.data.message; // Gunakan pesan dari server
+        } else {
+          errors.value.general = 'Terjadi kesalahan saat login. Silakan coba lagi.'; // Pesan default
+        }
       } finally {
         isLoading.value = false;
       }

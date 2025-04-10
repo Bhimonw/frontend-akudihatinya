@@ -79,6 +79,7 @@ import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 import { logout as authLogout } from '../stores/auth'; // Impor fungsi logout
+import Swal from 'sweetalert2';
 
 export default {
   props: {
@@ -131,6 +132,22 @@ export default {
     };
 
     const handleLogout = async () => {
+      // Tampilkan notifikasi konfirmasi
+      const confirmation = await Swal.fire({
+        title: 'Apakah Anda Yakin?',
+        text: 'Anda akan keluar dari aplikasi.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Ya, Logout!',
+        cancelButtonText: 'Batal',
+      });
+
+      // Jika pengguna membatalkan logout
+      if (!confirmation.isConfirmed) {
+        return;
+      }
       try {
         const token = localStorage.getItem('token'); // Ambil token dari localStorage
         if (!token) {
@@ -152,10 +169,26 @@ export default {
         // Hapus sesi autentikasi
         authLogout();
 
+        //Tampilkan notifikasi sukses
+        Swal.fire({
+          title: 'Berhasil',
+          text: 'Anda telah berhasil logout.',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false,
+        });
+
         // Redirect ke halaman login
         router.push({ name: 'Login' });
       } catch (error) {
         console.error('Gagal logout:', error);
+
+        // Tampilkan notifikasi gagal
+        Swal.fire({
+          title: 'Gagal!',
+          text: 'Terjadi kesalahan saat logout. Silakan coba lagi.',
+          icon: 'error',
+        });
       }
     };
 
