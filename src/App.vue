@@ -5,8 +5,19 @@
 </template>
 
 <script>
+import { onMounted } from 'vue';
+import { restoreAuth } from './stores/auth';
+
 export default {
   name: 'App',
+  created() {
+    restoreAuth();
+  },
+  setup() {
+    onMounted(() => {
+      restoreAuth();
+    });
+  }
 };
 </script>
 

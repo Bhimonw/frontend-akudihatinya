@@ -16,6 +16,8 @@ import Hipertensi from '../views/user/Hipertensi.vue';
 import TambahDataPeserta from '../views/user/TambahDataPeserta.vue';
 import DetailPasien from '../views/user/DetailPasien.vue';
 
+import { getAuthState, isAdmin as checkAdmin, isAdmin } from '../stores/auth';
+
 const routes = [
   // Admin Routes
   {
@@ -25,6 +27,7 @@ const routes = [
         path: 'login',
         name:"Login",
         component: Login,
+        meta: {requiresGuest: true},
       },
     ],
   },
@@ -35,12 +38,12 @@ const routes = [
       {
         path: 'dashboard',
         component: AdminDashboard,
-        meta: { title: 'Admin Dashboard' },
+        meta: { requiresAuth: true, isAdmin: true, title: 'Admin Dashboard' },
       },
       {
         path: 'manajemen-user',
         component: ManajemenUser,
-        meta: { title: 'Manajemen User' },
+        meta: { requiresAuth: true, isAdmin: true, title: 'Manajemen User' },
       },
     ],
   },
@@ -53,28 +56,29 @@ const routes = [
       {
         path: 'dashboard',
         component: UserDashboard,
-        meta: { title: 'Dashboard' },
+        meta: { requiresAuth: true, isAdmin: false, title: 'Dashboard' },
       },
       {
         path: 'diabetes-mellitus',
         component: DiabetesMellitus,
-        meta: { title: 'Diabetes Mellitus' },
+        meta: { requiresAuth: true, isAdmin: false, title: 'Diabetes Mellitus' },
       },
       {
         path: 'hipertensi',
         component: Hipertensi,
-        meta: { title: 'Hipertensi' },
+        meta: { requiresAuth: true, isAdmin: false, title: 'Hipertensi' },
       },
       {
         path: '/tambah-data-peserta',
         name: 'TambahDataPeserta',
         component: TambahDataPeserta,
+        meta: { requiresAuth: true, isAdmin: false},
       },
       {
         path: 'diabetes-mellitus/patient/:id',
       name: "DetailPasien",
       component: DetailPasien,
-      meta: { title: 'Detail Pasien' },
+      meta: { requiresAuth: true, isAdmin: false, title: 'Detail Pasien'},
       },
     ],
   },
@@ -87,6 +91,26 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
+});
+
+// Middleware untuk route guards
+router.beforeEach((to, from, next) => {
+  const isAuthenticated = !!getAuthState().token; // Periksa apakah pengguna sudah login
+  const isAdmin = checkAdmin(); // Periksa apakah pengguna adalah admin
+
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    // Jika halaman membutuhkan autentikasi tetapi pengguna belum login
+    next({ name: 'Login' }); // Redirect ke halaman login
+  } else if (to.meta.isAdmin !== undefined && to.meta.isAdmin !== isAdmin) {
+    // Jika role pengguna tidak sesuai dengan halaman yang diminta
+    if (isAdmin) {
+      next({ path: '/admin/dashboard' }); // Redirect ke halaman admin jika role admin
+    } else {
+      next({ path: '/user/dashboard' }); // Redirect ke halaman user jika role user
+    }
+  } else {
+    next(); // Lanjutkan ke halaman yang diminta
+  }
 });
 
 export default router;

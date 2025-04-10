@@ -27,7 +27,7 @@
       <!-- User Information -->
       <div class="user-info">
         <div class="department-container">
-          <p class="department">Nama User</p>
+          <p class="department">{{ userData.nama_puskesmas || 'Loading...' }}</p>
           <div class="dropdown-indicator" @click.stop="toggleDropdown">
             <font-awesome-icon :icon="['fas', 'chevron-down']" class="dropdown-icon" />
           </div>
@@ -43,8 +43,8 @@
           <img src="../../src/assets/profile.png" alt="Profile Icon" class="profile-icon" />
         </div>
         <div class="dropdown-user-info">
-          <p class="dropdown-department">Nama User</p>
-          <p class="dropdown-role">Role</p>
+          <p class="dropdown-department">{{ userData.nama_puskesmas || 'Loading...' }}</p>
+          <p class="dropdown-role">{{ userData.role || 'Loading...' }}</p>
         </div>
       </div>
       <hr class="dropdown-divider" />
@@ -64,7 +64,7 @@
           <span class="slider round"></span>
         </label>
       </div>
-      <div class="dropdown-item">
+      <div class="dropdown-item" @click="handleLogout">
         <div class="dropdown-icon">
           <font-awesome-icon :icon="['fas', 'sign-out-alt']" />
         </div>
@@ -73,9 +73,12 @@
     </div>
   </header>
 </template>
-  
+
 <script>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted } from 'vue';
+import axios from 'axios';
+import { useRouter } from 'vue-router';
+import { logout as authLogout } from '../stores/auth'; // Impor fungsi logout
 
 export default {
   props: {
@@ -85,35 +88,93 @@ export default {
     },
   },
   setup() {
+    const router = useRouter();
     const isDropdownOpen = ref(false);
+    const userData = ref({
+      nama_puskesmas: '',
+      role: '',
+    });
+
+    // Function to fetch user data from API
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem('token'); // Ambil token dari localStorage
+        if (!token) {
+          console.error('Token tidak ditemukan');
+          return;
+        }
+
+        const response = await axios.get('http://localhost:8000/api/user', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const user = response.data.data.user;
+        userData.value = {
+          nama_puskesmas: user.nama_puskesmas, // Menggunakan nama_puskesmas
+          role: user.roles[0]?.name || 'Unknown Role',
+        };
+      } catch (error) {
+        console.error('Gagal mengambil data user:', error);
+      }
+    };
 
     const toggleDropdown = () => {
       isDropdownOpen.value = !isDropdownOpen.value;
     };
 
     const closeDropdown = (event) => {
-      // Cek apakah klik terjadi di luar dropdown
       if (isDropdownOpen.value && !event.target.closest('.profile-section')) {
         isDropdownOpen.value = false;
       }
     };
 
-    onMounted(() => {
-      window.addEventListener('click', closeDropdown);
-    });
+    const handleLogout = async () => {
+      try {
+        const token = localStorage.getItem('token'); // Ambil token dari localStorage
+        if (!token) {
+          console.error('Token tidak ditemukan');
+          return;
+        }
 
-    onUnmounted(() => {
-      window.removeEventListener('click', closeDropdown);
+        // Panggil API logout
+        await axios.post(
+          'http://localhost:8000/api/logout',
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        // Hapus sesi autentikasi
+        authLogout();
+
+        // Redirect ke halaman login
+        router.push({ name: 'Login' });
+      } catch (error) {
+        console.error('Gagal logout:', error);
+      }
+    };
+
+    onMounted(() => {
+      fetchUserData(); // Fetch user data saat komponen dimuat
+      window.addEventListener('click', closeDropdown);
     });
 
     return {
       isDropdownOpen,
       toggleDropdown,
+      userData,
+      handleLogout,
     };
   },
 };
 </script>
-  
+
+
   <style scoped>
 
   /* Navbar Container */
