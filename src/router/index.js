@@ -11,6 +11,7 @@ import ManajemenUser from '../views/admin/ManajemenUser.vue';
 
 // User Views
 import UserDashboard from '../views/user/Dashboard.vue';
+import ListPasien from '../views/user/ListPasien.vue';
 import DiabetesMellitus from '../views/user/DiabetesMellitus.vue';
 import Hipertensi from '../views/user/Hipertensi.vue';
 import TambahDataPeserta from '../views/user/TambahDataPeserta.vue';
@@ -57,6 +58,11 @@ const routes = [
         path: 'dashboard',
         component: UserDashboard,
         meta: { requiresAuth: true, isAdmin: false, title: 'Dashboard' },
+      },
+      {
+        path: 'list-pasien',
+        component: ListPasien,
+        meta: { requiresAuth: true, isAdmin: false, title: 'Daftar Pasien' },
       },
       {
         path: 'diabetes-mellitus',

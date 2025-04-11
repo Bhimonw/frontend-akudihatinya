@@ -20,31 +20,14 @@
         <span v-if="isSidebarOpen" class="menu-text">Dashboard</span>
       </li>
       
-      <!-- Patient List Menu Item -->
+      <!-- Manajemen User Menu Item -->
       <li
         class="menu-item"
-        :class="{ active: activeMenu === 'list-pasien' }"
+        :class="{ active: activeMenu === 'manajemen-user' }"
         @click="navigate(menuItems[1])"
       >
         <font-awesome-icon :icon="['fas', 'users']" class="menu-icon" />
-        <span v-if="isSidebarOpen" class="menu-text">List Pasien</span>
-      </li>
-      
-      <!-- Section Label -->
-      <li v-if="isSidebarOpen" class="section-label">
-        <span>Laporan Pemantauan</span>
-      </li>
-      
-      <!-- Disease Menu Items -->
-      <li
-        v-for="(item, index) in diseaseItems"
-        :key="index"
-        class="menu-item"
-        :class="{ active: activeMenu === item.key }"
-        @click="navigate(item)"
-      >
-        <font-awesome-icon :icon="['fas', item.icon]" class="menu-icon" />
-        <span v-if="isSidebarOpen" class="menu-text">{{ item.label }}</span>
+        <span v-if="isSidebarOpen" class="menu-text">Manajemen User</span>
       </li>
     </ul>
   </div>
@@ -63,18 +46,14 @@ export default {
       activeMenu: 'dashboard',
       menuItems: [
         { key: 'dashboard', label: 'Dashboard', icon: 'chart-line' },
-        { key: 'list-pasien', label: 'List Pasien', icon: 'users' },
-      ],
-      diseaseItems: [
-        { key: 'diabetes-mellitus', label: 'Diabetes Mellitus', icon: 'disease' },
-        { key: 'hipertensi', label: 'Hipertensi', icon: 'heart-pulse' },
+        { key: 'manajemen-user', label: 'Manajemen User', icon: 'users' },
       ],
     };
   },
   methods: {
     navigate(item) {
       this.activeMenu = item.key;
-      this.$router.push(`/user/${item.key}`);
+      this.$router.push(`/admin/${item.key}`);
     },
   },
 };

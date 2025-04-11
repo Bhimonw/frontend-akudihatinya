@@ -1,7 +1,9 @@
 <template>
   <div class="layout">
-    <!-- Sidebar -->
-    <Sidebar :isSidebarOpen="isSidebarOpen" />
+    <!-- Render sidebar berdasarkan role user -->
+    <SidebarAdmin v-if="isUserAdmin" :isSidebarOpen="isSidebarOpen" />
+    <Sidebar v-else :isSidebarOpen="isSidebarOpen" />
+    
     <!-- Main Content -->
     <div class="main-content">
       <!-- Navbar -->
@@ -16,11 +18,14 @@
 
 <script>
 import Sidebar from '../components/Sidebar.vue';
+import SidebarAdmin from '../components/SidebarAdmin.vue';
 import Navbar from '../components/Navbar.vue';
+import { getAuthState } from '../stores/auth.js';
 
 export default {
   components: {
     Sidebar,
+    SidebarAdmin,
     Navbar,
   },
   data() {
@@ -32,6 +37,10 @@ export default {
     pageTitle() {
       return this.$route.meta.title || 'Dashboard';
     },
+    isUserAdmin() {
+      // Mengambil status admin dari auth store
+      return getAuthState().isadmin;
+    }
   },
   methods: {
     toggleSidebar() {
