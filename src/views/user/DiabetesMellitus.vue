@@ -12,13 +12,11 @@
               <option v-for="year in years" :key="year" :value="String(year)">{{ year }}</option>
             </select>
           </div>
-
           <!-- Tombol Tambah Data Peserta (with click handler to open modal) -->
           <button class="add-data-button" @click="openAddPatientModal">
             <font-awesome-icon :icon="['fas', 'plus']" />
             Tambah Pasien
           </button>
-
           <!-- Tombol Download Laporan dengan Dropdown -->
           <div class="download-dropdown">
             <button class="download-report-button" @click="toggleDownloadMenu">
@@ -38,7 +36,6 @@
             </div>
           </div>
         </div>
-
         <!-- Bagian Kanan -->
         <div class="right-section">
           <!-- Search Bar -->
@@ -48,7 +45,6 @@
           </div>
         </div>
       </div>
-
       <!-- Tabel Data Pasien -->
       <div class="table-container">
         <table class="data-table">
@@ -66,25 +62,43 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(patient, index) in paginatedPatients" :key="patient.id">
+            <tr v-if="isLoading">
+              <td colspan="9">
+                <div class="loading-container">
+                  <div class="loading-content">
+                    <div class="spinner"></div>
+                    <p>Memuat data...</p>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            <tr v-else v-for="(patient, index) in paginatedPatients" :key="patient.id">
               <td>{{ index + 1 }}</td>
               <td>{{ patient.name }}</td>
               <td>{{ patient.nik }}</td>
-              <td>{{ patient.bpjs }}</td>
+              <td>{{ patient.bpjs_number }}</td>
               <td>{{ patient.gender }}</td>
-              <td>{{ patient.dob }}</td>
+              <td>{{ patient.birth_date }}</td>
               <td>{{ patient.age }}</td>
-              <td>{{ patient.address }}</td>
+              <td class="action-button-container">{{ patient.address }}</td>
               <td>
-                <button class="action-button detail" @click="viewPatientDetails(patient.id)">
-                  Lihat Detail
-                </button>
+                <div class="action-buttons-container">
+                  <button class="action-button detail" @click="viewPatientDetails(patient.id)">
+                    <font-awesome-icon :icon="['fas', 'eye']" />
+                    Lihat Detail
+                  </button>
+                  <button class="action-button delete" @click="deleteExaminationYear(patient.id)">
+                    <font-awesome-icon :icon="['fas', 'trash']" />
+                  </button>
+                </div>
               </td>
+            </tr>
+            <tr v-if="!isLoading && paginatedPatients.length === 0">
+              <td colspan="9" class="no-data">Tidak ada data.</td>
             </tr>
           </tbody>
         </table>
       </div>
-
       <!-- Pagination -->
       <div class="pagination-container">
         <div class="flex items-center justify-between bg-white px-4 py-3 sm:px-6">
@@ -103,7 +117,6 @@
                 {{ firstItemIndex + 1 }}-{{ lastItemIndex }} dari {{ totalPatients }} item
               </p>
             </div>
-
             <!-- Pagination Buttons -->
             <nav class="isolate inline-flex -space-x-px rounded-md shadow-xs" aria-label="Pagination">
               <!-- Tombol Previous -->
@@ -114,7 +127,6 @@
               >
                 <font-awesome-icon :icon="['fas', 'chevron-left']" />
               </button>
-
               <!-- Nomor Halaman -->
               <button
                 v-for="page in totalPages"
@@ -127,7 +139,6 @@
               >
                 {{ page }}
               </button>
-
               <!-- Tombol Next -->
               <button
                 class="pagination-button next"
@@ -141,18 +152,18 @@
         </div>
       </div>
     </div>
-    
     <!-- Import the modal from separate file but don't define its content here -->
     <AddPatientModal 
-      v-if="showAddPatientModal" 
+      :show="showAddPatientModal" 
       @close="closeAddPatientModal"
       @submit="handlePatientSubmit"
+      :selected-year="selectedYear"
     />
   </div>
 </template>
 
 <script>
-import { patientData } from "../../data/dummyData.js";
+import axios from 'axios';
 import AddPatientModal from "../../components/modals/AddPatientModal.vue";
 
 export default {
@@ -164,43 +175,139 @@ export default {
     const currentYear = new Date().getFullYear();
     const startYear = 2000;
     const years = Array.from({ length: currentYear - startYear + 1 }, (_, i) => startYear + i).reverse();
-
     return {
-      patients: patientData,
+      patients: [], // Data pasien dari API
       currentPage: 1,
       pageSize: 10,
       searchQuery: "",
       selectedYear: String(currentYear),
       years: years,
       isDownloadMenuOpen: false,
-      showAddPatientModal: false
+      showAddPatientModal: false,
+      totalPatients: 0,
+      totalPages: 0,
+      links: {},
+      isLoading: false
     };
   },
   computed: {
-    totalPatients() {
-      return this.filteredPatients.length;
-    },
-    totalPages() {
-      return Math.ceil(this.totalPatients / this.pageSize);
-    },
-    firstItemIndex() {
-      return (this.currentPage - 1) * this.pageSize;
-    },
-    lastItemIndex() {
-      return Math.min(this.currentPage * this.pageSize, this.totalPatients);
-    },
     filteredPatients() {
       return this.patients.filter((patient) => {
         const matchesSearch = patient.name.toLowerCase().includes(this.searchQuery.toLowerCase());
-        const matchesYear = !this.selectedYear || patient.year === this.selectedYear;
+        const matchesYear = !this.selectedYear || patient.dm_years.includes(parseInt(this.selectedYear));
         return matchesSearch && matchesYear;
       });
     },
     paginatedPatients() {
       return this.filteredPatients.slice(this.firstItemIndex, this.lastItemIndex);
     },
+    firstItemIndex() {
+      return (this.currentPage - 1) * this.pageSize;
+    },
+    lastItemIndex() {
+      return Math.min(this.currentPage * this.pageSize, this.totalPatients);
+    }
   },
   methods: {
+    async fetchPatients() {
+      this.isLoading = true;
+      
+      try {
+        const token = localStorage.getItem("token"); 
+        if (!token) {
+          console.error("Token tidak ditemukan");
+          return;
+        }
+
+        const response = await axios.get("http://localhost:8000/api/puskesmas/patients", {
+          params: {
+            disease_type: "dm",
+            year: this.selectedYear,
+            search: this.searchQuery,
+            per_page: this.pageSize,
+            page: this.currentPage,
+          },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        // Log respons API untuk debugging
+        console.log("API Response:", response.data);
+
+        // Validasi struktur respons API
+        if (!response.data || !response.data.meta) {
+          console.error("Invalid API response structure:", response.data);
+          alert("Terjadi kesalahan: Struktur respons API tidak sesuai.");
+          return;
+        }
+
+        const { data, meta } = response.data;
+
+        // Konversi data ke array
+        const dataArray = Object.values(data);
+
+        // Update state dengan data dari API
+        this.patients = dataArray;
+        this.totalPatients = meta.total[0];
+        this.pageSize = meta.per_page[0];
+        this.currentPage = meta.current_page[0];
+        this.totalPages = meta.last_page[0];
+        this.links = meta.links;
+      } catch (error) {
+        console.error("Error fetching patients:", error);
+        alert("Terjadi kesalahan saat memuat data pasien.");
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    async deleteExaminationYear(patientId) {
+      const confirmed = confirm("Apakah Anda yakin akan menghapus data di tahun pemeriksaan ini?");
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        // Construct the payload
+        const payload = {
+          year: this.selectedYear,
+          examination_type: "dm",
+        };
+
+        console.log("Payload being sent:", payload); // Debugging: Log the payload
+
+        const token = localStorage.getItem("token");
+        if (!token) {
+          console.error("Token tidak ditemukan");
+          alert("Session expired. Please log in again.");
+          return;
+        }
+
+        const response = await axios.put(
+          `http://localhost:8000/api/puskesmas/patients/${patientId}/examination-year`,
+          payload,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        console.log("API Response:", response.data);
+
+        if (!response.data || !response.data.message) {
+          console.error("Invalid API response structure:", response.data);
+          alert("Terjadi kesalahan: Struktur respons API tidak sesuai.");
+          return;
+        }
+
+        alert("Data berhasil dihapus!");
+        this.fetchPatients(); // Refresh patient list after deletion
+      } catch (error) {
+        console.error("Error deleting examination year:", error.response?.data || error.message);
+        alert("Gagal menghapus data. Silakan coba lagi.");
+      }
+    },
     openAddPatientModal() {
       this.showAddPatientModal = true;
     },
@@ -211,22 +318,27 @@ export default {
       console.log("Data yang disimpan:", formData);
       alert("Data berhasil disimpan!");
       this.closeAddPatientModal();
+      this.fetchPatients(); // Muat ulang data setelah menambahkan pasien
     },
     prevPage() {
       if (this.currentPage > 1) {
         this.currentPage--;
+        this.fetchPatients();
       }
     },
     nextPage() {
       if (this.currentPage < this.totalPages) {
         this.currentPage++;
+        this.fetchPatients();
       }
     },
     goToPage(page) {
       this.currentPage = page;
+      this.fetchPatients();
     },
     resetPagination() {
       this.currentPage = 1;
+      this.fetchPatients();
     },
     viewPatientDetails(id) {
       this.$router.push({ name: "DetailPasien", params: { id }});
@@ -255,13 +367,31 @@ export default {
       console.log("Mengunduh data dalam format PDF...");
       alert("Mengunduh data dalam format PDF");
       this.isDownloadMenuOpen = false;
-    },
+    }
   },
-  beforeDestroy() {
-    document.removeEventListener('click', this.closeDownloadMenu);
+  watch: {
+    currentPage() {
+      this.fetchPatients();
+    },
+    selectedYear() {
+      this.currentPage = 1; // Reset halaman saat tahun berubah
+      this.fetchPatients();
+    },
+    searchQuery() {
+      this.currentPage = 1; // Reset halaman saat pencarian berubah
+      this.fetchPatients();
+    },
+    pageSize() {
+      this.currentPage = 1; // Reset halaman saat jumlah baris per halaman berubah
+      this.fetchPatients();
+    }
+  },
+  created() {
+    this.fetchPatients(); // Muat data pasien saat komponen dibuat
   }
 };
 </script>
+
 
 <style scoped>
 /* Root Styles */
@@ -545,21 +675,53 @@ export default {
   height: 60px;
 }
 
+.action-buttons-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 200px;
+  width: 200px;
+}
+
 /* Action Button */
-.action-button.detail {
+.action-button {
   padding: 8px 16px;
-  border: 1px solid var(--primary-300);
   border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.action-button.detail {
+  border: 1px solid var(--primary-300);
   background: var(--secondary-100);
   color: var(--primary-500);
-  transition: background-color 0.3s ease, transform 0.3s ease;
 }
 
 .action-button.detail:hover {
   background: var(--secondary-300);
+}
+
+.action-button.delete {
+  border: none;
+  background: #e53e3e;
+  color: #ffffff;
+  padding: 8px 12px;
+  height: 36px;
+  width: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-button.delete:hover {
+  background: #c53030;
+  transform: scale(1.05);
 }
 
 /* Scrollbar Styling */
@@ -636,5 +798,56 @@ export default {
 .dropdown-container {
   position: relative;
   width: 80px;
+}
+
+/* Loading Container Style */
+.loading-container {
+  width: 100%;
+  height: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Spinner Style */
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid var(--primary-500);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Loading Text Style */
+.loading-content p {
+  margin: 0;
+  color: var(--primary-500);
+  font-weight: 600;
+}
+
+/* Pesan "Tidak Ada Data" */
+.no-data {
+  text-align: center;
+  color: #9aa0a8;
+  font-size: 16px;
+  font-weight: 500;
 }
 </style>

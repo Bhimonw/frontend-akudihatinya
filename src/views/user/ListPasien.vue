@@ -6,7 +6,7 @@
       <div class="toolbar">
         <!-- Bagian Kiri -->
         <div class="left-section">
-          <!-- Tombol Tambah Data Peserta (with click handler to open modal) -->
+          <!-- Tombol Tambah Data Peserta -->
           <button class="add-data-button" @click="openAddPatientModal">
             <font-awesome-icon :icon="['fas', 'plus']" />
             Tambah Pasien
@@ -45,9 +45,13 @@
           </thead>
           <tbody>
             <tr v-if="isLoading">
-              <td colspan="9" class="loading-cell">
-                <div class="spinner"></div>
-                <p>Memuat data...</p>
+              <td colspan="9">
+                <div class="loading-container">
+                  <div class="loading-content">
+                    <div class="spinner"></div>
+                    <p>Memuat data...</p>
+                  </div>
+                </div>
               </td>
             </tr>
             <tr v-else v-for="(patient, index) in paginatedPatients" :key="patient.id">
@@ -239,10 +243,59 @@ export default {
     closeAddPatientModal() {
       this.showAddPatientModal = false;
     },
-    handlePatientSubmit(formData) {
-      console.log("Data yang disimpan:", formData);
-      alert("Data berhasil disimpan!");
-      this.closeAddPatientModal();
+    async handlePatientSubmit(formData) {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      Swal.fire({
+        title: "Error!",
+        text: "Token tidak ditemukan. Silakan login kembali.",
+        icon: "error",
+      });
+      return;
+    }
+    
+    // Set loading state
+    this.isSubmitting = true;
+    
+    // Send data to the server
+    const response = await axios.post(
+      "http://localhost:8000/api/puskesmas/patients",
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    
+    // Handle successful response
+    Swal.fire({
+      title: "Sukses!",
+      text: "Data pasien berhasil disimpan.",
+      icon: "success",
+    });
+    
+    // Close modal and refresh patient list
+    this.closeAddPatientModal();
+    this.fetchPatients();
+  } catch (error) {
+    // Handle error response
+    let errorMessage = "Terjadi kesalahan. Silakan coba lagi.";
+    
+    if (error.response && error.response.data && error.response.data.message) {
+      errorMessage = error.response.data.message;
+    }
+    
+    
+  } finally {
+    this.isSubmitting = false;
+  }
+},
+
+    closeAddPatientModal() {
+      this.showAddPatientModal = false;
     },
     prevPage() {
       if (this.currentPage > 1) {
@@ -565,6 +618,49 @@ export default {
   height: 60px;
 }
 
+/* Loading Container Style */
+.loading-container {
+  width: 100%;
+  height: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Spinner Style */
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid var(--primary-500);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Loading Text Style */
+.loading-content p {
+  margin: 0;
+  color: #4f5867;
+  font-size: 14px;
+}
+
 /* Action Button */
 .action-button.detail {
   padding: 8px 16px;
@@ -594,6 +690,14 @@ export default {
 
 .table-container::-webkit-scrollbar-track {
   background: #f3f4f6;
+}
+
+/* No Data Display */
+.no-data {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6b7280;
+  font-style: italic;
 }
 
 /* Pagination */
@@ -656,39 +760,5 @@ export default {
 .dropdown-container {
   position: relative;
   width: 80px;
-}
-
-/* Loading Cell */
-.loading-cell {
-  text-align: center;
-  padding: 20px;
-  background: #f9fafb;
-}
-
-/* Spinner */
-.spinner {
-  border: 4px solid #f3f3f3; /* Light grey */
-  border-top: 4px solid var(--primary-500); /* Blue */
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 16px;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-/* No Data Message */
-.no-data {
-  text-align: center;
-  padding: 20px;
-  color: #9aa0a8;
 }
 </style>

@@ -1,363 +1,407 @@
+<!-- components/modals/AddNewPatient.vue -->
 <template>
-    <div class="modal-overlay" @click="closeModal">
-      <div class="modal-container" @click.stop>
-        <div class="modal-header">
-          <h2>Tambah Data Pasien</h2>
-          <button class="close-button" @click="closeModal">
-            <font-awesome-icon :icon="['fas', 'times']" />
-          </button>
-        </div>
-  
-        <div class="modal-body">
-          <div class="new-patient-form">
-            <form @submit.prevent="submitNewPatient">
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="name">Nama Pasien</label>
-                  <input
-                    type="text"
-                    id="name"
-                    v-model="formData.name"
-                    :class="{ 'error-border': errors.name }"
-                    required
-                  />
-                  <span v-if="errors.name" class="error-message">{{ errors.name }}</span>
-                </div>
-                <div class="form-group">
-                  <label for="nik">NIK</label>
-                  <input
-                    type="text"
-                    id="nik"
-                    v-model="formData.nik"
-                    :class="{ 'error-border': errors.nik }"
-                    required
-                  />
-                  <span v-if="errors.nik" class="error-message">{{ errors.nik }}</span>
-                </div>
+  <div class="modal-backdrop">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h2>Tambah Data Pasien</h2>
+        <button class="close-button" @click="closeModal">
+          <font-awesome-icon :icon="['fas', 'times']" />
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="new-patient-form">
+          <form @submit.prevent="submitForm">
+            <!-- Nama Pasien -->
+            <div class="form-row">
+              <div class="form-group">
+                <label for="name">Nama Pasien <span class="required">*</span></label>
+                <input
+                  type="text"
+                  id="name"
+                  v-model="form.name"
+                  class="form-input"
+                  :class="{ 'input-error': errors.name }"
+                />
+                <p v-if="errors.name" class="error-message">
+                  Nama pasien tidak boleh kosong
+                </p>
               </div>
-  
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="bpjs">Nomor BPJS</label>
-                  <input
-                    type="text"
-                    id="bpjs"
-                    v-model="formData.bpjs"
-                    :class="{ 'error-border': errors.bpjs }"
-                  />
-                  <span v-if="errors.bpjs" class="error-message">{{ errors.bpjs }}</span>
-                </div>
-                <div class="form-group">
-                  <label for="gender">Jenis Kelamin</label>
-                  <select
-                    id="gender"
-                    v-model="formData.gender"
-                    :class="{ 'error-border': errors.gender }"
-                    required
-                  >
-                    <option value="">Pilih Jenis Kelamin</option>
-                    <option value="Laki-laki">Laki-laki</option>
-                    <option value="Perempuan">Perempuan</option>
-                  </select>
-                  <span v-if="errors.gender" class="error-message">{{ errors.gender }}</span>
-                </div>
+
+              <!-- NIK -->
+              <div class="form-group">
+                <label for="nik">NIK</label>
+                <input
+                  type="text"
+                  id="nik"
+                  v-model="form.nik"
+                  class="form-input"
+                />
               </div>
-  
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="dob">Tanggal Lahir</label>
+            </div>
+
+            <div class="form-row">
+              <!-- Nomor BPJS -->
+              <div class="form-group">
+                <label for="bpjs">Nomor BPJS</label>
+                <input
+                  type="text"
+                  id="bpjs"
+                  v-model="form.bpjs"
+                  class="form-input"
+                />
+              </div>
+
+              <!-- Jenis Kelamin -->
+              <div class="form-group">
+                <label for="gender">Jenis Kelamin <span class="required">*</span></label>
+                <select
+                  id="gender"
+                  v-model="form.gender"
+                  class="form-select"
+                  :class="{ 'input-error': errors.gender }"
+                >
+                  <option value="" disabled selected>Pilih Jenis Kelamin</option>
+                  <option value="male">Laki-laki</option>
+                  <option value="female">Perempuan</option>
+                </select>
+                <p v-if="errors.gender" class="error-message">
+                  Jenis kelamin tidak boleh kosong
+                </p>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <!-- Tanggal Lahir -->
+              <div class="form-group">
+                <label for="dob">Tanggal Lahir</label>
+                <div class="date-input-container">
                   <input
                     type="date"
                     id="dob"
-                    v-model="formData.dob"
-                    :class="{ 'error-border': errors.dob }"
-                    required
+                    v-model="form.dob"
+                    class="form-input"
                   />
-                  <span v-if="errors.dob" class="error-message">{{ errors.dob }}</span>
-                </div>
-                <div class="form-group">
-                  <label for="age">Umur</label>
-                  <input
-                    type="number"
-                    id="age"
-                    v-model="formData.age"
-                    min="0"
-                    :class="{ 'error-border': errors.age }"
-                    required
-                  />
-                  <span v-if="errors.age" class="error-message">{{ errors.age }}</span>
                 </div>
               </div>
-  
-              <div class="form-group full-width">
-                <label for="address">Alamat</label>
-                <textarea
-                  id="address"
-                  v-model="formData.address"
-                  rows="3"
-                  :class="{ 'error-border': errors.address }"
-                  required
-                ></textarea>
-                <span v-if="errors.address" class="error-message">{{ errors.address }}</span>
+
+              <!-- Umur -->
+              <div class="form-group">
+                <label for="age">Umur <span class="required">*</span></label>
+                <input
+                  type="number"
+                  id="age"
+                  v-model="form.age"
+                  class="form-input"
+                  :class="{ 'input-error': errors.age }"
+                />
+                <p v-if="errors.age" class="error-message">
+                  Umur tidak boleh kosong
+                </p>
               </div>
-  
-              <div class="button-container">
-                <button type="button" class="cancel-button" @click="closeModal">
-                  Batal
-                </button>
-                <button type="submit" class="submit-button">Simpan</button>
-              </div>
-            </form>
-          </div>
+            </div>
+
+            <!-- Alamat -->
+            <div class="form-group full-width">
+              <label for="address">Alamat <span class="required">*</span></label>
+              <textarea
+                id="address"
+                v-model="form.address"
+                class="form-textarea"
+                :class="{ 'input-error': errors.address }"
+              ></textarea>
+              <p v-if="errors.address" class="error-message">
+                Alamat tidak boleh kosong
+              </p>
+            </div>
+
+            <!-- Tombol Aksi -->
+            <div class="form-actions">
+              <button type="button" class="btn-cancel" @click="closeModal">
+                Batal
+              </button>
+              <button type="submit" class="btn-save">
+                Simpan
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
-  </template>
-  
-  <script>
-  export default {
-    name: 'AddPatientModal',
-    data() {
-      return {
-        formData: {
-          id: null,
-          name: '',
-          nik: '',
-          bpjs: '',
-          gender: '',
-          dob: '',
-          age: '',
-          address: ''
-        },
-        errors: {
-          name: '',
-          nik: '',
-          bpjs: '',
-          gender: '',
-          dob: '',
-          age: '',
-          address: ''
-        }
-      };
-    },
-    methods: {
-      validateForm() {
-        let isValid = true;
-        this.errors = { // Reset errors
-          name: '',
-          nik: '',
-          bpjs: '',
-          gender: '',
-          dob: '',
-          age: '',
-          address: ''
-        };
-  
-        if (!this.formData.name) {
-          this.errors.name = 'Nama Pasien harus diisi';
-          isValid = false;
-        }
-        if (!this.formData.nik) {
-          this.errors.nik = 'NIK harus diisi';
-          isValid = false;
-        }
-        if (!this.formData.gender) {
-          this.errors.gender = 'Jenis Kelamin harus dipilih';
-          isValid = false;
-        }
-        if (!this.formData.dob) {
-          this.errors.dob = 'Tanggal Lahir harus diisi';
-          isValid = false;
-        }
-        if (!this.formData.age) {
-          this.errors.age = 'Umur harus diisi';
-          isValid = false;
-        }
-        if (!this.formData.address) {
-          this.errors.address = 'Alamat harus diisi';
-          isValid = false;
-        }
-  
-        return isValid;
+  </div>
+</template> 
+
+<script>
+export default {
+  data() {
+    return {
+      form: {
+        name: "",
+        nik: "",
+        bpjs: "",
+        gender: "",
+        dob: "",
+        age: "",
+        address: ""
       },
-      submitNewPatient() {
-        if (this.validateForm()) {
-          const newPatient = {
-            ...this.formData,
-            id: Date.now()
-          };
-          this.$emit('submit', newPatient);
-          this.closeModal();
-        }
+      errors: {
+        name: false,
+        gender: false,
+        age: false,
+        address: false,
       },
-      closeModal() {
-        this.$emit('close');
+    };
+  },
+  methods: {
+    validateForm() {
+      let isValid = true;
+
+      // Reset errors
+      Object.keys(this.errors).forEach(key => {
+        this.errors[key] = false;
+      });
+
+      // Validate required fields
+      if (!this.form.name.trim()) {
+        this.errors.name = true;
+        isValid = false;
       }
-    }
-  };
-  </script>
-  
-  <style scoped>
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-  }
-  
+      
+      if (!this.form.gender) {
+        this.errors.gender = true;
+        isValid = false;
+      }
+      
+      if (!this.form.age) {
+        this.errors.age = true;
+        isValid = false;
+      }
+      
+      if (!this.form.address.trim()) {
+        this.errors.address = true;
+        isValid = false;
+      }
+
+      return isValid;
+    },
+    
+    submitForm() {
+      if (this.validateForm()) {
+        // Format data sesuai dengan spesifikasi API
+        const formData = {
+          name: this.form.name,
+          nik: this.form.nik || "", // Mengizinkan kosong
+          bpjs_number: this.form.bpjs || "", // Mengizinkan kosong
+          gender: this.form.gender,
+          birth_date: this.form.dob || null, // Mengizinkan kosong
+          age: parseInt(this.form.age),
+          address: this.form.address,
+          // Langsung set has_ht dan has_dm menjadi false
+          has_ht: false,
+          has_dm: false
+        };
+        
+        // Emit event submit dengan data yang sudah diformat
+        this.$emit("submit", formData);
+      }
+    },
+    
+    closeModal() {
+      this.$emit("close");
+    },
+  },
+};
+</script>
+
+<style scoped>
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-container {
+  width: 90%;
+  max-width: 900px;
+  max-height: 90vh;
+  background-color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #eaeaea;
+  flex-shrink: 0;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333333;
+  margin: 0;
+}
+
+.close-button {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  color: #9aa0a8;
+  cursor: pointer;
+  padding: 5px;
+  transition: color 0.3s ease;
+}
+
+.close-button:hover {
+  color: #333333;
+}
+
+.modal-body {
+  padding: 20px;
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+.new-patient-form {
+  width: 100%;
+}
+
+.form-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 15px;
+}
+
+.form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group.full-width {
+  width: 100%;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: #4f5867;
+}
+
+.required {
+  color: #ef4444;
+  margin-left: 2px;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #eaeaea;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333333;
+  transition: border-color 0.3s ease;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  border-color: var(--primary-500);
+  outline: none;
+}
+
+.input-error {
+  border-color: #ef4444 !important;
+}
+
+.form-textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.error-message {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #ef4444;
+}
+
+.date-input-container {
+  position: relative;
+}
+
+.calendar-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9aa0a8;
+  pointer-events: none;
+}
+
+.form-actions {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btn-cancel {
+  padding: 10px 20px;
+  background-color: #ffffff;
+  border: 1px solid #eaeaea;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4f5867;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn-cancel:hover {
+  background-color: #f3f4f6;
+}
+
+.btn-save {
+  padding: 10px 20px;
+  background-color: var(--primary-500);
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn-save:hover {
+  background-color: var(--primary-700);
+}
+
+@media (max-width: 768px) {
   .modal-container {
-    background: #ffffff;
-    border-radius: 10px;
-    width: 90%;
-    max-width: 900px;
-    max-height: 90vh;
-    box-shadow: 0px 4px 25px rgba(0, 0, 0, 0.25);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
+    width: 95%;
+    max-height: 95vh;
   }
-  
-  .modal-header {
-    padding: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #eaeaea;
-    flex-shrink: 0;
-  }
-  
-  .modal-header h2 {
-    font-family: "Inter", sans-serif;
-    font-size: 18px;
-    font-weight: 600;
-    color: #333333;
-    margin: 0;
-  }
-  
-  .close-button {
-    background: transparent;
-    border: none;
-    font-size: 20px;
-    color: #9aa0a8;
-    cursor: pointer;
-    padding: 5px;
-  }
-  
-  .close-button:hover {
-    color: #333333;
-  }
-  
-  .modal-body {
-    padding: 20px;
-    overflow-y: auto;
-    flex-grow: 1;
-  }
-  
-  .new-patient-form {
-    width: 100%;
-  }
-  
+
   .form-row {
-    display: flex;
-    gap: 20px;
-    margin-bottom: 15px;
-  }
-  
-  .form-group {
-    flex: 1;
-    display: flex;
     flex-direction: column;
+    gap: 15px;
   }
-  
-  .form-group.full-width {
-    width: 100%;
-  }
-  
-  .form-group label {
-    font-size: 14px;
-    font-weight: 500;
-    margin-bottom: 6px;
-    color: #4f5867;
-  }
-  
-  .form-group input,
-  .form-group select,
-  .form-group textarea {
-    padding: 10px;
-    border: 1px solid #cdcfd4;
-    border-radius: 8px;
-    font-family: "Inter", sans-serif;
-    font-size: 14px;
-    color: #333333;
-  }
-  
-  .error-border {
-    border-color: red !important;
-  }
-  
-  .error-message {
-    font-size: 12px;
-    color: red;
-    margin-top: 4px;
-    display: block;
-  }
-  
-  .button-container {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 20px;
-  }
-  
-  .cancel-button {
-    padding: 10px 20px;
-    background: #ffffff;
-    color: #4f5867;
-    border: 1px solid #cdcfd4;
-    border-radius: 8px;
-    font-family: "Inter", sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  
-  .cancel-button:hover {
-    background: #f3f4f6;
-  }
-  
-  .submit-button {
-    padding: 10px 20px;
-    background: var(--primary-500);
-    color: #ffffff;
-    border: none;
-    border-radius: 8px;
-    font-family: "Inter", sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  
-  .submit-button:hover {
-    background: var(--primary-700);
-  }
-  
-  @media (max-width: 768px) {
-    .modal-container {
-      width: 95%;
-      max-height: 95vh;
-    }
-  
-    .form-row {
-      flex-direction: column;
-      gap: 15px;
-    }
-  }
-  </style>
+}
+</style>

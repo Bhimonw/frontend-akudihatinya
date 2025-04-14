@@ -1,43 +1,40 @@
 <template>
-  <div class="modal-overlay" @click="closeModal">
+  <div class="modal-overlay" v-if="show" @click="closeModal">
     <div class="modal-container" @click.stop>
       <div class="modal-header">
-        <h2>Tambah Data Pasien</h2>
-        <button class="close-button" @click="closeModal">
-          <font-awesome-icon :icon="['fas', 'times']" />
+        <h2>Tambah Pasien</h2>
+        <button class="close-button" @click.prevent="closeModal">
+          ✕
         </button>
       </div>
-      
       <div class="modal-body">
-        <!-- Patient Selection View -->
+        <!-- Tampilan Daftar Pasien -->
         <div v-if="!showNewPatientForm" class="patient-selection">
-          <!-- Toolbar for patient selection -->
+          <!-- Toolbar -->
           <div class="patient-toolbar">
             <div class="search-container">
               <font-awesome-icon :icon="['fas', 'search']" class="search-icon" />
-              <input 
-                type="text" 
-                placeholder="Cari pasien..." 
-                class="search-input" 
-                v-model="searchPatientQuery" 
+              <input
+                type="text"
+                class="search-input"
+                placeholder="Cari pasien..."
+                v-model="searchPatientQuery"
               />
             </div>
-            
             <button class="add-new-patient-button" @click="showNewPatientForm = true">
               <font-awesome-icon :icon="['fas', 'plus']" />
               Tambah Pasien Baru
             </button>
           </div>
-          
           <!-- Patient Table -->
           <div class="table-container">
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>No</th>
-                  <th>Nama Pasien</th>
+                  <th>No.</th>
+                  <th>Nama</th>
                   <th>NIK</th>
-                  <th>Nomor BPJS</th>
+                  <th>No. BPJS</th>
                   <th>Jenis Kelamin</th>
                   <th>Tanggal Lahir</th>
                   <th>Umur</th>
@@ -46,7 +43,19 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(patient, index) in filteredPatients" :key="patient.id">
+                <!-- Indikator Loading -->
+                <tr v-if="isLoading">
+                  <td colspan="9">
+                    <div class="loading-container">
+                      <div class="loading-content">
+                        <div class="spinner"></div>
+                        <p>Memuat data...</p>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+                <!-- Data Pasien -->
+                <tr v-else-if="filteredPatients.length > 0" v-for="(patient, index) in filteredPatients" :key="patient.id">
                   <td>{{ index + 1 }}</td>
                   <td>{{ patient.name }}</td>
                   <td>{{ patient.nik }}</td>
@@ -56,47 +65,40 @@
                   <td>{{ patient.age }}</td>
                   <td>{{ patient.address }}</td>
                   <td>
-                    <button 
-                      class="action-button select" 
-                      @click="selectPatient(patient)"
-                    >
+                    <button class="action-button select" @click="selectPatient(patient)">
                       Tambahkan
                     </button>
                   </td>
                 </tr>
-                <tr v-if="filteredPatients.length === 0">
-                  <td colspan="9" class="no-data-message">
-                    Tidak ada data pasien yang sesuai dengan pencarian
-                  </td>
+                <!-- Pesan "Tidak Ada Data" -->
+                <tr v-else>
+                  <td colspan="9" class="no-data-message">Tidak ada data pasien yang sesuai dengan pencarian</td>
                 </tr>
               </tbody>
             </table>
           </div>
-          
           <div class="modal-footer">
             <button class="cancel-button" @click="closeModal">Batal</button>
           </div>
         </div>
-        
-        <!-- New Patient Form -->
+        <!-- Form Tambah Pasien Baru -->
         <div v-else class="new-patient-form">
+          <h3>Tambah Pasien Baru</h3>
           <form @submit.prevent="submitNewPatient">
-            <!-- Form fields would go here in a real implementation -->
             <div class="form-row">
               <div class="form-group">
-                <label for="name">Nama Pasien</label>
-                <input type="text" id="name" v-model="formData.name" required>
+                <label for="name">Nama</label>
+                <input type="text" id="name" v-model="formData.name" placeholder="Masukkan nama" required />
               </div>
               <div class="form-group">
                 <label for="nik">NIK</label>
-                <input type="text" id="nik" v-model="formData.nik" required>
+                <input type="text" id="nik" v-model="formData.nik" placeholder="Masukkan NIK" required />
               </div>
             </div>
-            
             <div class="form-row">
               <div class="form-group">
-                <label for="bpjs">Nomor BPJS</label>
-                <input type="text" id="bpjs" v-model="formData.bpjs">
+                <label for="bpjs">No. BPJS</label>
+                <input type="text" id="bpjs" v-model="formData.bpjs" placeholder="Masukkan No. BPJS" />
               </div>
               <div class="form-group">
                 <label for="gender">Jenis Kelamin</label>
@@ -107,23 +109,26 @@
                 </select>
               </div>
             </div>
-            
             <div class="form-row">
               <div class="form-group">
                 <label for="dob">Tanggal Lahir</label>
-                <input type="date" id="dob" v-model="formData.dob" required>
+                <input type="date" id="dob" v-model="formData.dob" required />
               </div>
               <div class="form-group">
                 <label for="age">Umur</label>
-                <input type="number" id="age" v-model="formData.age" min="0" required>
+                <input type="number" id="age" v-model="formData.age" placeholder="Masukkan umur" min="0" required />
               </div>
             </div>
-            
             <div class="form-group full-width">
               <label for="address">Alamat</label>
-              <textarea id="address" v-model="formData.address" rows="3" required></textarea>
+              <textarea 
+                id="address" 
+                v-model="formData.address" 
+                placeholder="Masukkan alamat" 
+                rows="3" 
+                required
+              ></textarea>
             </div>
-            
             <div class="button-container">
               <button type="button" class="cancel-button" @click="showNewPatientForm = false">
                 Kembali
@@ -138,111 +143,195 @@
 </template>
 
 <script>
+import axios from "axios";
+
 export default {
-  name: 'AddPatientModal',
   props: {
-    existingPatients: {
-      type: Array,
-      default: () => {
-        // Default dummy data if no patients are provided
-        return [
-          {
-            id: 1,
-            name: 'Budi Santoso',
-            nik: '3171234567890001',
-            bpjs: '00112233445566',
-            gender: 'Laki-laki',
-            dob: '1985-06-12',
-            age: 38,
-            address: 'Jl. Merdeka No. 123, Jakarta'
-          },
-          {
-            id: 2,
-            name: 'Siti Rahayu',
-            nik: '3171234567890002',
-            bpjs: '00112233445577',
-            gender: 'Perempuan',
-            dob: '1990-03-25',
-            age: 33,
-            address: 'Jl. Sudirman No. 45, Jakarta'
-          },
-          {
-            id: 3,
-            name: 'Ahmad Fadli',
-            nik: '3171234567890003',
-            bpjs: '00112233445588',
-            gender: 'Laki-laki',
-            dob: '1976-11-08',
-            age: 47,
-            address: 'Jl. Gatot Subroto No. 67, Jakarta'
-          }
-        ];
-      }
-    }
+    show: {
+      type: Boolean,
+      required: true,
+    },
+    selectedYear: { // Receive selectedYear as a prop
+      type: String,
+      required: true,
+    },
   },
   data() {
     return {
+      patients: [], // Array untuk menyimpan data pasien dari API
+      searchPatientQuery: "",
       showNewPatientForm: false,
-      searchPatientQuery: '',
       formData: {
         id: null,
-        name: '',
-        nik: '',
-        bpjs: '',
-        gender: '',
-        dob: '',
-        age: '',
-        address: ''
-      }
+        name: "",
+        nik: "",
+        bpjs: "",
+        gender: "",
+        dob: "",
+        age: "",
+        address: "",
+      },
+      isLoading: false, // State untuk loading
     };
   },
   computed: {
     filteredPatients() {
       if (!this.searchPatientQuery) {
-        return this.existingPatients;
+        return this.patients;
       }
-      
       const searchTerm = this.searchPatientQuery.toLowerCase();
-      return this.existingPatients.filter(patient => {
-        return patient.name.toLowerCase().includes(searchTerm) ||
-               patient.nik.includes(searchTerm) ||
-               (patient.bpjs && patient.bpjs.includes(searchTerm));
+      return this.patients.filter((patient) => {
+        return (
+          patient.name.toLowerCase().includes(searchTerm) ||
+          patient.nik.includes(searchTerm) ||
+          (patient.bpjs && patient.bpjs.includes(searchTerm))
+        );
       });
-    }
+    },
   },
   methods: {
-    closeModal() {
-      this.$emit('close');
+    async fetchPatients() {
+      this.isLoading = true; // Aktifkan loading
+      try {
+        const token = localStorage.getItem("token"); // Ambil token dari localStorage
+        if (!token) {
+          console.error("Token tidak ditemukan");
+          return;
+        }
+        const response = await axios.get("http://localhost:8000/api/puskesmas/patients", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        // Validasi struktur respons API
+        if (!response.data || !response.data.data) {
+          console.error("Invalid API response structure:", response.data);
+          alert("Terjadi kesalahan: Struktur respons API tidak sesuai.");
+          return;
+        }
+        // Proses respons API
+        this.patients = response.data.data.map((patient) => ({
+          id: patient.id,
+          name: patient.name,
+          nik: patient.nik,
+          bpjs: patient.bpjs_number,
+          gender: patient.gender === "male" ? "Laki-laki" : "Perempuan",
+          dob: patient.birth_date,
+          age: patient.age,
+          address: patient.address,
+        }));
+      } catch (error) {
+        console.error("Error fetching patients:", error);
+        alert("Gagal memuat data pasien. Silakan coba lagi.");
+      } finally {
+        this.isLoading = false; // Nonaktifkan loading
+      }
     },
-    selectPatient(patient) {
-      this.$emit('submit', patient);
-      this.closeModal();
+    closeModal() {
+      this.$emit("close");
+      this.resetForm();
+    },
+    async selectPatient(patient) {
+      const confirmed = confirm("Apakah Anda yakin akan menambahkan data ini?");
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        // Validate selectedYear
+        if (!this.selectedYear) {
+          console.error("Selected year is missing or invalid.");
+          alert("Tahun pemeriksaan tidak valid. Silakan pilih tahun yang sesuai.");
+          return;
+        }
+
+        // Convert selectedYear to a number
+        const yearAsNumber = parseInt(this.selectedYear, 10);
+        if (isNaN(yearAsNumber)) {
+          console.error("Invalid year format:", this.selectedYear);
+          alert("Format tahun tidak valid. Harap periksa input.");
+          return;
+        }
+
+        // Construct the payload with year as a number
+        const payload = {
+          year: yearAsNumber, // Ensure year is a number
+          examination_type: "dm",
+        };
+
+        console.log("Payload being sent:", payload); // Debugging: Log the payload
+
+        const token = localStorage.getItem("token");
+        if (!token) {
+          console.error("Token tidak ditemukan");
+          alert("Session expired. Please log in again.");
+          return;
+        }
+
+        const response = await axios.post(
+          `http://localhost:8000/api/puskesmas/patients/${patient.id}/examination-year`,
+          payload,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        console.log("API Response:", response.data);
+
+        if (!response.data || !response.data.message) {
+          console.error("Invalid API response structure:", response.data);
+          alert("Terjadi kesalahan: Struktur respons API tidak sesuai.");
+          return;
+        }
+
+        alert("Data berhasil ditambahkan!");
+        this.$emit("submit", patient);
+        this.closeModal();
+      } catch (error) {
+        console.error("Error adding examination year:", error.response?.data || error.message);
+        alert("Gagal menambahkan tahun pemeriksaan. Silakan coba lagi.");
+      }
     },
     submitNewPatient() {
-      // Create new patient with an ID
       const newPatient = {
         ...this.formData,
-        id: Date.now()
+        id: Date.now(),
       };
-      
-      this.$emit('submit', newPatient);
+      this.$emit("submit", newPatient);
       this.closeModal();
     },
     resetForm() {
       this.formData = {
         id: null,
-        name: '',
-        nik: '',
-        bpjs: '',
-        gender: '',
-        dob: '',
-        age: '',
-        address: ''
+        name: "",
+        nik: "",
+        bpjs: "",
+        gender: "",
+        dob: "",
+        age: "",
+        address: "",
       };
       this.showNewPatientForm = false;
-      this.searchPatientQuery = '';
+      this.searchPatientQuery = "";
+    },
+  },
+  watch: {
+    show: {
+      immediate: true,
+      handler(newVal) {
+        if (newVal) {
+          this.fetchPatients();
+        }
+      }
     }
-  }
+  },
+  created() {
+    if (this.show) {
+      this.fetchPatients(); // Muat data pasien saat komponen dibuat
+    }
+  },
 };
 </script>
 
@@ -296,10 +385,18 @@ export default {
   color: #9aa0a8;
   cursor: pointer;
   padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
 }
 
 .close-button:hover {
   color: #333333;
+  background-color: #f3f4f6;
 }
 
 .modal-body {
@@ -379,10 +476,12 @@ export default {
   border-radius: 10px;
   border: 1px solid #eaeaea;
   flex-grow: 1;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 .data-table {
   width: 100%;
+  min-width: 800px;
   border-collapse: separate;
   border-spacing: 0;
   font-family: "Inter", sans-serif;
@@ -437,6 +536,14 @@ export default {
 /* New Patient Form Styles */
 .new-patient-form {
   width: 100%;
+}
+
+.new-patient-form h3 {
+  font-family: "Inter", sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333333;
+  margin: 0 0 20px 0;
 }
 
 .form-row {
@@ -548,5 +655,57 @@ export default {
   .search-container {
     max-width: none;
   }
+}
+
+/* Loading Container Style */
+.loading-container {
+  width: 100%;
+  height: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Spinner Style */
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid var(--primary-500);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Loading Text Style */
+.loading-content p {
+  margin: 0;
+  color: var(--primary-500);
+  font-weight: 600;
+}
+
+/* Pesan "Tidak Ada Data" */
+.no-data-message {
+  text-align: center;
+  color: #9aa0a8;
+  font-size: 16px;
+  font-weight: 500;
+  padding: 20px 0;
 }
 </style>
