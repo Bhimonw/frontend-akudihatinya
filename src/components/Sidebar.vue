@@ -27,7 +27,7 @@
         @click="navigate(menuItems[1])"
       >
         <font-awesome-icon :icon="['fas', 'users']" class="menu-icon" />
-        <span v-if="isSidebarOpen" class="menu-text">List Pasien</span>
+        <span v-if="isSidebarOpen" class="menu-text">Daftar Pasien</span>
       </li>
       
       <!-- Section Label -->

@@ -67,12 +67,12 @@ const routes = [
       {
         path: 'diabetes-mellitus',
         component: DiabetesMellitus,
-        meta: { requiresAuth: true, isAdmin: false, title: 'Diabetes Mellitus' },
+        meta: { requiresAuth: true, isAdmin: false, title: 'Laporan Pemantauan Diabetes Mellitus' },
       },
       {
         path: 'hipertensi',
         component: Hipertensi,
-        meta: { requiresAuth: true, isAdmin: false, title: 'Hipertensi' },
+        meta: { requiresAuth: true, isAdmin: false, title: 'Laporan Pemantauan Hipertensi' },
       },
       {
         path: '/tambah-data-peserta',

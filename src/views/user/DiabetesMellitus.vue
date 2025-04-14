@@ -44,7 +44,7 @@
           <!-- Search Bar -->
           <div class="search-container">
             <font-awesome-icon :icon="['fas', 'search']" class="search-icon" />
-            <input type="text" placeholder="Search..." class="search-input" v-model="searchQuery" />
+            <input type="text" placeholder="Cari Data..." class="search-input" v-model="searchQuery" />
           </div>
         </div>
       </div>

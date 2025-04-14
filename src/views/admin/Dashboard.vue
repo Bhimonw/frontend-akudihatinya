@@ -19,11 +19,7 @@
           <option v-for="program in programs" :key="program" :value="program">{{ program }}</option>
         </select>
       </div>
-    </div>
 
-    <!-- Bagian Kanan -->
-    <div class="right-section">
-      <!-- Print Laporan Button -->
       <button class="print-report-button" @click="printReport">
         <font-awesome-icon :icon="['fas', 'print']" />
         Print Laporan
@@ -188,13 +184,52 @@
             <th rowspan="2">NO</th>
             <th rowspan="2">NAMA PKM</th>
             <th rowspan="2">SASARAN</th>
-            <th colspan="3" class="th-group">JUMLAH</th>
+            <th colspan="2" class="th-group">JUMLAH</th>
             <th colspan="3" class="th-group">JANUARI</th>
             <th colspan="3" class="th-group">FEBRUARI</th>
+            <th colspan="3" class="th-group">MARET</th>
+            <th colspan="3" class="th-group">APRIL</th>
+            <th colspan="3" class="th-group">MEI</th>
+            <th colspan="3" class="th-group">JUNI</th>
+            <th colspan="3" class="th-group">JULI</th>
+            <th colspan="3" class="th-group">AGUSTUS</th>
+            <th colspan="3" class="th-group">SEPTEMBER</th>
+            <th colspan="3" class="th-group">OKTOBER</th>
+            <th colspan="3" class="th-group">NOVEMBER</th>
+            <th colspan="3" class="th-group">DESEMBER</th>
           </tr>
           <tr>
             <th>LAKI-LAKI</th>
             <th>PEREMPUAN</th>
+            <th>S</th>
+            <th>TS</th>
+            <th>%</th>
+            <th>S</th>
+            <th>TS</th>
+            <th>%</th>
+            <th>S</th>
+            <th>TS</th>
+            <th>%</th>
+            <th>S</th>
+            <th>TS</th>
+            <th>%</th>
+            <th>S</th>
+            <th>TS</th>
+            <th>%</th>
+            <th>S</th>
+            <th>TS</th>
+            <th>%</th>
+            <th>S</th>
+            <th>TS</th>
+            <th>%</th>
+            <th>S</th>
+            <th>TS</th>
+            <th>%</th>
+            <th>S</th>
+            <th>TS</th>
+            <th>%</th>
+            <th>S</th>
+            <th>TS</th>
             <th>%</th>
             <th>S</th>
             <th>TS</th>
@@ -214,9 +249,39 @@
             <td>48</td>
             <td>154</td>
             <td>24%</td>
-            <td>30</td>
-            <td>124</td>
-            <td></td>
+            <td>48</td>
+            <td>154</td>
+            <td>24%</td>
+            <td>48</td>
+            <td>154</td>
+            <td>24%</td>
+            <td>48</td>
+            <td>154</td>
+            <td>24%</td>
+            <td>48</td>
+            <td>154</td>
+            <td>24%</td>
+            <td>48</td>
+            <td>154</td>
+            <td>24%</td>
+            <td>48</td>
+            <td>154</td>
+            <td>24%</td>
+            <td>48</td>
+            <td>154</td>
+            <td>24%</td>
+            <td>48</td>
+            <td>154</td>
+            <td>24%</td>
+            <td>48</td>
+            <td>154</td>
+            <td>24%</td>
+            <td>48</td>
+            <td>154</td>
+            <td>24%</td>
+            <td>48</td>
+            <td>154</td>
+            <td>24%</td>
           </tr>
           <!-- Add more rows as needed -->
         </tbody>
@@ -237,7 +302,7 @@ export default {
       selectedYear: String(currentYear),
       years: years,
       selectedProgram: "Diabetes Mellitus",
-      programs: ["Diabetes Mellitus", "Hipertensi", "TB", "HIV/AIDS"],
+      programs: ["Diabetes Mellitus", "Hipertensi"],
       searchQuery: "",
       chartData: {
         // Your chart data would go here

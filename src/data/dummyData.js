@@ -132,3 +132,129 @@ export const patientData = [
     months: ["-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-"],
   },
 ];
+
+// dummyData.js
+
+// Data dummy untuk users
+export const userData = [
+  {
+    id: 1,
+    username: "admin_rs",
+    password: "password123",
+    name: "Administrator Rumah Sakit",
+    role: "Admin",
+    address: "Jl. Kesehatan No. 1, Jakarta Pusat",
+    email: "admin@rs-sehat.com",
+    phone: "021-5551234"
+  },
+  {
+    id: 2,
+    username: "dr_ahmad",
+    password: "doctor123",
+    name: "Dr. Ahmad Santoso, Sp.PD",
+    role: "Dokter",
+    address: "Jl. Merdeka No. 45, Jakarta Selatan",
+    email: "ahmad@rs-sehat.com",
+    phone: "0811-2233-445"
+  },
+  {
+    id: 3,
+    username: "suster_maria",
+    password: "nurse456",
+    name: "Maria Dewi, S.Kep",
+    role: "Perawat",
+    address: "Jl. Mawar No. 12, Jakarta Timur",
+    email: "maria@rs-sehat.com",
+    phone: "0822-3344-556"
+  },
+  {
+    id: 4,
+    username: "apt_budi",
+    password: "pharma789",
+    name: "Budi Santoso, S.Farm, Apt",
+    role: "Apoteker",
+    address: "Jl. Anggrek No. 8, Jakarta Barat",
+    email: "budi@rs-sehat.com",
+    phone: "0833-4455-667"
+  },
+  {
+    id: 5,
+    username: "resep_linda",
+    password: "front123",
+    name: "Linda Wati",
+    role: "Resepsionis",
+    address: "Jl. Melati No. 23, Jakarta Utara",
+    email: "linda@rs-sehat.com",
+    phone: "0844-5566-778"
+  },
+  {
+    id: 6,
+    username: "dr_joko",
+    password: "doctor456",
+    name: "Dr. Joko Widodo, Sp.JP",
+    role: "Dokter",
+    address: "Jl. Proklamasi No. 17, Jakarta Pusat",
+    email: "joko@rs-sehat.com",
+    phone: "0855-6677-889"
+  },
+  {
+    id: 7,
+    username: "suster_ani",
+    password: "nurse789",
+    name: "Ani Suryani, S.Kep",
+    role: "Perawat",
+    address: "Jl. Cempaka No. 9, Jakarta Selatan",
+    email: "ani@rs-sehat.com",
+    phone: "0866-7788-990"
+  },
+  {
+    id: 8,
+    username: "admin_data",
+    password: "admin123",
+    name: "Eko Prasetyo",
+    role: "Admin",
+    address: "Jl. Sudirman No. 76, Jakarta Pusat",
+    email: "eko@rs-sehat.com",
+    phone: "0877-8899-001"
+  },
+  {
+    id: 9,
+    username: "dr_ratna",
+    password: "doctor789",
+    name: "Dr. Ratna Dewi, Sp.A",
+    role: "Dokter",
+    address: "Jl. Kebon Sirih No. 34, Jakarta Pusat",
+    email: "ratna@rs-sehat.com",
+    phone: "0888-9900-112"
+  },
+  {
+    id: 10,
+    username: "apt_sari",
+    password: "pharma123",
+    name: "Sari Indah, S.Farm, Apt",
+    role: "Apoteker",
+    address: "Jl. Gatot Subroto No. 56, Jakarta Selatan",
+    email: "sari@rs-sehat.com",
+    phone: "0899-0011-223"
+  },
+  {
+    id: 11,
+    username: "suster_diana",
+    password: "nurse123",
+    name: "Diana Putri, S.Kep",
+    role: "Perawat",
+    address: "Jl. Teratai No. 7, Jakarta Timur",
+    email: "diana@rs-sehat.com",
+    phone: "0810-1122-334"
+  },
+  {
+    id: 12,
+    username: "resep_tono",
+    password: "front456",
+    name: "Tono Santoso",
+    role: "Resepsionis",
+    address: "Jl. Dahlia No. 22, Jakarta Barat",
+    email: "tono@rs-sehat.com",
+    phone: "0821-2233-445"
+  }
+];

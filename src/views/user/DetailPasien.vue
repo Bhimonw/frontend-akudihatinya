@@ -125,7 +125,7 @@
                 <th rowspan="2">Aksi</th>
               </tr>
               <tr>
-                <th>Tidak Puasa (mg/dL)</th>
+                <th>Sewaktu (mg/dL)</th>
                 <th>Puasa (mg/dL)</th>
                 <th>2 Jam Postprandial (mg/dL)</th>
                 <th>HbA1c (%)</th>

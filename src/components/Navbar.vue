@@ -27,7 +27,7 @@
       <!-- User Information -->
       <div class="user-info">
         <div class="department-container">
-          <p class="department">{{ userData.nama_puskesmas || 'Loading...' }}</p>
+          <p class="department">{{ userData.nama_puskesmas }}</p>
           <div class="dropdown-indicator" @click.stop="toggleDropdown">
             <font-awesome-icon :icon="['fas', 'chevron-down']" class="dropdown-icon" />
           </div>
@@ -43,8 +43,8 @@
           <img src="../../src/assets/profile.png" alt="Profile Icon" class="profile-icon" />
         </div>
         <div class="dropdown-user-info">
-          <p class="dropdown-department">{{ userData.nama_puskesmas || 'Loading...' }}</p>
-          <p class="dropdown-role">{{ userData.role || 'Loading...' }}</p>
+          <p class="dropdown-department">{{ userData.nama_puskesmas }}</p>
+          <p class="dropdown-role">{{ userData.role }}</p>
         </div>
       </div>
       <hr class="dropdown-divider" />
@@ -92,8 +92,8 @@ export default {
     const router = useRouter();
     const isDropdownOpen = ref(false);
     const userData = ref({
-      nama_puskesmas: '',
-      role: '',
+      nama_puskesmas: 'Loading...',
+      role: 'Loading...',
     });
 
     // Function to fetch user data from API
@@ -105,16 +105,18 @@ export default {
           return;
         }
 
-        const response = await axios.get('http://localhost:8000/api/user', {
+        // Ambil user ID dari localStorage (asumsi disimpan saat login)
+
+        const response = await axios.get('http://localhost:8000/api/me', {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
-        const user = response.data.data.user;
+        const user = response.data.user;
         userData.value = {
-          nama_puskesmas: user.nama_puskesmas, // Menggunakan nama_puskesmas
-          role: user.roles[0]?.name || 'Unknown Role',
+          nama_puskesmas: user.name || 'Unknown User', // Menggunakan nama_puskesmas
+          role: user.role || 'Unknown Role',
         };
       } catch (error) {
         console.error('Gagal mengambil data user:', error);
