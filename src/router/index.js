@@ -12,10 +12,12 @@ import ManajemenUser from '../views/admin/ManajemenUser.vue';
 // User Views
 import UserDashboard from '../views/user/Dashboard.vue';
 import ListPasien from '../views/user/ListPasien.vue';
+import DetailPasienLP from '../views/user/DetailPasienLP.vue';
 import DiabetesMellitus from '../views/user/DiabetesMellitus.vue';
 import Hipertensi from '../views/user/Hipertensi.vue';
 import TambahDataPeserta from '../views/user/TambahDataPeserta.vue';
 import DetailPasien from '../views/user/DetailPasien.vue';
+import DetailPasienHT from '../views/user/DetailPasienHT.vue';
 
 import { getAuthState, isAdmin as checkAdmin, isAdmin } from '../stores/auth';
 
@@ -65,6 +67,12 @@ const routes = [
         meta: { requiresAuth: true, isAdmin: false, title: 'Daftar Pasien' },
       },
       {
+        path: 'list-pasien/detail-pasien',
+        component: DetailPasienLP,
+        name: "DetailPasienLP",
+        meta: { requiresAuth: true, isAdmin: false, title: 'DetailPasien' },
+      },
+      {
         path: 'diabetes-mellitus',
         component: DiabetesMellitus,
         meta: { requiresAuth: true, isAdmin: false, title: 'Laporan Pemantauan Diabetes Mellitus' },
@@ -85,6 +93,12 @@ const routes = [
       name: "DetailPasien",
       component: DetailPasien,
       meta: { requiresAuth: true, isAdmin: false, title: 'Detail Pasien'},
+      },
+      {
+        path: 'hipertensi/detail-pasien/:id',
+        name: "DetailPasienHT",
+        component: DetailPasienHT,
+        meta: { requiresAuth: true, isAdmin: false, title: 'Detail Pasien' },
       },
     ],
   },

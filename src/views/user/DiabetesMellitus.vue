@@ -163,6 +163,7 @@
 </template>
 
 <script>
+import Swal from 'sweetalert2';
 import axios from 'axios';
 import AddPatientModal from "../../components/modals/AddPatientModal.vue";
 
@@ -261,52 +262,81 @@ export default {
       }
     },
     async deleteExaminationYear(patientId) {
-      const confirmed = confirm("Apakah Anda yakin akan menghapus data di tahun pemeriksaan ini?");
-      if (!confirmed) {
+    // Gunakan SweetAlert untuk konfirmasi
+    const confirmation = await Swal.fire({
+      title: 'Apakah Anda yakin?',
+      text: "Anda akan menghapus data pemeriksaan pasien ini!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Ya, hapus!',
+      cancelButtonText: 'Batal'
+    });
+
+    // Jika pengguna membatalkan, hentikan proses
+    if (!confirmation.isConfirmed) {
+      return;
+    }
+
+    try {
+      // Construct the payload
+      const payload = {
+        year: this.selectedYear,
+        examination_type: "dm",
+      };
+      console.log("Payload being sent:", payload); // Debugging: Log the payload
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("Token tidak ditemukan");
+        Swal.fire({
+          icon: 'error',
+          title: 'Sesi Berakhir',
+          text: 'Silakan login kembali.',
+        });
         return;
       }
 
-      try {
-        // Construct the payload
-        const payload = {
-          year: this.selectedYear,
-          examination_type: "dm",
-        };
-
-        console.log("Payload being sent:", payload); // Debugging: Log the payload
-
-        const token = localStorage.getItem("token");
-        if (!token) {
-          console.error("Token tidak ditemukan");
-          alert("Session expired. Please log in again.");
-          return;
+      const response = await axios.put(
+        `http://localhost:8000/api/puskesmas/patients/${patientId}/examination-year`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
+      );
 
-        const response = await axios.put(
-          `http://localhost:8000/api/puskesmas/patients/${patientId}/examination-year`,
-          payload,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        console.log("API Response:", response.data);
-
-        if (!response.data || !response.data.message) {
-          console.error("Invalid API response structure:", response.data);
-          alert("Terjadi kesalahan: Struktur respons API tidak sesuai.");
-          return;
-        }
-
-        alert("Data berhasil dihapus!");
-        this.fetchPatients(); // Refresh patient list after deletion
-      } catch (error) {
-        console.error("Error deleting examination year:", error.response?.data || error.message);
-        alert("Gagal menghapus data. Silakan coba lagi.");
+      console.log("API Response:", response.data);
+      if (!response.data || !response.data.message) {
+        console.error("Invalid API response structure:", response.data);
+        Swal.fire({
+          icon: 'error',
+          title: 'Kesalahan',
+          text: 'Struktur respons API tidak sesuai.',
+        });
+        return;
       }
-    },
+
+      // Tampilkan notifikasi sukses menggunakan SweetAlert
+      Swal.fire({
+        icon: 'success',
+        title: 'Berhasil',
+        text: 'Data berhasil dihapus!',
+      });
+
+      this.fetchPatients(); // Refresh patient list after deletion
+    } catch (error) {
+      console.error("Error deleting examination year:", error.response?.data || error.message);
+
+      // Tampilkan notifikasi gagal menggunakan SweetAlert
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal',
+        text: 'Terjadi kesalahan saat menghapus data. Silakan coba lagi.',
+      });
+    }
+  },
     openAddPatientModal() {
       this.showAddPatientModal = true;
     },

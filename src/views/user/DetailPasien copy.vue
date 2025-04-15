@@ -216,7 +216,7 @@
 
 <script>
 import { patientData } from "../../data/dummyData.js"; // Dummy data pasien
-import ModalTambahData from "../../components/modals/AddExaminationData.vue"; // Import modal
+import ModalTambahData from "../../components/modals/AddExaminationDataDM.vue"; // Import modal
 
 export default {
   name: "DetailPasien",

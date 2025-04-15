@@ -56,14 +56,14 @@
                 </tr>
                 <!-- Data Pasien -->
                 <tr v-else-if="filteredPatients.length > 0" v-for="(patient, index) in filteredPatients" :key="patient.id">
-                  <td>{{ index + 1 }}</td>
-                  <td>{{ patient.name }}</td>
-                  <td>{{ patient.nik }}</td>
-                  <td>{{ patient.bpjs }}</td>
-                  <td>{{ patient.gender }}</td>
-                  <td>{{ patient.dob }}</td>
-                  <td>{{ patient.age }}</td>
-                  <td>{{ patient.address }}</td>
+                  <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
+                  <td>{{ patient.name || '-'}}</td>
+                  <td>{{ patient.nik || '-'}}</td>
+                  <td>{{ patient.bpjs || '-'}}</td>
+                  <td>{{ patient.gender === "male" ? "Laki-laki" : "Perempuan" || '-'}}</td>
+                  <td>{{ patient.dob || '-'}}</td>
+                  <td>{{ patient.age || '-'}}</td>
+                  <td>{{ patient.address || '-'}}</td>
                   <td>
                     <button class="action-button select" @click="selectPatient(patient)">
                       Tambahkan
