@@ -222,7 +222,7 @@ export default {
   data() {
     return {
       patients: [], // Array untuk menyimpan data pasien dari API
-      searchQuery: "",
+      searchPatientQuery: "",
       showNewPatientForm: false,
       isLoading: false, // State untuk loading
       currentPage: 1,
@@ -277,7 +277,7 @@ export default {
           params:{
             page: page,
             per_page: this. pageSize,
-            search: this.searchQuery || undefined,
+            search: this.searchPatientQuery || undefined,
           },
           headers: {
             Authorization: `Bearer ${token}`,
@@ -437,6 +437,9 @@ export default {
     },
   },
   watch: {
+    searchPatientQuery(newVal) {
+      this.resetPagination();
+    },
     show: {
       immediate: true,
       handler(newVal) {

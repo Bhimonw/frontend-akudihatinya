@@ -100,137 +100,118 @@
         </div>
         <!-- Data Pemeriksaan Pasien Container -->
         <div class="page-container">
-          <!-- Title moved inside the container with the same styling as profile-header -->
-          <div class="profile-header">
+        <!-- Title moved inside the container with the same styling as profile-header -->
+        <div class="profile-header">
             <h2>Data Pemeriksaan Pasien</h2>
-          </div>
-          <!-- Toolbar -->
-          <div class="toolbar">
+        </div>
+        <!-- Toolbar -->
+        <div class="toolbar">
             <!-- Bagian Kiri -->
             <div class="left-section">
-              <!-- Search Bar -->
-              <div class="search-container">
+            <!-- Search Bar -->
+            <div class="search-container">
                 <font-awesome-icon :icon="['fas', 'search']" class="search-icon" />
                 <input type="text" placeholder="Search..." class="search-input" v-model="searchQuery" />
-              </div>
+            </div>
             </div>
             <!-- Bagian Kanan -->
             <div class="right-section">
-              <!-- Tombol Tambah Data Peserta -->
-              <button class="add-data-button" @click="isModalOpen = true">
+            <!-- Tombol Tambah Data Peserta -->
+            <button class="add-data-button" @click="isModalOpen = true">
                 <font-awesome-icon :icon="['fas', 'plus']" />
                 Tambah Data Pemeriksaan
-              </button>
+            </button>
             </div>
-          </div>
-          <!-- Tabel Data Pasien -->
-          <div class="table-container">
+        </div>
+        <!-- Tabel Data Pemeriksaan -->
+        <div class="table-container">
             <table class="data-table">
-              <thead>
+            <thead>
                 <tr>
-                  <th rowspan="2">No</th>
-                  <th rowspan="2">Tanggal Pemeriksaan</th>
-                  <th colspan="4">Hasil Pemeriksaan Gula Darah</th>
-                  <th rowspan="2">Aksi</th>
+                <th rowspan="2">No</th>
+                <th rowspan="2">Tanggal Pemeriksaan</th>
+                <th colspan="2">Hasil Pemeriksaan Hipertensi</th>
+                <th rowspan="2">Aksi</th>
                 </tr>
                 <tr>
-                  <th>Sewaktu (mg/dL)</th>
-                  <th>Puasa (mg/dL)</th>
-                  <th>2 Jam Postprandial (mg/dL)</th>
-                  <th>HbA1c (%)</th>
+                <th>Systolic (mmHg)</th>
+                <th>Diastolic (mmHg)</th>
                 </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(exam, index) in paginatedExams" :key="exam.id">
-                  <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
-                  <td>{{ exam.examination_date }}</td>
-                  <td>{{ exam.result || '-' }}</td>
-                  <td>-</td>
-                  <td>-</td>
-                  <td>-</td>
-                  <td>
-                    <button class="action-button edit" @click="editExam(exam.id)">
-                      <font-awesome-icon :icon="['fas', 'edit']" />
+            </thead>
+            <tbody>
+                <!-- Indikator Loading -->
+                <tr v-if="isLoadingExams">
+                <td colspan="5" class="loading-row">
+                    <div class="loading-container">
+                    <div class="spinner"></div>
+                    <p>Memuat data...</p>
+                    </div>
+                </td>
+                </tr>
+                <!-- Pesan "Tidak Ada Data" -->
+                <tr v-else-if="filteredExams.length === 0">
+                <td colspan="5" class="no-data">
+                    <p>Tidak ada data pemeriksaan.</p>
+                </td>
+                </tr>
+                <!-- Data Pemeriksaan -->
+                <tr v-else v-for="(exam, index) in paginatedExams" :key="exam.id">
+                <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
+                <td>{{ exam.examination_date }}</td>
+                <td>{{ exam.systolic || '-' }}</td>
+                <td>{{ exam.diastolic || '-' }}</td>
+                <td>
+                    <button class="action-button edit" @click="openEditExamModal(exam)">
+                    <font-awesome-icon :icon="['fas', 'edit']" />
                     </button>
                     <button class="action-button delete" @click="deleteExam(exam.id)">
-                      <font-awesome-icon :icon="['fas', 'trash']" />
+                    <font-awesome-icon :icon="['fas', 'trash']" />
                     </button>
-                  </td>
+                </td>
                 </tr>
-              </tbody>
+            </tbody>
             </table>
-          </div>
-          <!-- Pagination -->
-          <div class="pagination-container">
-            <div class="flex items-center justify-between bg-white px-4 py-3 sm:px-6">
-              <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                <!-- Showing Text -->
-                <div>
-                  <p class="text-sm text-gray-700 flex items-center gap-2">
-                    Baris per halaman:
-                    <div class="dropdown-container">
-                      <select id="rowsPerPage" v-model="pageSize" @change="resetPagination" class="dropdown-select">
-                        <option value="10">10</option>
-                        <option value="25">25</option>
-                        <option value="100">100</option>
-                      </select>
-                    </div>
-                    {{ firstItemIndex + 1 }}-{{ lastItemIndex }} dari {{ totalExams }} item
-                  </p>
-                </div>
-                <!-- Pagination Buttons -->
-                <nav class="isolate inline-flex -space-x-px rounded-md shadow-xs" aria-label="Pagination">
-                  <!-- Tombol Previous -->
-                  <button
-                    class="pagination-button prev"
-                    @click="prevPage"
-                    :disabled="currentPage === 1"
-                  >
-                    <font-awesome-icon :icon="['fas', 'chevron-left']" />
-                  </button>
-                  <!-- Nomor Halaman -->
-                  <button
-                    v-for="page in totalPages"
-                    :key="page"
-                    :class="[
-                      currentPage === page ? 'active' : '',
-                      'pagination-button',
-                    ]"
-                    @click="goToPage(page)"
-                  >
-                    {{ page }}
-                  </button>
-                  <!-- Tombol Next -->
-                  <button
-                    class="pagination-button next"
-                    @click="nextPage"
-                    :disabled="currentPage === totalPages"
-                  >
-                    <font-awesome-icon :icon="['fas', 'chevron-right']" />
-                  </button>
-                </nav>
-              </div>
-            </div>
-          </div>
+        </div>
         </div>
       </div>
       <!-- Modal Tambah Data -->
       <ModalTambahData
         :visible="isModalOpen"
+        :patient-id="patientId"
         @close="closeModal"
         @submit="handleModalSubmit"
+      />
+  
+      <EditPatientDetail
+        :visible="isEditModalOpen"
+        :patientData="patient"
+        @close="closeEditModal"
+        @submit="handleEditModalSubmit"
+      />
+  
+      <EditExaminationModal
+        :visible="isEditExamModalOpen"
+        :patient-id="patientId"
+        :exam-data="selectedExam"
+        @close="closeEditExamModal"
+        @submit="handleEditExamSubmit"
       />
     </div>
   </template>
   
   <script>
+  import Swal from 'sweetalert2';
   import axios from 'axios';
-  import ModalTambahData from "../../components/modals/AddExaminationDataDM.vue";
+  import ModalTambahData from "../../components/modals/AddExaminationDataHT.vue";
+  import EditPatientDetail from '../../components/modals/EditPatientDetail.vue';
+  import EditExaminationModal from '../../components/modals/EditExaminationDataHT.vue';
   
   export default {
     name: "DetailPasienHT",
     components: {
       ModalTambahData,
+      EditPatientDetail,
+      EditExaminationModal
     },
     data() {
       return {
@@ -246,17 +227,23 @@
           "Jul", "Agu", "Sep", "Okt", "Nov", "Des"
         ],
         isModalOpen: false,
+        isEditModalOpen: false,
         isLoading: false,
+        isLoadingExams: false,
+        selectedExam: null,
+        isEditExamModalOpen: false,
       };
     },
     computed: {
-      filteredExams() {
+        filteredExams() {
+        console.log("Filtering exams, current exams:", this.exams.length);
         return this.exams.filter((exam) => {
-          const matchesSearch = exam.examination_date.toLowerCase().includes(this.searchQuery.toLowerCase());
-          const matchesYear = !this.selectedYear || exam.year === this.selectedYear;
-          return matchesSearch && matchesYear;
+        const matchesSearch = exam.examination_date.toLowerCase().includes(this.searchQuery.toLowerCase());
+        const matchesYear = !this.selectedYear || exam.year === parseInt(this.selectedYear);
+        console.log(`Exam ${exam.id}: matchesSearch=${matchesSearch}, matchesYear=${matchesYear}`);
+        return matchesSearch && matchesYear;
         });
-      },
+    },
       totalExams() {
         return this.filteredExams.length;
       },
@@ -307,35 +294,182 @@
           this.isLoading = false;
         }
       },
-      async fetchExaminations() {
-        this.isLoading = true;
+      async deletePatient() {
         try {
-          const token = localStorage.getItem("token");
-          if (!token) {
-            console.error("Token tidak ditemukan");
+          // Tampilkan konfirmasi menggunakan SweetAlert
+          const confirmation = await Swal.fire({
+            title: 'Apakah Anda yakin?',
+            text: 'Anda akan menghapus data pasien ini! Semua data pemeriksaan pasien juga akan terhapus.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Ya, hapus!',
+            cancelButtonText: 'Batal',
+          });
+  
+          // Jika pengguna membatalkan, hentikan proses
+          if (!confirmation.isConfirmed) {
             return;
           }
-          const response = await axios.get("http://localhost:8000/api/puskesmas/ht-examinations", {
-            params: {
-              patient_id: this.patientId,
-              year: this.selectedYear,
-              per_page: this.pageSize,
-              page: this.currentPage,
-            },
+  
+          // Panggil API untuk menghapus data pasien
+          const token = localStorage.getItem("token");
+          if (!token) {
+            throw new Error("Token tidak ditemukan");
+          }
+  
+          const response = await axios.delete(`http://localhost:8000/api/puskesmas/patients/${this.patientId}`, {
             headers: {
               Authorization: `Bearer ${token}`,
             },
           });
-          this.exams = response.data.data;
-          this.totalExams = response.data.meta.total;
-          this.currentPage = response.data.meta.current_page;
-          this.totalPages = response.data.meta.last_page;
+  
+          // Tampilkan notifikasi sukses menggunakan SweetAlert
+          Swal.fire({
+            icon: 'success',
+            title: 'Berhasil',
+            text: 'Data pasien berhasil dihapus.',
+            confirmButtonText: 'Tutup',
+          });
+  
+          // Redirect ke halaman utama (misalnya, halaman daftar pasien)
+          this.$router.push('/user/hipertensi');
         } catch (error) {
-          console.error("Error fetching examinations:", error);
-          alert("Terjadi kesalahan saat memuat data pemeriksaan.");
-        } finally {
-          this.isLoading = false;
+          console.error("Error deleting patient:", error);
+  
+          // Tampilkan notifikasi gagal menggunakan SweetAlert
+          Swal.fire({
+            icon: 'error',
+            title: 'Gagal',
+            text: error.response?.data?.message || 'Terjadi kesalahan saat menghapus data pasien.',
+            confirmButtonText: 'Tutup',
+          });
         }
+      },
+      async fetchExaminations() {
+        this.isLoadingExams = true;
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) {
+            console.error("Token tidak ditemukan");
+            return;
+            }
+            const response = await axios.get("http://localhost:8000/api/puskesmas/ht-examinations", {
+            params: {
+                patient_id: this.patientId,
+                year: this.selectedYear,
+                per_page: this.pageSize,
+                page: this.currentPage,
+            },
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            });
+
+            console.log("API Response:", response.data);
+
+            // Pastikan data adalah array dan tidak kosong
+            if (response.data && Array.isArray(response.data.data)) {
+            this.exams = response.data.data;
+            
+            // Menangani meta yang memiliki struktur array dengan benar
+            const meta = response.data.meta;
+            
+            // Konversi nilai array ke nilai tunggal jika diperlukan
+            this.totalExams = Array.isArray(meta.total) ? meta.total[0] : meta.total;
+            this.currentPage = Array.isArray(meta.current_page) ? meta.current_page[0] : meta.current_page;
+            this.totalPages = Array.isArray(meta.last_page) ? meta.last_page[0] : meta.last_page;
+            } else {
+            this.exams = [];
+            console.error("Data dari API bukan array:", response.data);
+            }
+
+            console.log("Processed exams data:", this.exams);
+        } catch (error) {
+            console.error("Error fetching examinations:", error);
+            alert("Terjadi kesalahan saat memuat data pemeriksaan.");
+        } finally {
+            this.isLoadingExams = false;
+        }
+        },
+      async deleteExam(id) {
+        try {
+          // Tampilkan konfirmasi menggunakan SweetAlert
+          const confirmation = await Swal.fire({
+            title: 'Apakah Anda yakin?',
+            text: 'Anda akan menghapus data pemeriksaan ini.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Ya, hapus!',
+            cancelButtonText: 'Batal',
+          });
+  
+          // Jika pengguna membatalkan, hentikan proses
+          if (!confirmation.isConfirmed) {
+            return;
+          }
+  
+          const token = localStorage.getItem("token");
+          if (!token) {
+            throw new Error("Token tidak ditemukan");
+          }
+  
+          // Panggil API untuk menghapus data pemeriksaan
+          await axios.delete(`http://localhost:8000/api/puskesmas/ht-examinations/${id}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+  
+          // Tampilkan notifikasi sukses
+          Swal.fire({
+            icon: 'success',
+            title: 'Berhasil',
+            text: 'Data pemeriksaan berhasil dihapus.',
+            confirmButtonText: 'Tutup',
+          });
+  
+          // Muat ulang data pemeriksaan setelah penghapusan
+          this.fetchExaminations();
+        } catch (error) {
+          console.error("Error deleting examination:", error);
+  
+          // Tampilkan notifikasi gagal
+          Swal.fire({
+            icon: 'error',
+            title: 'Gagal',
+            text:
+              error.response?.data?.message ||
+              error.message ||
+              'Terjadi kesalahan saat menghapus data pemeriksaan.',
+            confirmButtonText: 'Tutup',
+          });
+        }
+      },
+      openEditModal(exam) {
+        // Kirim data pemeriksaan ke modal edit
+        this.selectedExam = exam;
+        this.isEditModalOpen = true; // Buka modal edit
+      },
+  
+      closeEditModal() {
+        this.isEditModalOpen = false; // Tutup modal edit
+      },
+      openEditExamModal(exam) {
+        this.selectedExam = exam; // Simpan data pemeriksaan yang dipilih
+        this.isEditExamModalOpen = true; // Buka modal edit
+      },
+      closeEditExamModal() {
+        this.isEditExamModalOpen = false; // Tutup modal edit
+      },
+      handleEditExamSubmit() {
+        this.fetchExaminations(); // Muat ulang data setelah pembaruan
+      },
+      async handleEditModalSubmit() {
+        this.fetchExaminations();
       },
       prevPage() {
         if (this.currentPage > 1) {
@@ -358,36 +492,67 @@
         this.fetchExaminations();
       },
       editPatient() {
-        console.log("Edit patient data");
-      },
-      deletePatient() {
-        console.log("Delete patient data");
+        this.isEditModalOpen = true;
       },
       editExam(id) {
         console.log("Edit exam with ID:", id);
       },
-      deleteExam(id) {
-        console.log("Delete exam with ID:", id);
-      },
       closeModal() {
         this.isModalOpen = false;
+      },
+      closeEditModal() {
+        this.isEditModalOpen = false;
       },
       handleModalSubmit(data) {
         console.log("New examination data:", data);
         this.isModalOpen = false;
         // Simpan data ke state exams atau lakukan aksi lainnya
       },
+      handleEditModalSubmit(updatedPatient) {
+      // Update the patient data in your component
+        this.patient = {
+          name: updatedPatient.name,
+          nik: updatedPatient.nik || '-',
+          bpjs_number: updatedPatient.bpjs_number || '-',
+          birth_date: updatedPatient.birth_date || '-',
+          age: updatedPatient.age || '-',
+          gender: updatedPatient.gender === 'female' ? 'Perempuan' : 'Laki-Laki',
+          address: updatedPatient.address || '-',
+        };
+        
+        // Optionally, show a success message
+        console.log("Patient data updated successfully");
+      },
       hasVisitInMonth(month) {
-        const monthIndex = this.months.indexOf(month);
+        const monthIndex = this.months.indexOf(month); // Mendapatkan indeks bulan (0-11)
         if (monthIndex === -1) return false;
+  
+        // Periksa apakah ada data pemeriksaan di bulan dan tahun yang sesuai
         return this.exams.some((exam) => {
           const examDate = new Date(exam.examination_date);
-          const examMonth = examDate.getMonth(); // Bulan dalam format 0-11
-          return examMonth === monthIndex && exam.year === this.selectedYear;
+          return examDate.getMonth() === monthIndex && examDate.getFullYear() === parseInt(this.selectedYear);
         });
       },
     },
     watch: {
+      selectedYear() {
+        this.currentPage = 1; // Reset halaman saat tahun berubah
+        this.fetchExaminations();
+      },
+      $route() {
+        this.patientId = this.$route.params.id;
+        this.selectedYear = this.$route.query.year || new Date().getFullYear();
+        this.fetchPatientDetails();
+        this.fetchExaminations();
+      },
+      searchQuery() {
+        this.currentPage = 1; // Reset halaman saat pencarian berubah
+        this.fetchExaminations();
+      },
+      pageSize() {
+        this.currentPage = 1; // Reset halaman saat jumlah baris per halaman berubah
+        this.fetchExaminations();
+      },
       "$route.query.year": function(newYear) {
         if (newYear) {
           this.selectedYear = newYear; // Update tahun terpilih
@@ -1142,20 +1307,23 @@
     transition: color 0.3s ease;
   }
   
-  /* Container untuk Loading */
+  
+  /* Styling untuk Indikator Loading */
+  .loading-row {
+    text-align: center;
+  }
+  
   .loading-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 200px;
-    text-align: center;
+    height: 100px; /* Sesuaikan tinggi */
   }
   
-  /* Spinner Animasi */
   .spinner {
-    border: 4px solid rgba(0, 0, 0, 0.1);
-    border-left-color: #007bff;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid var(--primary-500);
     border-radius: 50%;
     width: 40px;
     height: 40px;
@@ -1164,26 +1332,19 @@
   }
   
   @keyframes spin {
-    to {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
       transform: rotate(360deg);
     }
   }
   
-  /* Gaya teks "Memuat data..." */
-  .loading-container p {
-    font-size: 1rem;
-    color: #666;
-    margin: 0;
-  }
-  
-  @media (max-width: 768px) {
-    .spinner {
-      width: 30px;
-      height: 30px;
-    }
-  
-    .loading-container p {
-      font-size: 0.9rem;
-    }
+  /* Styling untuk Pesan "Tidak Ada Data" */
+  .no-data {
+    text-align: center;
+    color: #9aa0a8;
+    font-size: 16px;
+    font-weight: 500;
   }
   </style>

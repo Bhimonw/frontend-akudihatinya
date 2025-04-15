@@ -13,11 +13,7 @@
           </div>
         </div>
         <div class="image-placeholder">
-          <div class="placeholder-cross">
-            <div class="horizontal-line"></div>
-            <div class="vertical-line"></div>
-            <div class="center-dot"></div>
-          </div>
+          <img :src="brandImage" alt="Brand Image" class="brand-image" />
         </div>
       </div>
 
@@ -109,12 +105,18 @@
 </template>
 
 <script>
+import brandImage from '../../assets/ptm.jpg';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { login as authLogin, getAuthState } from '../../stores/auth.js';
 import Swal from 'sweetalert2';
 
 export default {
+  data() {
+    return {
+      brandImage,
+    };
+  },
   setup() {
     const router = useRouter();
     const credentials = ref({
@@ -350,47 +352,17 @@ export default {
 }
 /* Placeholder Image */
 .image-placeholder {
-  width: 180px;
-  height: 180px;
-  margin: 30px auto;
-  border: 1px solid #cdcfd4;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  opacity: 0.8;
-  flex-grow: 1;
+  width: 250px;
+  height: 250px;
+  margin: 0px auto;
   border-radius: 10px;
+  overflow: hidden; /* Pastikan gambar tetap dalam batas placeholder */
 }
-.placeholder-cross {
-  position: relative;
+
+.brand-image {
   width: 100%;
   height: 100%;
-}
-.horizontal-line, .vertical-line {
-  position: absolute;
-  background-color: #cdcfd4;
-}
-.horizontal-line {
-  width: 100%;
-  height: 1px;
-  top: 50%;
-  transform: translateY(-50%);
-}
-.vertical-line {
-  width: 1px;
-  height: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-}
-.center-dot {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  background-color: var(--primary-500);
-  border-radius: 50%;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  object-fit: cover; /* Gambar akan menyesuaikan ukuran tanpa distorsi */
 }
 /* Login Form Section */
 .login-title {
