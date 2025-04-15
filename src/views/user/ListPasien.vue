@@ -9,7 +9,7 @@
           <!-- Tombol Tambah Data Peserta -->
           <button class="add-data-button" @click="openAddPatientModal">
             <font-awesome-icon :icon="['fas', 'plus']" />
-            Tambah Pasien
+            Tambah Pasien Baru
           </button>
         </div>
         <!-- Bagian Kanan -->
@@ -54,15 +54,15 @@
                 </div>
               </td>
             </tr>
-            <tr v-else v-for="(patient, index) in paginatedPatients" :key="patient.id">
-              <td>{{ index + 1 }}</td>
-              <td>{{ patient.name }}</td>
-              <td>{{ patient.nik }}</td>
-              <td>{{ patient.bpjs }}</td>
-              <td>{{ patient.gender }}</td>
-              <td>{{ patient.dob }}</td>
-              <td>{{ patient.age }}</td>
-              <td>{{ patient.address }}</td>
+            <tr v-else v-for="(patient, index) in patients" :key="patient.id">
+              <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
+              <td>{{ patient.name || '-'}}</td>
+              <td>{{ patient.nik || '-'}}</td>
+              <td>{{ patient.bpjs_number || '-'}}</td>
+              <td>{{ patient.gender === "male" ? "Laki-laki" : "Perempuan" || '-'}}</td>
+              <td>{{ patient.birth_date || '-'}}</td>
+              <td>{{ patient.age || '-'}}</td>
+              <td>{{ patient.address || '-'}}</td>
               <td>
                 <button
                   class="action-button detail"
@@ -166,35 +166,24 @@ export default {
       pageSize: 10,
       searchQuery: "",
       showAddPatientModal: false,
+      totalPatients: 0,
+      totalPages: 0,
+      links: {},
       isLoading: false,
     };
   },
   computed: {
-    totalPatients() {
-      return this.filteredPatients.length;
-    },
-    totalPages() {
-      return Math.ceil(this.totalPatients / this.pageSize);
-    },
     firstItemIndex() {
       return (this.currentPage - 1) * this.pageSize;
     },
     lastItemIndex() {
-      return Math.min(this.currentPage * this.pageSize, this.totalPatients);
-    },
-    filteredPatients() {
-      return this.patients.filter((patient) => {
-        const searchLower = this.searchQuery.toLowerCase();
-        return (
-          patient.name.toLowerCase().includes(searchLower) ||
-          patient.nik.includes(searchLower) ||
-          patient.bpjs.includes(searchLower) ||
-          patient.address.toLowerCase().includes(searchLower)
-        );
-      });
+      return Math.min(this.firstItemIndex * this.patients.length, this.totalPatients);
     },
     paginatedPatients() {
-      return this.filteredPatients.slice(this.firstItemIndex, this.lastItemIndex);
+      return this.filteredPatients;
+    },
+    filteredPatients() {
+      return this.patients;
     },
   },
   methods: {
@@ -216,17 +205,26 @@ export default {
             page: this.currentPage,
           },
         });
-        this.patients = response.data.data.map((patient) => ({
-          id: patient.id,
-          name: patient.name,
-          nik: patient.nik,
-          bpjs: patient.bpjs_number,
-          gender: patient.gender === "male" ? "Laki-laki" : "Perempuan",
-          dob: patient.birth_date,
-          age: patient.age,
-          address: patient.address,
-        }));
-        this.totalPatients = response.data.meta.total;
+
+        if (!response.data || !response.data.meta) {
+          console.error("Invalid API response structure:", response.data);
+          alert("Terjadi kesalahan: Struktur respons API tidak sesuai.");
+          return;
+        }
+        
+        const { data, meta } = response.data;
+
+        // IMPORTANT: Ensure data is properly converted from object to array
+        this.patients = typeof data === 'object' && !Array.isArray(data) 
+          ? Object.values(data) 
+          : data;
+          
+        // Fix the meta data processing as well
+        this.totalPatients = Array.isArray(meta.total) ? meta.total[0] : meta.total;
+        this.pageSize = Array.isArray(meta.per_page) ? meta.per_page[0] : meta.per_page;
+        this.currentPage = Array.isArray(meta.current_page) ? meta.current_page[0] : meta.current_page;
+        this.totalPages = Array.isArray(meta.last_page) ? meta.last_page[0] : meta.last_page;
+        this.links = meta.links;
       } catch (error) {
         Swal.fire({
           title: "Error!",
@@ -270,12 +268,7 @@ export default {
       }
     );
     
-    // Handle successful response
-    Swal.fire({
-      title: "Sukses!",
-      text: "Data pasien berhasil disimpan.",
-      icon: "success",
-    });
+
     
     // Close modal and refresh patient list
     this.closeAddPatientModal();
@@ -300,18 +293,22 @@ export default {
     prevPage() {
       if (this.currentPage > 1) {
         this.currentPage--;
+        this.fetchPatients();
       }
     },
     nextPage() {
       if (this.currentPage < this.totalPages) {
         this.currentPage++;
+        this.fetchPatients();
       }
     },
     goToPage(page) {
       this.currentPage = page;
+      this.fetchPatients();
     },
     resetPagination() {
       this.currentPage = 1;
+      this.fetchPatients();
     },
     viewPatientDetails(id) {
       this.$router.push({ name: "DetailPasien", params: { id } });

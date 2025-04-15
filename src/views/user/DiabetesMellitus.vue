@@ -72,15 +72,15 @@
                 </div>
               </td>
             </tr>
-            <tr v-else v-for="(patient, index) in paginatedPatients" :key="patient.id">
-              <td>{{ index + 1 }}</td>
-              <td>{{ patient.name }}</td>
-              <td>{{ patient.nik }}</td>
-              <td>{{ patient.bpjs_number }}</td>
-              <td>{{ patient.gender }}</td>
-              <td>{{ patient.birth_date }}</td>
-              <td>{{ patient.age }}</td>
-              <td class="action-button-container">{{ patient.address }}</td>
+            <tr v-else v-for="(patient, index) in patients" :key="patient.id">
+              <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
+              <td>{{ patient.name || '-' }}</td>
+              <td>{{ patient.nik || '-'}}</td>
+              <td>{{ patient.bpjs_number || '-' }}</td>
+              <td>{{ patient.gender === "male" ? "Laki-laki" : "Perempuan" || '-'}}</td>
+              <td>{{ patient.birth_date || '-'}}</td>
+              <td>{{ patient.age || '-'}}</td>
+              <td class="action-button-container">{{ patient.address || '-'}}</td>
               <td>
                 <div class="action-buttons-container">
                   <button class="action-button detail" @click="viewPatientDetails(patient.id)">
@@ -192,20 +192,16 @@ export default {
   },
   computed: {
     filteredPatients() {
-      return this.patients.filter((patient) => {
-        const matchesSearch = patient.name.toLowerCase().includes(this.searchQuery.toLowerCase());
-        const matchesYear = !this.selectedYear || patient.dm_years.includes(parseInt(this.selectedYear));
-        return matchesSearch && matchesYear;
-      });
+      return this.patients;
     },
     paginatedPatients() {
-      return this.filteredPatients.slice(this.firstItemIndex, this.lastItemIndex);
+      return this.filteredPatients;
     },
     firstItemIndex() {
       return (this.currentPage - 1) * this.pageSize;
     },
     lastItemIndex() {
-      return Math.min(this.currentPage * this.pageSize, this.totalPatients);
+      return Math.min(this.firstItemIndex * this.patients.length, this.totalPatients);
     }
   },
   methods: {
@@ -232,10 +228,8 @@ export default {
           },
         });
 
-        // Log respons API untuk debugging
         console.log("API Response:", response.data);
 
-        // Validasi struktur respons API
         if (!response.data || !response.data.meta) {
           console.error("Invalid API response structure:", response.data);
           alert("Terjadi kesalahan: Struktur respons API tidak sesuai.");
@@ -244,16 +238,21 @@ export default {
 
         const { data, meta } = response.data;
 
-        // Konversi data ke array
-        const dataArray = Object.values(data);
-
-        // Update state dengan data dari API
-        this.patients = dataArray;
-        this.totalPatients = meta.total[0];
-        this.pageSize = meta.per_page[0];
-        this.currentPage = meta.current_page[0];
-        this.totalPages = meta.last_page[0];
+        // IMPORTANT: Ensure data is properly converted from object to array
+        this.patients = typeof data === 'object' && !Array.isArray(data) 
+          ? Object.values(data) 
+          : data;
+          
+        // Fix the meta data processing as well
+        this.totalPatients = Array.isArray(meta.total) ? meta.total[0] : meta.total;
+        this.pageSize = Array.isArray(meta.per_page) ? meta.per_page[0] : meta.per_page;
+        this.currentPage = Array.isArray(meta.current_page) ? meta.current_page[0] : meta.current_page;
+        this.totalPages = Array.isArray(meta.last_page) ? meta.last_page[0] : meta.last_page;
         this.links = meta.links;
+        
+        console.log("Processed patient data:", this.patients);
+        console.log("Total Patients:", this.totalPatients);
+        console.log("Current Page:", this.currentPage, "of", this.totalPages);
       } catch (error) {
         console.error("Error fetching patients:", error);
         alert("Terjadi kesalahan saat memuat data pasien.");
@@ -341,7 +340,11 @@ export default {
       this.fetchPatients();
     },
     viewPatientDetails(id) {
-      this.$router.push({ name: "DetailPasien", params: { id }});
+      this.$router.push({
+        name: "DetailPasien",
+        params: { id },
+        query: { year: this.selectedYear } // Kirim tahun sebagai query parameter
+      });
     },
     toggleDownloadMenu() {
       this.isDownloadMenuOpen = !this.isDownloadMenuOpen;
@@ -705,12 +708,15 @@ export default {
 
 .action-button.detail:hover {
   background: var(--secondary-300);
+  transform: scale(1.05);
 }
 
 .action-button.delete {
   border: none;
-  background: #e53e3e;
-  color: #ffffff;
+  background: white;
+  color: #e53935;
+  border: 1px solid #e53935;
+  border-radius: 6px;
   padding: 8px 12px;
   height: 36px;
   width: 36px;
@@ -720,7 +726,8 @@ export default {
 }
 
 .action-button.delete:hover {
-  background: #c53030;
+  background: #ffebee;
+  color: #c62828;
   transform: scale(1.05);
 }
 

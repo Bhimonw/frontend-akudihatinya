@@ -77,6 +77,68 @@
               </tbody>
             </table>
           </div>
+          <!-- Pagination -->
+          <!-- Pagination -->
+          <div class="pagination-container">
+            <div class="flex items-center justify-between bg-white px-4 py-3 sm:px-6">
+              <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                <!-- Showing Text -->
+                <div>
+                  <p class="text-sm text-gray-700 flex items-center gap-2">
+                    Baris per halaman:
+                    <div class="dropdown-container">
+                      <select
+                        id="rowsPerPage"
+                        v-model="pageSize"
+                        @change="resetPagination"
+                        class="dropdown-select"
+                      >
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                        <option value="100">100</option>
+                      </select>
+                    </div>
+                    {{ firstItemIndex + 1 }}-{{ lastItemIndex }} dari
+                    {{ totalPatients }} item
+                  </p>
+                </div>
+                <!-- Pagination Buttons -->
+                <nav
+                  class="isolate inline-flex -space-x-px rounded-md shadow-xs"
+                  aria-label="Pagination"
+                >
+                  <!-- Tombol Previous -->
+                  <button
+                    class="pagination-button prev"
+                    @click="prevPage"
+                    :disabled="currentPage === 1"
+                  >
+                    <font-awesome-icon :icon="['fas', 'chevron-left']" />
+                  </button>
+                  <!-- Nomor Halaman -->
+                  <button
+                    v-for="page in totalPages"
+                    :key="page"
+                    :class="[
+                      currentPage === page ? 'active' : '',
+                      'pagination-button',
+                    ]"
+                    @click="goToPage(page)"
+                  >
+                    {{ page }}
+                  </button>
+                  <!-- Tombol Next -->
+                  <button
+                    class="pagination-button next"
+                    @click="nextPage"
+                    :disabled="currentPage === totalPages"
+                  >
+                    <font-awesome-icon :icon="['fas', 'chevron-right']" />
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
           <div class="modal-footer">
             <button class="cancel-button" @click="closeModal">Batal</button>
           </div>
@@ -143,6 +205,7 @@
 </template>
 
 <script>
+import Swal from 'sweetalert2';
 import axios from "axios";
 
 export default {
@@ -159,38 +222,50 @@ export default {
   data() {
     return {
       patients: [], // Array untuk menyimpan data pasien dari API
-      searchPatientQuery: "",
+      searchQuery: "",
       showNewPatientForm: false,
-      formData: {
-        id: null,
-        name: "",
-        nik: "",
-        bpjs: "",
-        gender: "",
-        dob: "",
-        age: "",
-        address: "",
-      },
       isLoading: false, // State untuk loading
+      currentPage: 1,
+      pageSize: 10,
+      totalPatients: 0,
     };
   },
   computed: {
+    firstItemIndex() {
+      return (this.currentPage - 1) * this.pageSize;
+    },
+    lastItemIndex() {
+      return Math.min(this.currentPage * this.pageSize, this.totalPatients);
+    },
+    paginatedPatients() {
+      return this.filteredPatients;
+    },
     filteredPatients() {
-      if (!this.searchPatientQuery) {
-        return this.patients;
-      }
-      const searchTerm = this.searchPatientQuery.toLowerCase();
-      return this.patients.filter((patient) => {
-        return (
-          patient.name.toLowerCase().includes(searchTerm) ||
-          patient.nik.includes(searchTerm) ||
-          (patient.bpjs && patient.bpjs.includes(searchTerm))
-        );
-      });
+      return this.patients;
     },
   },
   methods: {
-    async fetchPatients() {
+    prevPage() {
+      if (this.currentPage > 1) {
+        this.currentPage--;
+        this.fetchPatients();
+      }
+    },
+    nextPage() {
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++;
+        this.fetchPatients(this.currentPage);
+      }
+    },
+    goToPage(page) {
+      this.currentPage = page;
+      this.fetchPatients();
+    },
+    resetPagination() {
+      this.currentPage = 1;
+      this.fetchPatients();
+    },
+    async fetchPatients(page = this.currentPage) {
       this.isLoading = true; // Aktifkan loading
       try {
         const token = localStorage.getItem("token"); // Ambil token dari localStorage
@@ -199,32 +274,42 @@ export default {
           return;
         }
         const response = await axios.get("http://localhost:8000/api/puskesmas/patients", {
+          params:{
+            page: page,
+            per_page: this. pageSize,
+            search: this.searchQuery || undefined,
+          },
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
         // Validasi struktur respons API
-        if (!response.data || !response.data.data) {
+        if (!response.data || !response.data.meta) {
           console.error("Invalid API response structure:", response.data);
           alert("Terjadi kesalahan: Struktur respons API tidak sesuai.");
           return;
         }
+        
+        const { data, meta } = response.data;
         // Proses respons API
-        this.patients = response.data.data.map((patient) => ({
-          id: patient.id,
-          name: patient.name,
-          nik: patient.nik,
-          bpjs: patient.bpjs_number,
-          gender: patient.gender === "male" ? "Laki-laki" : "Perempuan",
-          dob: patient.birth_date,
-          age: patient.age,
-          address: patient.address,
-        }));
+        this.patients = typeof data === 'object' && !Array.isArray(data) 
+          ? Object.values(data) 
+          : data;
+          
+        // Fix the meta data processing as well
+        this.totalPatients = Array.isArray(meta.total) ? meta.total[0] : meta.total;
+        this.pageSize = Array.isArray(meta.per_page) ? meta.per_page[0] : meta.per_page;
+        this.currentPage = Array.isArray(meta.current_page) ? meta.current_page[0] : meta.current_page;
+        this.totalPages = Array.isArray(meta.last_page) ? meta.last_page[0] : meta.last_page;
+        this.links = meta.links;
       } catch (error) {
-        console.error("Error fetching patients:", error);
-        alert("Gagal memuat data pasien. Silakan coba lagi.");
+        Swal.fire({
+          title: "Error!",
+          text: "Gagal memuat data pasien. Silakan coba lagi.",
+          icon: "error",
+        });
       } finally {
-        this.isLoading = false; // Nonaktifkan loading
+        this.isLoading = false;
       }
     },
     closeModal() {
@@ -232,10 +317,6 @@ export default {
       this.resetForm();
     },
     async selectPatient(patient) {
-      const confirmed = confirm("Apakah Anda yakin akan menambahkan data ini?");
-      if (!confirmed) {
-        return;
-      }
 
       try {
         // Validate selectedYear
@@ -294,13 +375,51 @@ export default {
         alert("Gagal menambahkan tahun pemeriksaan. Silakan coba lagi.");
       }
     },
-    submitNewPatient() {
-      const newPatient = {
-        ...this.formData,
-        id: Date.now(),
-      };
-      this.$emit("submit", newPatient);
-      this.closeModal();
+    async submitNewPatient() {
+      // Tampilkan dialog konfirmasi dengan SweetAlert2
+      const result = await Swal.fire({
+        title: 'Konfirmasi',
+        text: 'Apakah Anda yakin akan menyimpan data ini?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Ya',
+        cancelButtonText: 'Batal',
+      });
+
+      // Jika pengguna membatalkan, hentikan proses
+      if (!result.isConfirmed) {
+        return;
+      }
+
+      try {
+        // Buat objek pasien baru
+        const newPatient = {
+          ...this.formData,
+          id: Date.now(),
+        };
+
+        // Emit data ke parent component
+        this.$emit("submit", newPatient);
+
+        // Tampilkan notifikasi sukses
+        Swal.fire({
+          icon: 'success',
+          title: 'Berhasil!',
+          text: 'Data berhasil disimpan!',
+        });
+
+        // Tutup modal
+        this.closeModal();
+      } catch (error) {
+        console.error("Error saving patient:", error);
+
+        // Tampilkan notifikasi error jika terjadi kesalahan
+        Swal.fire({
+          icon: 'error',
+          title: 'Kesalahan',
+          text: 'Gagal menyimpan data. Silakan coba lagi.',
+        });
+      }
     },
     resetForm() {
       this.formData = {
@@ -322,7 +441,7 @@ export default {
       immediate: true,
       handler(newVal) {
         if (newVal) {
-          this.fetchPatients();
+          this.fetchPatients(this.currentPage);
         }
       }
     }
@@ -708,4 +827,61 @@ export default {
   font-weight: 500;
   padding: 20px 0;
 }
+
+/* Pagination */
+.pagination-container {
+  background-color: #ffffff;
+  border-radius: 8px;
+}
+
+/* Pagination Buttons */
+.pagination-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #9aa0a8;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.pagination-button:hover {
+  color: var(--primary-500);
+}
+
+/* Halaman Aktif */
+.pagination-button.active {
+  color: var(--primary-500);
+  font-weight: 600;
+}
+
+/* Tombol Previous dan Next */
+.pagination-button.prev,
+.pagination-button.next {
+  background-color: var(--primary-500);
+  color: #ffffff;
+  width: auto;
+  padding: 10px 16px;
+  font-size: 16px;
+}
+
+.pagination-button.prev:hover,
+.pagination-button.next:hover {
+  background-color: var(--primary-700);
+}
+
+/* Tombol Disabled */
+.pagination-button:disabled {
+  background-color: #9aa0a8;
+  color: #ffffff;
+  cursor: not-allowed;
+}
+
 </style>

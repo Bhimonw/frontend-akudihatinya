@@ -27,7 +27,7 @@
     </div>
   </div>
 
-  <!-- Summary Cards Section - Added as per sketch -->
+  <!-- Summary Cards Section - Modified to separate Standar and Tidak Standar -->
   <div class="summary-cards">
     <div class="summary-card">
       <div class="icon-container">
@@ -42,12 +42,23 @@
     
     <div class="summary-card">
       <div class="icon-container">
-        <font-awesome-icon :icon="['fas', 'chart-line']" class="summary-icon" />
+        <font-awesome-icon :icon="['fas', 'check-circle']" class="summary-icon standar" />
       </div>
       <div class="card-content">
-        <h3 class="card-title">Total Capaian</h3>
-        <p class="card-value">189</p>
-        <p class="card-subtitle">(Jumlah)</p>
+        <h3 class="card-title">Capaian Standar</h3>
+        <p class="card-value">120</p>
+        <p class="card-subtitle">(Sesuai Standar)</p>
+      </div>
+    </div>
+    
+    <div class="summary-card">
+      <div class="icon-container">
+        <font-awesome-icon :icon="['fas', 'times-circle']" class="summary-icon non-standar" />
+      </div>
+      <div class="card-content">
+        <h3 class="card-title">Capaian Tidak Standar</h3>
+        <p class="card-value">69</p>
+        <p class="card-subtitle">(Tidak Sesuai Standar)</p>
       </div>
     </div>
     
@@ -357,10 +368,10 @@ body {
   margin-bottom: 16px;
 }
 
-/* Summary Cards - New section added as per sketch */
+/* Summary Cards - Modified to have 5 cards with grid */
 .summary-cards {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 20px;
   margin-bottom: 30px;
 }
@@ -388,6 +399,23 @@ body {
 .summary-icon {
   color: #10b981;
   font-size: 20px;
+}
+
+/* Custom colors for standar and non-standar icons */
+.summary-icon.standar {
+  color: #3b82f6; /* Blue for standard */
+}
+
+.icon-container .standar {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.summary-icon.non-standar {
+  color: #ef4444; /* Red for non-standard */
+}
+
+.icon-container .non-standar {
+  background-color: rgba(239, 68, 68, 0.1);
 }
 
 .card-content {
@@ -607,6 +635,12 @@ body {
 }
 
 /* Responsive Styles */
+@media (max-width: 1200px) {
+  .summary-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 @media (max-width: 992px) {
   .toolbar {
     flex-direction: column;
@@ -621,11 +655,11 @@ body {
   .summary-cards {
     grid-template-columns: repeat(2, 1fr);
   }
+}
 
-  @media (max-width: 576px) {
-    .summary-cards {
-      grid-template-columns: 1fr;
-    }
+@media (max-width: 576px) {
+  .summary-cards {
+    grid-template-columns: 1fr;
   }
 }
 </style>

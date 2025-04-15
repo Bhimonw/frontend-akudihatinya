@@ -131,6 +131,8 @@
 </template> 
 
 <script>
+import Swal from 'sweetalert2';
+
 export default {
   data() {
     return {
@@ -184,8 +186,28 @@ export default {
       return isValid;
     },
     
-    submitForm() {
-      if (this.validateForm()) {
+    async submitForm() {
+      // Validasi form terlebih dahulu
+      if (!this.validateForm()) {
+        return;
+      }
+
+      // Tampilkan dialog konfirmasi dengan SweetAlert2
+      const result = await Swal.fire({
+        title: 'Konfirmasi',
+        text: 'Apakah Anda yakin akan menyimpan data ini?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Ya',
+        cancelButtonText: 'Batal',
+      });
+
+      // Jika pengguna membatalkan, hentikan proses
+      if (!result.isConfirmed) {
+        return;
+      }
+
+      try {
         // Format data sesuai dengan spesifikasi API
         const formData = {
           name: this.form.name,
@@ -195,13 +217,31 @@ export default {
           birth_date: this.form.dob || null, // Mengizinkan kosong
           age: parseInt(this.form.age),
           address: this.form.address,
-          // Langsung set has_ht dan has_dm menjadi false
           has_ht: false,
           has_dm: false
         };
-        
+
         // Emit event submit dengan data yang sudah diformat
         this.$emit("submit", formData);
+
+        // Tampilkan notifikasi sukses
+        Swal.fire({
+          icon: 'success',
+          title: 'Berhasil!',
+          text: 'Data berhasil disimpan!',
+        });
+
+        // Tutup modal
+        this.closeModal();
+      } catch (error) {
+        console.error("Error saving patient:", error);
+
+        // Tampilkan notifikasi error jika terjadi kesalahan
+        Swal.fire({
+          icon: 'error',
+          title: 'Kesalahan',
+          text: 'Gagal menyimpan data. Silakan coba lagi.',
+        });
       }
     },
     

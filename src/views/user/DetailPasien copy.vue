@@ -18,45 +18,30 @@
         <div class="profile-header">
           <h2>Detail Pasien</h2>
         </div>
-
-        <div v-if="isLoading" class="loading-container">
-        <div class="spinner"></div>
-        <p>Memuat data...</p>
-        </div>
-
-        <div v-else class="profile-info-container">
-            <div class="profile-info">
-            <!-- Kolom Utama (3 Kolom/Grid) -->
-            <div class="info-item">
-              <span class="label">Nama Lengkap :</span>
-              <span class="value">{{ patient.name }}</span>
-            </div>
-            <div class="info-item">
-              <span class="label">Jenis Kelamin :</span>
-              <span class="value">{{ patient.gender || '-' }}</span>
-            </div>
-            <div class="info-item">
-              <span class="label">NIK :</span>
-              <span class="value">{{ patient.nik || '-' }}</span>
-            </div>
-            <div class="info-item">
-              <span class="label">Nomor BPJS :</span>
-              <span class="value">{{ patient.bpjs_number || '-' }}</span>
-            </div>
-            <div class="info-item">
-              <span class="label">Tanggal Lahir :</span>
-              <span class="value">{{ patient.birth_date || '-' }}</span>
-            </div>
-            <div class="info-item">
-              <span class="label">Umur :</span>
-              <span class="value">{{ patient.age || '-' }}</span>
-            </div>
+        <div class="profile-info">
+          <div class="info-item">
+            <span class="label">Nama Lengkap :</span>
+            <span class="value">{{ patient.name }}</span>
           </div>
-
-          <!-- Alamat (Full Width) -->
-          <div class="address-info">
-            <span class="label">Alamat :</span>
-            <span class="value">{{ patient.address || '-' }}</span>
+          <div class="info-item">
+            <span class="label">Jenis Kelamin :</span>
+            <span class="value">{{ patient.gender === 'L' ? 'Laki-Laki' : 'Perempuan' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">NIK :</span>
+            <span class="value">{{ patient.nik }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Nomor BPJS :</span>
+            <span class="value">{{ patient.bpjs }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Tanggal Lahir :</span>
+            <span class="value">{{ patient.dob }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Umur :</span>
+            <span class="value">{{ patient.age }}</span>
           </div>
         </div>
         <!-- Tombol Ubah dan Hapus -->
@@ -116,6 +101,12 @@
           </div>
           <!-- Bagian Kanan -->
           <div class="right-section">
+            <!-- Dropdown Tahun -->
+            <div class="dropdown-container-year">
+              <select class="dropdown-select" v-model="selectedYear">
+                <option v-for="year in years" :key="year" :value="year">{{ year }}</option>
+              </select>
+            </div>
             <!-- Tombol Tambah Data Peserta -->
             <button class="add-data-button" @click="isModalOpen = true">
               <font-awesome-icon :icon="['fas', 'plus']" />
@@ -142,12 +133,12 @@
             </thead>
             <tbody>
               <tr v-for="(exam, index) in paginatedExams" :key="exam.id">
-                <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
-                <td>{{ exam.examination_date }}</td>
-                <td>{{ exam.result || '-' }}</td>
-                <td>-</td>
-                <td>-</td>
-                <td>-</td>
+                <td>{{ index + 1 }}</td>
+                <td>{{ exam.date }}</td>
+                <td>{{ exam.fastingGlucose || '-' }}</td>
+                <td>{{ exam.postPrandialGlucose || '-' }}</td>
+                <td>{{ exam.twoHourPostprandial || '-' }}</td>
+                <td>{{ exam.hba1c || '-' }}</td>
                 <td>
                   <button class="action-button edit" @click="editExam(exam.id)">
                     <font-awesome-icon :icon="['fas', 'edit']" />
@@ -175,7 +166,7 @@
                       <option value="100">100</option>
                     </select>
                   </div>
-                  {{ firstItemIndex + 1 }}-{{ lastItemIndex }} dari {{ totalExams }} item
+                  {{ firstItemIndex + 1 }}-{{ lastItemIndex }} dari {{ totalPatients }} item
                 </p>
               </div>
               <!-- Pagination Buttons -->
@@ -224,8 +215,8 @@
 </template>
 
 <script>
-import axios from 'axios';
-import ModalTambahData from "../../components/modals/AddExaminationData.vue";
+import { patientData } from "../../data/dummyData.js"; // Dummy data pasien
+import ModalTambahData from "../../components/modals/AddExaminationData.vue"; // Import modal
 
 export default {
   name: "DetailPasien",
@@ -234,25 +225,35 @@ export default {
   },
   data() {
     return {
-      patientId: this.$route.params.id,
-      patient: {},
-      exams: [],
-      selectedYear: this.$route.query.year || new Date().getFullYear(), // Ambil tahun dari query atau default ke tahun sekarang
-      searchQuery: "",
-      currentPage: 1,
-      pageSize: 10,
+      patientId: this.$route.params.id, // Ambil ID dari URL
+      patient: {}, // Data pasien
+      exams: [], // Riwayat pemeriksaan pasien
+      selectedYear: "2023", // Tahun terpilih
+      years: ["2023", "2022", "2021"], // Daftar tahun
+      searchQuery: "", // Query pencarian
+      currentPage: 1, // Halaman saat ini
+      pageSize: 10, // Jumlah item per halaman
       months: [
-        "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
-        "Jul", "Agu", "Sep", "Okt", "Nov", "Des"
-      ],
-      isModalOpen: false,
-      isLoading: false,
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "Mei",
+        "Jun",
+        "Jul",
+        "Agu",
+        "Sep",
+        "Okt",
+        "Nov",
+        "Des",
+      ], // Nama-nama bulan
+      isModalOpen: false, // Status modal
     };
   },
   computed: {
     filteredExams() {
       return this.exams.filter((exam) => {
-        const matchesSearch = exam.examination_date.toLowerCase().includes(this.searchQuery.toLowerCase());
+        const matchesSearch = exam.date.toLowerCase().includes(this.searchQuery.toLowerCase());
         const matchesYear = !this.selectedYear || exam.year === this.selectedYear;
         return matchesSearch && matchesYear;
       });
@@ -274,88 +275,38 @@ export default {
     },
   },
   methods: {
-    async fetchPatientDetails() {
-      this.isLoading = true;
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          console.error("Token tidak ditemukan");
-          return;
-        }
-        const response = await axios.get(`http://localhost:8000/api/puskesmas/patients/${this.patientId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        console.log("API Response:", response.data);
-        const apiPatient = response.data.patient; // Ambil data dari respons API
-
-        // Mapping properti agar sesuai dengan template
-        this.patient = {
-          name: apiPatient.name,
-          nik: apiPatient.nik || '-',
-          bpjs_number: apiPatient.bpjs_number || '-', // Sesuaikan dengan nama properti di API dan template
-          birth_date: apiPatient.birth_date || '-',   // Sesuaikan dengan nama properti di API dan template
-          age: apiPatient.age || '-',
-          gender: apiPatient.gender === 'female' ? 'Perempuan' : 'Laki-Laki',
-          address: apiPatient.address || '-',
-        };
-      } catch (error) {
-        console.error("Error fetching patient details:", error);
-        alert("Terjadi kesalahan saat memuat detail pasien.");
-      } finally {
-        this.isLoading = false;
+    getPatientData() {
+      const patient = patientData.find((p) => p.id === parseInt(this.patientId)); // Cari pasien berdasarkan ID
+      if (patient) {
+        this.patient = patient;
       }
     },
-    async fetchExaminations() {
-      this.isLoading = true;
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          console.error("Token tidak ditemukan");
-          return;
-        }
-        const response = await axios.get("http://localhost:8000/api/puskesmas/dm-examinations", {
-          params: {
-            patient_id: this.patientId,
-            year: this.selectedYear,
-            per_page: this.pageSize,
-            page: this.currentPage,
-          },
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        this.exams = response.data.data;
-        this.totalExams = response.data.meta.total;
-        this.currentPage = response.data.meta.current_page;
-        this.totalPages = response.data.meta.last_page;
-      } catch (error) {
-        console.error("Error fetching examinations:", error);
-        alert("Terjadi kesalahan saat memuat data pemeriksaan.");
-      } finally {
-        this.isLoading = false;
-      }
+    getExaminationData() {
+      // Simulasi data riwayat pemeriksaan
+      this.exams = [
+        { id: 1, date: "01-01-2023", fastingGlucose: 90, postPrandialGlucose: 120, hba1c: 5.5, year: "2023" },
+        { id: 2, date: "01-02-2023", fastingGlucose: 85, postPrandialGlucose: 110, hba1c: 5.4, year: "2023" },
+        { id: 3, date: "15-04-2023", fastingGlucose: 88, postPrandialGlucose: 115, hba1c: 5.5, year: "2023" },
+        { id: 4, date: "10-06-2023", fastingGlucose: 92, postPrandialGlucose: 118, hba1c: 5.6, year: "2023" },
+        { id: 5, date: "05-08-2023", fastingGlucose: 87, postPrandialGlucose: 112, hba1c: 5.4, year: "2023" },
+        { id: 6, date: "12-11-2023", fastingGlucose: 91, postPrandialGlucose: 119, hba1c: 5.7, year: "2023" },
+      ];
     },
     prevPage() {
       if (this.currentPage > 1) {
         this.currentPage--;
-        this.fetchExaminations();
       }
     },
     nextPage() {
       if (this.currentPage < this.totalPages) {
         this.currentPage++;
-        this.fetchExaminations();
       }
     },
     goToPage(page) {
       this.currentPage = page;
-      this.fetchExaminations();
     },
     resetPagination() {
       this.currentPage = 1;
-      this.fetchExaminations();
     },
     editPatient() {
       console.log("Edit patient data");
@@ -381,27 +332,18 @@ export default {
       const monthIndex = this.months.indexOf(month);
       if (monthIndex === -1) return false;
       return this.exams.some((exam) => {
-        const examDate = new Date(exam.examination_date);
-        const examMonth = examDate.getMonth(); // Bulan dalam format 0-11
+        const examDate = exam.date.split("-");
+        const examMonth = parseInt(examDate[1]) - 1; // Bulan dalam format 01-12 ke indeks 0-11
         return examMonth === monthIndex && exam.year === this.selectedYear;
       });
     },
   },
-  watch: {
-    "$route.query.year": function(newYear) {
-      if (newYear) {
-        this.selectedYear = newYear; // Update tahun terpilih
-        this.fetchExaminations(); // Muat ulang data pemeriksaan
-      }
-    }
-  },
   mounted() {
-    this.fetchPatientDetails();
-    this.fetchExaminations();
+    this.getPatientData();
+    this.getExaminationData();
   },
 };
 </script>
-
 
 <style scoped>
 .patient-details {
@@ -474,11 +416,10 @@ export default {
   margin: 0;
 }
 
-/* Profile Info dengan Grid 3 Kolom */
 .profile-info {
   display: grid;
-  grid-template-columns: repeat(3, 1fr); /* Tetap 3 kolom */
-  gap: 20px; /* Jarak antar item */
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
   margin-bottom: 24px;
 }
 
@@ -501,26 +442,6 @@ export default {
   padding: 4px 0;
 }
 
-/* Address Info (Full Width) */
-.address-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: 24px;
-}
-
-.address-info .label {
-  font-weight: 500;
-  color: #666;
-  font-size: 0.9rem;
-}
-
-.address-info .value {
-  font-weight: 600;
-  color: #333;
-  font-size: 1rem;
-  word-wrap: break-word; /* Memastikan teks panjang tidak keluar dari card */
-}
 /* Profile Action Buttons */
 .profile-actions {
   display: flex;
@@ -546,7 +467,6 @@ export default {
 
 .action-button.edit-patient:hover {
   background: var(--primary-700);
-  transform: scale(1.05);
 }
 
 .action-button.delete-patient {
@@ -567,7 +487,6 @@ export default {
 .action-button.delete-patient:hover {
   background: #ffebee;
   color: #c62828;
-  transform: scale(1.05);
 }
 
 /* NEW: Monthly Attendance Container */
@@ -1142,48 +1061,4 @@ export default {
   transition: color 0.3s ease;
 }
 
-/* Container untuk Loading */
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 200px;
-  text-align: center;
-}
-
-/* Spinner Animasi */
-.spinner {
-  border: 4px solid rgba(0, 0, 0, 0.1);
-  border-left-color: #007bff;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-  margin-bottom: 16px;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* Gaya teks "Memuat data..." */
-.loading-container p {
-  font-size: 1rem;
-  color: #666;
-  margin: 0;
-}
-
-@media (max-width: 768px) {
-  .spinner {
-    width: 30px;
-    height: 30px;
-  }
-
-  .loading-container p {
-    font-size: 0.9rem;
-  }
-}
 </style>
