@@ -3,8 +3,16 @@
     <!-- Top Bar (Profile Placeholder) -->
     <div class="top-bar">
       <div class="profile-placeholder">
-        <div class="circle"></div>
-      </div>
+  <div class="circle">
+    <img
+      v-if="profileImage"
+      :src="profileImage"
+      alt="Profile Picture"
+      class="profile-image"
+    />
+    <div v-else class="placeholder"></div>
+  </div>
+</div>
       <h3 v-if="isSidebarOpen" class="app-name">Akudihatinya</h3>
     </div>
 
@@ -107,15 +115,31 @@ export default {
   height: 40px;
   border: 2px solid #bbbbbb;
   border-radius: 99999px;
+  overflow: hidden; /* Memastikan gambar tetap circular */
 }
 
 .circle {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: #f0f0f0;
+  background: #f0f0f0; /* Placeholder background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
+.profile-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Memastikan gambar menutupi area lingkaran */
+}
+
+.placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #f0f0f0; /* Placeholder background */
+}
 .app-name {
   font-family: 'Poppins', sans-serif;
   font-weight: 700;

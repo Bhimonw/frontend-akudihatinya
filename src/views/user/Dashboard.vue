@@ -1,24 +1,19 @@
 <template>
-  <!-- Main content with adjusted layout based on sketch -->
-  
-  <!-- Header with Year and Program Dropdowns -->
   <div class="toolbar">
     <div class="left-section">
       <!-- Dropdown Tahun -->
       <div class="dropdown-container-year">
-        <select id="yearPicker" class="dropdown-select" v-model="selectedYear">
+        <select id="yearPicker" class="dropdown-select" v-model="selectedYear" @change="updateData">
           <option v-for="year in years" :key="year" :value="String(year)">{{ year }}</option>
         </select>
       </div>
-
       <!-- Dropdown Program Kesehatan -->
       <div class="dropdown-container-program">
-        <select id="programPicker" class="dropdown-select" v-model="selectedProgram">
+        <select id="programPicker" class="dropdown-select" v-model="selectedProgram" @change="updateData">
           <option v-for="program in programs" :key="program" :value="program">{{ program }}</option>
         </select>
       </div>
-      
-      <!-- Print Button - Moved from right to align with sketch -->
+      <!-- Print Button -->
       <button class="print-report-button" @click="printReport">
         <font-awesome-icon :icon="['fas', 'print']" />
         Print Laporan
@@ -27,7 +22,7 @@
     </div>
   </div>
 
-  <!-- Summary Cards Section - Modified to separate Standar and Tidak Standar -->
+  <!-- Summary Cards Section -->
   <div class="summary-cards">
     <div class="summary-card">
       <div class="icon-container">
@@ -35,61 +30,55 @@
       </div>
       <div class="card-content">
         <h3 class="card-title">Sasaran</h3>
-        <p class="card-value">250</p>
+        <p class="card-value">{{ summaryCards.sasaran }}</p>
         <p class="card-subtitle">(Jumlah)</p>
       </div>
     </div>
-    
     <div class="summary-card">
       <div class="icon-container">
         <font-awesome-icon :icon="['fas', 'check-circle']" class="summary-icon standar" />
       </div>
       <div class="card-content">
         <h3 class="card-title">Capaian Standar</h3>
-        <p class="card-value">120</p>
+        <p class="card-value">{{ summaryCards.capaianStandar }}</p>
         <p class="card-subtitle">(Sesuai Standar)</p>
       </div>
     </div>
-    
     <div class="summary-card">
       <div class="icon-container">
         <font-awesome-icon :icon="['fas', 'times-circle']" class="summary-icon non-standar" />
       </div>
       <div class="card-content">
         <h3 class="card-title">Capaian Tidak Standar</h3>
-        <p class="card-value">69</p>
+        <p class="card-value">{{ summaryCards.capaianTidakStandar }}</p>
         <p class="card-subtitle">(Tidak Sesuai Standar)</p>
       </div>
     </div>
-    
     <div class="summary-card">
       <div class="icon-container">
         <font-awesome-icon :icon="['fas', 'hospital']" class="summary-icon" />
       </div>
       <div class="card-content">
         <h3 class="card-title">Total Pelayanan</h3>
-        <p class="card-value">412</p>
+        <p class="card-value">{{ summaryCards.totalPelayanan }}</p>
         <p class="card-subtitle">(Jumlah)</p>
       </div>
     </div>
-    
     <div class="summary-card">
       <div class="icon-container">
         <font-awesome-icon :icon="['fas', 'percent']" class="summary-icon" />
       </div>
       <div class="card-content">
         <h3 class="card-title">% Capaian Pelayanan</h3>
-        <p class="card-value">75.6%</p>
+        <p class="card-value">{{ summaryCards.persenCapaianPelayanan }}</p>
         <p class="card-subtitle">(Sesuai Standar)</p>
       </div>
     </div>
   </div>
 
-  <!-- Statistics Section - Full Width as per sketch -->
+  <!-- Statistics Section -->
   <div class="statistics-card">
     <h2 class="section-title">Statistik</h2>
-    
-    <!-- Legends -->
     <div class="chart-legends">
       <div class="legend-item">
         <div class="legend-dot male"></div>
@@ -100,10 +89,7 @@
         <span>Perempuan</span>
       </div>
     </div>
-    
-    <!-- Chart Container -->
     <div class="chart-container">
-      <!-- Y-Axis Values -->
       <div class="y-axis-values">
         <div>100</div>
         <div>80</div>
@@ -112,20 +98,8 @@
         <div>20</div>
         <div>0</div>
       </div>
-      
-      <!-- Chart Placeholder -->
-      <div class="chart">
-        <div class="chart-placeholder">
-          <div class="chart-date">16 Aug 2022</div>
-          <div class="chart-value">$59,492.10</div>
-          <!-- Mock chart lines -->
-          <div class="chart-line male"></div>
-          <div class="chart-line female"></div>
-        </div>
-      </div>
+      <canvas id="chart"></canvas>
     </div>
-    
-    <!-- X-Axis Values -->
     <div class="x-axis-values">
       <div>Jan</div>
       <div>Feb</div>
@@ -134,16 +108,19 @@
       <div>May</div>
       <div>Jun</div>
       <div>Jul</div>
+      <div>Aug</div>
+      <div>Sep</div>
+      <div>Oct</div>
+      <div>Nov</div>
+      <div>Dec</div>
     </div>
   </div>
 
-  <!-- Data Table Section - Full Width Below -->
+  <!-- Data Table Section -->
   <div class="table-section table-card">
     <div class="table-header">
-      <h2 class="section-title">Rekap Data Diabetes Mellitus</h2>
+      <h2 class="section-title">Rekap Data {{ selectedProgram }}</h2>
     </div>
-    
-    <!-- Table Container -->
     <div class="table-container">
       <table class="data-table">
         <thead>
@@ -204,47 +181,46 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td>40</td>
-            <td>38</td>
-            <td>48</td>
-            <td>154</td>
-            <td>24%</td>
-            <td>30</td>
-            <td>124</td>
-            <td>24%</td>
-            <td>30</td>
-            <td>124</td>
-            <td>24%</td>
-            <td>30</td>
-            <td>124</td>
-            <td>24%</td>
-            <td>30</td>
-            <td>124</td>
-            <td>24%</td>
-            <td>30</td>
-            <td>124</td>
-            <td>24%</td>
-            <td>30</td>
-            <td>124</td>
-            <td>24%</td>
-            <td>30</td>
-            <td>124</td>
-            <td>24%</td>
-            <td>30</td>
-            <td>124</td>
-            <td>24%</td>
-            <td>30</td>
-            <td>124</td>
-            <td>24%</td>
-            <td>30</td>
-            <td>124</td>
-            <td>24%</td>
-            <td>30</td>
-            <td>124</td>
-            <td>24%</td>
+          <tr v-for="(row, index) in tableData" :key="index">
+            <td>{{ row.jenisKelamin }}</td>
+            <td>{{ row.jenisKelamin }}</td>
+            <td>{{ row.januari.s }}</td>
+            <td>{{ row.januari.ts }}</td>
+            <td>{{ row.januari.persen }}</td>
+            <td>{{ row.februari.s }}</td>
+            <td>{{ row.februari.ts }}</td>
+            <td>{{ row.februari.persen }}</td>
+            <td>{{ row.maret.s }}</td>
+            <td>{{ row.maret.ts }}</td>
+            <td>{{ row.maret.persen }}</td>
+            <td>{{ row.april.s }}</td>
+            <td>{{ row.april.ts }}</td>
+            <td>{{ row.april.persen }}</td>
+            <td>{{ row.mei.s }}</td>
+            <td>{{ row.mei.ts }}</td>
+            <td>{{ row.mei.persen }}</td>
+            <td>{{ row.juni.s }}</td>
+            <td>{{ row.juni.ts }}</td>
+            <td>{{ row.juni.persen }}</td>
+            <td>{{ row.juli.s }}</td>
+            <td>{{ row.juli.ts }}</td>
+            <td>{{ row.juli.persen }}</td>
+            <td>{{ row.agustus.s }}</td>
+            <td>{{ row.agustus.ts }}</td>
+            <td>{{ row.agustus.persen }}</td>
+            <td>{{ row.september.s }}</td>
+            <td>{{ row.september.ts }}</td>
+            <td>{{ row.september.persen }}</td>
+            <td>{{ row.oktober.s }}</td>
+            <td>{{ row.oktober.ts }}</td>
+            <td>{{ row.oktober.persen }}</td>
+            <td>{{ row.november.s }}</td>
+            <td>{{ row.november.ts }}</td>
+            <td>{{ row.november.persen }}</td>
+            <td>{{ row.desember.s }}</td>
+            <td>{{ row.desember.ts }}</td>
+            <td>{{ row.desember.persen }}</td>
           </tr>
-          <!-- Add more rows as needed -->
         </tbody>
       </table>
     </div>
@@ -252,29 +228,75 @@
 </template>
 
 <script>
+import { Chart } from "chart.js/auto";
+import { dummyData } from "../../data/dummyData.js";
+
 export default {
   name: "Dashboard",
   data() {
     const currentYear = new Date().getFullYear();
     const startYear = 2020;
     const years = Array.from({ length: currentYear - startYear + 1 }, (_, i) => startYear + i).reverse();
-
     return {
+      chartInstance: null,
       selectedYear: String(currentYear),
-      years: years,
+      years: years.filter((year) => year >= 2024 && year <= 2025), // Hanya 2024 dan 2025
       selectedProgram: "Diabetes Mellitus",
       programs: ["Diabetes Mellitus", "Hipertensi"],
-      chartData: {
-        // Your chart data would go here
-      }
+      summaryCards: {},
+      tableData: [],
+      chartData: {},
     };
   },
+  mounted() {
+    this.updateData();
+  },
   methods: {
-    printReport() {
-      console.log("Mencetak laporan...");
-      alert("Mencetak laporan untuk " + this.selectedProgram + " tahun " + this.selectedYear);
+  updateData() {
+    const data = dummyData[this.selectedYear]?.[this.selectedProgram];
+    if (!data) {
+      console.error("Data tidak ditemukan untuk tahun dan program yang dipilih.");
+      return;
     }
-  }
+
+    this.summaryCards = data.summaryCards;
+    this.tableData = data.tableData;
+    this.chartData = data.chartData;
+
+    // Render ulang chart
+    this.renderChart();
+  },
+  renderChart() {
+    const ctx = document.getElementById("chart").getContext("2d");
+    if (this.chartInstance) {
+      this.chartInstance.destroy(); // Hapus chart sebelumnya jika ada
+    }
+    this.chartInstance = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+        datasets: [
+          {
+            label: "Laki-laki",
+            data: this.chartData.lakiLaki,
+            borderColor: "#3b82f6",
+            fill: false,
+          },
+          {
+            label: "Perempuan",
+            data: this.chartData.perempuan,
+            borderColor: "#f59e0b",
+            fill: false,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+      },
+    });
+  },
+},
 };
 </script>
 
@@ -512,51 +534,6 @@ body {
   border-bottom: 1px solid #eaeaea;
 }
 
-/* Chart Placeholder (replace with your actual chart) */
-.chart-placeholder {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-.chart-date {
-  position: absolute;
-  top: 20px;
-  left: 100px;
-  font-family: "Inter", sans-serif;
-  font-size: 12px;
-  color: #4f5867;
-}
-
-.chart-value {
-  position: absolute;
-  top: 40px;
-  left: 100px;
-  font-family: "Inter", sans-serif;
-  font-size: 16px;
-  font-weight: 600;
-  color: #333333;
-}
-
-/* Mock chart lines */
-.chart-line {
-  position: absolute;
-  height: 2px;
-  bottom: 50px;
-  left: 0;
-  right: 0;
-}
-
-.chart-line.male {
-  bottom: 120px;
-  background: linear-gradient(90deg, transparent, #3b82f6, #3b82f6, #3b82f6, transparent);
-}
-
-.chart-line.female {
-  bottom: 80px;
-  background: linear-gradient(90deg, transparent, #f59e0b, #f59e0b, #f59e0b, transparent);
-}
-
 .x-axis-values {
   display: flex;
   justify-content: space-between;
@@ -647,11 +624,9 @@ body {
     align-items: flex-start;
     gap: 16px;
   }
-
   .left-section {
     width: 100%;
   }
-
   .summary-cards {
     grid-template-columns: repeat(2, 1fr);
   }
