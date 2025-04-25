@@ -6,18 +6,21 @@
 
 <script>
 import { onMounted } from 'vue';
-import { restoreAuth } from './stores/auth';
+import { useAuthStore } from './stores/auth';
 
 export default {
   name: 'App',
   created() {
-    restoreAuth();
+    const authStore = useAuthStore();
+    authStore.restoreAuth();
   },
   setup() {
+    const authStore = useAuthStore();
+    console.log('Current refreshToken:', authStore.refreshToken);
     onMounted(() => {
-      restoreAuth();
+      authStore.restoreAuth();
     });
-  }
+  },
 };
 </script>
 

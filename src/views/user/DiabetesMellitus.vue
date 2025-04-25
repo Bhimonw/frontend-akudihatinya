@@ -371,7 +371,7 @@ export default {
     },
     viewPatientDetails(id) {
       this.$router.push({
-        name: "DetailPasien",
+        name: "DetailPasienDM",
         params: { id },
         query: { year: this.selectedYear } // Kirim tahun sebagai query parameter
       });

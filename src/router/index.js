@@ -16,10 +16,10 @@ import DetailPasienLP from '../views/user/DetailPasienLP.vue';
 import DiabetesMellitus from '../views/user/DiabetesMellitus.vue';
 import Hipertensi from '../views/user/Hipertensi.vue';
 import TambahDataPeserta from '../views/user/TambahDataPeserta.vue';
-import DetailPasien from '../views/user/DetailPasien.vue';
+import DetailPasienDM from '../views/user/DetailPasienDM.vue';
 import DetailPasienHT from '../views/user/DetailPasienHT.vue';
 
-import { getAuthState, isAdmin as checkAdmin, isAdmin } from '../stores/auth';
+import { getAuthState, isAdmin } from '../stores/auth';
 
 const routes = [
   // Admin Routes
@@ -67,7 +67,7 @@ const routes = [
         meta: { requiresAuth: true, isAdmin: false, title: 'Daftar Pasien' },
       },
       {
-        path: 'list-pasien/detail-pasien',
+        path: 'list-pasien/patient/:id',
         component: DetailPasienLP,
         name: "DetailPasienLP",
         meta: { requiresAuth: true, isAdmin: false, title: 'DetailPasien' },
@@ -90,12 +90,12 @@ const routes = [
       },
       {
         path: 'diabetes-mellitus/patient/:id',
-      name: "DetailPasien",
-      component: DetailPasien,
+      name: "DetailPasienDM",
+      component: DetailPasienDM,
       meta: { requiresAuth: true, isAdmin: false, title: 'Detail Pasien'},
       },
       {
-        path: 'hipertensi/detail-pasien/:id',
+        path: 'hipertensi/patient/:id',
         name: "DetailPasienHT",
         component: DetailPasienHT,
         meta: { requiresAuth: true, isAdmin: false, title: 'Detail Pasien' },
@@ -115,22 +115,25 @@ const router = createRouter({
 
 // Middleware untuk route guards
 router.beforeEach((to, from, next) => {
-  const isAuthenticated = !!getAuthState().token; // Periksa apakah pengguna sudah login
-  const isAdmin = checkAdmin(); // Periksa apakah pengguna adalah admin
+  const isAuthenticated = !!getAuthState()?.token; // Periksa apakah pengguna sudah login
+  const isAdminUser = isAdmin(); // Periksa apakah pengguna adalah admin
 
+  // Jika halaman membutuhkan autentikasi tetapi pengguna belum login
   if (to.meta.requiresAuth && !isAuthenticated) {
-    // Jika halaman membutuhkan autentikasi tetapi pengguna belum login
-    next({ name: 'Login' }); // Redirect ke halaman login
-  } else if (to.meta.isAdmin !== undefined && to.meta.isAdmin !== isAdmin) {
-    // Jika role pengguna tidak sesuai dengan halaman yang diminta
-    if (isAdmin) {
-      next({ path: '/admin/dashboard' }); // Redirect ke halaman admin jika role admin
-    } else {
-      next({ path: '/user/dashboard' }); // Redirect ke halaman user jika role user
-    }
-  } else {
-    next(); // Lanjutkan ke halaman yang diminta
+    return next({ name: 'Login' });
   }
+
+  // Jika halaman membutuhkan role admin tetapi pengguna bukan admin
+  if (to.meta.isAdmin !== undefined && to.meta.isAdmin !== isAdminUser) {
+    if (isAdminUser) {
+      return next({ path: '/admin/dashboard' }); // Redirect ke admin dashboard
+    } else {
+      return next({ path: '/user/dashboard' }); // Redirect ke user dashboard
+    }
+  }
+
+  // Jika semua kondisi terpenuhi, lanjutkan ke halaman yang diminta
+  next();
 });
 
 export default router;

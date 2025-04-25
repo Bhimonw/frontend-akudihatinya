@@ -19,6 +19,7 @@
                   type="text"
                   id="name"
                   v-model="form.name"
+                  @input="clearError('name')"
                   class="form-input"
                   :class="{ 'input-error': errors.name }"
                 />
@@ -57,6 +58,7 @@
                 <select
                   id="gender"
                   v-model="form.gender"
+                  @input="clearError('gender')"
                   class="form-select"
                   :class="{ 'input-error': errors.gender }"
                 >
@@ -79,6 +81,7 @@
                     type="date"
                     id="dob"
                     v-model="form.dob"
+                    @change="calculateAge"
                     class="form-input"
                   />
                 </div>
@@ -91,8 +94,10 @@
                   type="number"
                   id="age"
                   v-model="form.age"
+                  @input="clearError('age')"
                   class="form-input"
                   :class="{ 'input-error': errors.age }"
+                  :disabled="isAgeDisabled"
                 />
                 <p v-if="errors.age" class="error-message">
                   Umur tidak boleh kosong
@@ -106,6 +111,7 @@
               <textarea
                 id="address"
                 v-model="form.address"
+                @input="clearError('address')"
                 class="form-textarea"
                 :class="{ 'input-error': errors.address }"
               ></textarea>
@@ -151,6 +157,7 @@ export default {
         age: false,
         address: false,
       },
+      isAgeDisabled: false,
     };
   },
   methods: {
@@ -184,6 +191,25 @@ export default {
       }
 
       return isValid;
+    },
+    calculateAge() {
+      if (this.form.dob) {
+        const today = new Date();
+        const birthDate = new Date(this.form.dob);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDifference = today.getMonth() - birthDate.getMonth();
+        if (
+          monthDifference < 0 ||
+          (monthDifference === 0 && today.getDate() < birthDate.getDate())
+        ) {
+          age--;
+        }
+        this.form.age = age;
+        this.isAgeDisabled = true;
+      } else {
+        this.form.age = "";
+        this.isAgeDisabled = false;
+      }
     },
     
     async submitForm() {
@@ -248,6 +274,10 @@ export default {
     closeModal() {
       this.$emit("close");
     },
+
+    clearError(fieldName) {
+      this.errors[fieldName] = false;
+    }
   },
 };
 </script>

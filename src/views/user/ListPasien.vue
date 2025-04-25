@@ -150,7 +150,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import apiClient from "../../api.js"; // Sesuaikan path dengan lokasi file konfigurasi Axios
 import Swal from "sweetalert2";
 import AddPatientModal from "../../components/modals/AddNewPatient.vue";
 
@@ -195,10 +195,7 @@ export default {
           console.error("Token tidak ditemukan");
           return;
         }
-        const response = await axios.get("http://localhost:8000/api/puskesmas/patients", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        const response = await apiClient.get("/puskesmas/patients", {
           params: {
             search: this.searchQuery || undefined,
             per_page: this.pageSize,
@@ -226,11 +223,21 @@ export default {
         this.totalPages = Array.isArray(meta.last_page) ? meta.last_page[0] : meta.last_page;
         this.links = meta.links;
       } catch (error) {
-        Swal.fire({
+        if (error.response?.status === 401) {
+          Swal.fire({
+          title: "Session Expired!",
+          text: "Your Session has Expired",
+          icon: "warning",
+        }).then(() => {
+          this.logout();
+        });
+        } else {
+          Swal.fire({
           title: "Error!",
           text: "Gagal memuat data pasien. Silakan coba lagi.",
           icon: "error",
         });
+        }
       } finally {
         this.isLoading = false;
       }
@@ -311,7 +318,7 @@ export default {
       this.fetchPatients();
     },
     viewPatientDetails(id) {
-      this.$router.push({ name: "DetailPasien", params: { id } });
+      this.$router.push({ name: "DetailPasienLP", params: { id } });
     },
   },
   watch: {

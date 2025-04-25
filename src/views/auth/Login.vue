@@ -89,15 +89,17 @@
           </button>
 
           <!-- General Error Message -->
-          <div v-if="errors.general" class="general-error">
+          <div v-if="errors.general || errors.details" class="general-error">
             <font-awesome-icon :icon="['fas', 'exclamation-circle']" class="error-icon" />
-            <span>{{ errors.general }}</span>
+            <div class="general-error-content">
+              <span>{{ errors.general }}</span> <!-- Pesan umum -->
+              <p v-if="errors.details" class="error-details">{{ errors.details }}</p> <!-- Pesan detail -->
+            </div>
           </div>
         </div>
       </div>
     </div>
-
-    <!-- Footer - Outside container -->
+    <!-- Footer -->
     <div class="copyright-footer">
       <p>Copyright © {{ currentYear }} Dinas Kesehatan. Hak Cipta Dilindungi</p>
     </div>
@@ -108,7 +110,7 @@
 import brandImage from '../../assets/ptm.jpg';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { login as authLogin, getAuthState } from '../../stores/auth.js';
+import { useAuthStore } from '../../stores/auth.js'; // Import the Pinia store
 import Swal from 'sweetalert2';
 
 export default {
@@ -119,6 +121,10 @@ export default {
   },
   setup() {
     const router = useRouter();
+    const authStore = useAuthStore(); // Initialize the Pinia store
+    console.log('Pinia State:', authStore);
+    console.log('Token in Pinia:', authStore.token);
+    console.log('Refresh Token in Pinia:', authStore.refreshToken);
     const credentials = ref({
       username: '',
       password: '',
@@ -132,6 +138,7 @@ export default {
       username: '',
       password: '',
       general: '',
+      details: '',
     });
     const currentYear = new Date().getFullYear();
 
@@ -140,6 +147,7 @@ export default {
         username: '',
         password: '',
         general: '',
+        details: '',
       };
     };
 
@@ -160,12 +168,15 @@ export default {
     const handleLogin = async () => {
       if (!validateForm()) return;
       isLoading.value = true;
-
+      resetErrors();
       try {
-        // Panggil fungsi login dari utils/auth.js
-        await authLogin(credentials.value.username, credentials.value.password);
+        // Call the login function via the authStore instance
+        await authStore.login(credentials.value.username, credentials.value.password);
 
-        // Tampilkan notifikasi login berhasil
+        // Set up interceptors after successful login
+        authStore.setupInterceptors();
+
+        // Show success notification
         Swal.fire({
           title: 'Berhasil!',
           text: 'Anda telah berhasil login.',
@@ -174,22 +185,26 @@ export default {
           showConfirmButton: false,
         });
 
-        // Redirect berdasarkan nilai isadmin
-        const { isadmin } = getAuthState();
-        if (isadmin) {
+        // Redirect based on user role
+        const { isAdmin } = authStore;
+        if (isAdmin) {
           router.push('/admin/dashboard'); // Admin dashboard
         } else {
           router.push('/user/dashboard'); // User dashboard
         }
       } catch (error) {
-        // Reset pesan error umum
-        errors.value.general = '';
-
-        // Tangkap respons error dari server
-        if (error.response && error.response.data && error.response.data.message) {
-          errors.value.general = error.response.data.message; // Gunakan pesan dari server
-        } else {
-          errors.value.general = 'Terjadi kesalahan saat login. Silakan coba lagi.'; // Pesan default
+        // Handle login errors
+        resetErrors();
+        try {
+          const errorData = JSON.parse(error.message);
+          if (errorData.message) {
+            errors.value.general = errorData.message; // General error message
+          }
+          if (errorData.errors) {
+            errors.value.details = errorData.errors; // Detailed error message
+          }
+        } catch (parseError) {
+          errors.value.general = 'Terjadi kesalahan saat login. Silakan coba lagi.';
         }
       } finally {
         isLoading.value = false;
@@ -451,6 +466,11 @@ export default {
   margin-bottom: 0;
   animation: fadeIn 0.3s;
 }
+.error-details {
+  color: #ff6b6b;
+  font-size: 12px;
+  margin-top: 4px;
+}
 .login-button {
   background-color: var(--primary-500);
   color: white;
@@ -508,37 +528,59 @@ export default {
 .button-loading {
   opacity: 0.8;
 }
+/* General Error Container */
 .general-error {
-  background-color: #fff5f5;
-  border: 1px solid #ffe3e3;
-  border-radius: 6px;
-  padding: 10px;
+  background: #fff5f5; /* Latar belakang merah muda pucat */
+  border: 1px solid #ffe3e3; /* Border merah muda */
+  border-radius: 8px; /* Sudut melengkung */
+  padding: 12px 16px; /* Padding untuk konten */
+  margin-top: 15px; /* Jarak dari elemen sebelumnya */
   display: flex;
-  align-items: center;
-  margin-top: 15px;
-  animation: fadeIn 0.3s;
-  gap: 8px;
+  align-items: flex-start;
+  gap: 10px; /* Jarak antara ikon dan teks */
+  animation: fadeIn 0.3s ease-in-out; /* Efek fade-in */
 }
+
+/* Ikon Error */
 .error-icon {
-  color: #ff6b6b;
-  font-size: 16px;
+  color: #e03131; /* Warna merah untuk ikon */
+  font-size: 20px; /* Ukuran ikon */
+  flex-shrink: 0;
 }
+
+/* Konten Error */
+.general-error-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px; /* Jarak antara teks umum dan detail */
+}
+
+/* Pesan Error Umum */
 .general-error span {
-  color: #e03131;
-  font-size: 14px;
+  color: #e03131; /* Warna merah untuk teks */
+  font-size: 14px; /* Ukuran teks */
+  font-weight: 500; /* Sedikit tebal */
+  margin: 0;
+}
+
+/* Pesan Error Detail */
+.error-details {
+  color: #ff6b6b; /* Warna merah muda untuk detail */
+  font-size: 12px; /* Ukuran teks lebih kecil */
+  margin: 0;
 }
 /* Copyright Footer - Outside container */
 .copyright-footer {
-  width: 100%;
-  max-width: 900px;
-  text-align: right;
+  width: 100%; /* Lebar footer mengikuti konten */
+  max-width: 900px; /* Sama dengan max-width login-card */
+  text-align: right; /* Teks footer rata kanan */
   padding: 5px 15px 10px;
   z-index: 1;
   position: relative;
   animation: fadeIn 1s ease;
   animation-delay: 0.5s;
   animation-fill-mode: backwards;
-  margin-top: -15px;
+  margin-top: -15px; /* Sesuaikan jarak dari card */
 }
 .copyright-footer p {
   font-family: "Inter", sans-serif;
@@ -568,6 +610,11 @@ export default {
   }
   .form-container {
     max-width: 100%;
+  }
+  .copyright-footer {
+    max-width: 100%;
+    text-align: center;
+    padding: 10px;
   }
 }
 @media (max-width: 576px) {

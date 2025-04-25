@@ -18,7 +18,7 @@
       <div class="mask-group">
         <div class="ellipse"></div>
         <img
-          src="../../src/assets/profile.png"
+          src="../../src/assets/profile.jpg"
           alt="Profile Icon"
           class="profile-icon"
         />
@@ -40,7 +40,7 @@
       <div class="dropdown-header">
         <div class="mask-group">
           <div class="ellipse"></div>
-          <img src="../../src/assets/profile.png" alt="Profile Icon" class="profile-icon" />
+          <img src="../../src/assets/profile.jpg" alt="Profile Icon" class="profile-icon" />
         </div>
         <div class="dropdown-user-info">
           <p class="dropdown-department">{{ userData.nama_puskesmas }}</p>
@@ -78,7 +78,7 @@
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
-import { logout as authLogout } from '../stores/auth'; // Impor fungsi logout
+import { useAuthStore } from '../stores/auth'; // Change this line
 import Swal from 'sweetalert2';
 
 export default {
@@ -90,6 +90,7 @@ export default {
   },
   setup() {
     const router = useRouter();
+    const authStore = useAuthStore(); // Add this line to get the store instance
     const isDropdownOpen = ref(false);
     const userData = ref({
       nama_puskesmas: 'Loading...',
@@ -104,8 +105,6 @@ export default {
           console.error('Token tidak ditemukan');
           return;
         }
-
-        // Ambil user ID dari localStorage (asumsi disimpan saat login)
 
         const response = await axios.get('http://localhost:8000/api/users/me', {
           headers: {
@@ -169,7 +168,7 @@ export default {
         );
 
         // Hapus sesi autentikasi
-        authLogout();
+        authStore.logout(); // Use the store's logout method
 
         //Tampilkan notifikasi sukses
         Swal.fire({
@@ -209,8 +208,7 @@ export default {
 };
 </script>
 
-
-  <style scoped>
+<style scoped>
 
   /* Navbar Container */
 .navbar {
@@ -276,8 +274,7 @@ export default {
 .ellipse {
   position: absolute;
   width: 44px;
-  height: 44px;
-  background: #eeeeff; /* Warna latar belakang lingkaran */
+  height: 44px; /* Warna latar belakang lingkaran */
   border-radius: 50%;
   transition: transform 0.3s ease; /* Animasi halus saat hover */
 }

@@ -20,7 +20,7 @@
 import Sidebar from '../components/Sidebar.vue';
 import SidebarAdmin from '../components/SidebarAdmin.vue';
 import Navbar from '../components/Navbar.vue';
-import { getAuthState } from '../stores/auth.js';
+import { useAuthStore } from '../stores/auth.js'; // Fix this import
 
 export default {
   components: {
@@ -38,8 +38,9 @@ export default {
       return this.$route.meta.title || 'Dashboard';
     },
     isUserAdmin() {
-      // Mengambil status admin dari auth store
-      return getAuthState().isadmin;
+      // Get the auth store instance and access its state
+      const authStore = useAuthStore();
+      return authStore.isAdmin; // Use the store's isAdmin property
     }
   },
   methods: {

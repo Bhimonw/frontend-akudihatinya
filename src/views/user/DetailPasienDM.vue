@@ -213,7 +213,7 @@ import EditPatientDetail from '../../components/modals/EditPatientDetail.vue';
 import EditExaminationModal from '../../components/modals/EditExaminationModal.vue';
 
 export default {
-  name: "DetailPasien",
+  name: "DetailPasienDM",
   components: {
     ModalTambahData,
     EditPatientDetail,
