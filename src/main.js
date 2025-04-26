@@ -3,7 +3,6 @@ import './style.css';
 import App from './App.vue';
 import router from './router/index.js';
 import { createPinia } from 'pinia';
-import { useAuthStore } from './stores/auth.js';
 
 import './assets/styles/global.css';
 
@@ -23,7 +22,3 @@ app.use(router);
 app.component('font-awesome-icon', FontAwesomeIcon);
 
 app.mount('#app');
-
-// Restore auth state on app load
-const authStore = useAuthStore();
-authStore.restoreAuth();

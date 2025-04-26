@@ -10,15 +10,11 @@ import { useAuthStore } from './stores/auth';
 
 export default {
   name: 'App',
-  created() {
-    const authStore = useAuthStore();
-    authStore.restoreAuth();
-  },
   setup() {
     const authStore = useAuthStore();
-    console.log('Current refreshToken:', authStore.refreshToken);
+
     onMounted(() => {
-      authStore.restoreAuth();
+      console.log('App mounted, authStore ready');
     });
   },
 };

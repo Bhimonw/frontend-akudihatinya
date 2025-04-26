@@ -3,17 +3,12 @@ import { useAuthStore } from "../src/stores/auth.js"; // Import store auth
 
 const apiClient = axios.create({
   baseURL: "http://localhost:8000/api",
+  withCredentials: true,
 });
 
 // Request Interceptor
 apiClient.interceptors.request.use(
   async (config) => {
-    const authStore = useAuthStore();
-    const token = authStore.token || localStorage.getItem("token");
-
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
     return config;
   },
   (error) => Promise.reject(error)

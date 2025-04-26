@@ -112,6 +112,7 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth.js'; // Import the Pinia store
 import Swal from 'sweetalert2';
+import { nextTick } from 'vue';
 
 export default {
   data() {
@@ -122,9 +123,6 @@ export default {
   setup() {
     const router = useRouter();
     const authStore = useAuthStore(); // Initialize the Pinia store
-    console.log('Pinia State:', authStore);
-    console.log('Token in Pinia:', authStore.token);
-    console.log('Refresh Token in Pinia:', authStore.refreshToken);
     const credentials = ref({
       username: '',
       password: '',
@@ -166,50 +164,54 @@ export default {
     };
 
     const handleLogin = async () => {
-      if (!validateForm()) return;
-      isLoading.value = true;
+    if (!validateForm()) return;
+    isLoading.value = true;
+    resetErrors();
+    
+    try {
+      await authStore.login(credentials.value.username, credentials.value.password);
+      
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userRole', authStore.user.role);
+
+      const userRole = localStorage.getItem('userRole');
+      const isAdmin = userRole === 'admin';
+
+      if (isAdmin) {
+          console.log('Redirecting to /admin/dashboard');
+          router.push({ path: '/admin/dashboard', replace: true });
+        } else {
+          console.log('Redirecting to /user/dashboard');
+          router.push({ path: '/user/dashboard', replace: true });
+        }
+
+      // Show success notification
+      Swal.fire({
+        title: 'Berhasil!',
+        text: 'Anda telah berhasil login.',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      // Handle login errors
       resetErrors();
       try {
-        // Call the login function via the authStore instance
-        await authStore.login(credentials.value.username, credentials.value.password);
-
-        // Set up interceptors after successful login
-        authStore.setupInterceptors();
-
-        // Show success notification
-        Swal.fire({
-          title: 'Berhasil!',
-          text: 'Anda telah berhasil login.',
-          icon: 'success',
-          timer: 2000,
-          showConfirmButton: false,
-        });
-
-        // Redirect based on user role
-        const { isAdmin } = authStore;
-        if (isAdmin) {
-          router.push('/admin/dashboard'); // Admin dashboard
-        } else {
-          router.push('/user/dashboard'); // User dashboard
+        const errorData = JSON.parse(error.message);
+        if (errorData.message) {
+          errors.value.general = errorData.message;
         }
-      } catch (error) {
-        // Handle login errors
-        resetErrors();
-        try {
-          const errorData = JSON.parse(error.message);
-          if (errorData.message) {
-            errors.value.general = errorData.message; // General error message
-          }
-          if (errorData.errors) {
-            errors.value.details = errorData.errors; // Detailed error message
-          }
-        } catch (parseError) {
-          errors.value.general = 'Terjadi kesalahan saat login. Silakan coba lagi.';
+        if (errorData.errors) {
+          errors.value.details = errorData.errors;
         }
-      } finally {
-        isLoading.value = false;
+      } catch (parseError) {
+        errors.value.general = 'Terjadi kesalahan saat login. Silakan coba lagi.';
       }
-    };
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
 
     return {
       credentials,

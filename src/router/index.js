@@ -19,7 +19,7 @@ import TambahDataPeserta from '../views/user/TambahDataPeserta.vue';
 import DetailPasienDM from '../views/user/DetailPasienDM.vue';
 import DetailPasienHT from '../views/user/DetailPasienHT.vue';
 
-import { getAuthState, isAdmin } from '../stores/auth';
+import { useAuthStore} from '../stores/auth';
 
 const routes = [
   // Admin Routes
@@ -114,23 +114,34 @@ const router = createRouter({
 });
 
 // Middleware untuk route guards
-router.beforeEach((to, from, next) => {
-  const isAuthenticated = !!getAuthState()?.token; // Periksa apakah pengguna sudah login
-  const isAdminUser = isAdmin(); // Periksa apakah pengguna adalah admin
+router.beforeEach(async(to, from, next) => {
+  const authStore = useAuthStore();
 
+  const isAuthenticated = localStorage.getItem('isLoggedIn') === 'true';
+  const isAdminUser = localStorage.getItem('userRole') === 'admin';
+
+  console.log('Route navigation:');
+  console.log('to.path:', to.path);
+  console.log('isAuthenticated:', isAuthenticated);
+  console.log('isAdminUser:', isAdminUser);
+  
   // Jika halaman membutuhkan autentikasi tetapi pengguna belum login
   if (to.meta.requiresAuth && !isAuthenticated) {
     return next({ name: 'Login' });
   }
 
-  // Jika halaman membutuhkan role admin tetapi pengguna bukan admin
-  if (to.meta.isAdmin !== undefined && to.meta.isAdmin !== isAdminUser) {
-    if (isAdminUser) {
-      return next({ path: '/admin/dashboard' }); // Redirect ke admin dashboard
-    } else {
-      return next({ path: '/user/dashboard' }); // Redirect ke user dashboard
-    }
+  if (to.meta.isAdmin === true && !isAdminUser && isAuthenticated) {
+    return next({ path: '/user/dashboard' });
   }
+
+  if (to.meta.isAdmin === false && isAdminUser &&isAuthenticated) {
+    return next({ path: '/admin/dashboard' });
+  }
+
+    // Jika halaman login tetapi pengguna sudah login
+    if (to.meta.requiresGuest && isAuthenticated) {
+      return next(isAdminUser ? '/admin/dashboard' : '/user/dashboard');
+    }
 
   // Jika semua kondisi terpenuhi, lanjutkan ke halaman yang diminta
   next();
