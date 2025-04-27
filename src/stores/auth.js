@@ -10,9 +10,6 @@ export const useAuthStore = defineStore('auth', {
   }),
 
   actions: {
-    /**
-     * Fungsi untuk login
-     */
     async login(username, password) {
       try {
         const response = await fetch('http://localhost:8000/api/login', {
@@ -40,9 +37,6 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    /**
-     * Fungsi untuk logout
-     */
     logout() {
       this.$reset(); // Reset state ke nilai awal
 
@@ -63,7 +57,6 @@ export const useAuthStore = defineStore('auth', {
      * Fungsi untuk menyimpan user setelah login atau restore
      */
     setUser(data) {
-      console.log('Raw API response:', data);
 
       if (!data || !data.user) {
         console.error('Invalid user data', data);
@@ -96,8 +89,7 @@ export const useAuthStore = defineStore('auth', {
         const result = await response.json();
         console.log("Refresh token response:", result)
 
-        // Token baru sudah disimpan di cookie oleh backend
-        // Kita hanya perlu update user info jika ada
+       // Update user info if available
         if (result.user) {
           this.setUser(result);
         }
@@ -109,6 +101,23 @@ export const useAuthStore = defineStore('auth', {
         throw error;
       }
     },
+
+    async fetchUserData() {
+      try {
+        const response = await axios.get('users/me');
+        if (response.data && response.data.user) {
+          this.setUser({
+            user: response.data.user
+          });
+          return response.data;
+        }
+        return null;
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        return null;
+      }
+    },
+    
     checkAuth() {
       const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
       const userRole = localStorage.getItem('userRole');

@@ -2,6 +2,9 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import DefaultLayout from '../layouts/DefaultLayout.vue';
 
+//Home Page
+import Home from '../views/Home.vue'
+
 //Auth
 import Login from '../views/auth/Login.vue'
 
@@ -22,7 +25,15 @@ import DetailPasienHT from '../views/user/DetailPasienHT.vue';
 import { useAuthStore} from '../stores/auth';
 
 const routes = [
-  // Admin Routes
+  // Homepage Route
+  {
+    path: '/',
+    name: 'Home',
+    component: Home,
+    meta: { requiresGuest: false }
+  },
+
+  // Auth Routes
   {
     path: '/auth',
     children: [
@@ -34,6 +45,8 @@ const routes = [
       },
     ],
   },
+
+  //Admin Routes
   {
     path: '/admin',
     component: DefaultLayout,
@@ -105,7 +118,7 @@ const routes = [
 
   // Default Route (Redirect to User Dashboard)
   // { path: '/', redirect: '/user/dashboard' },
-  { path: '/', redirect: '/auth/login' },
+  // { path: '/', redirect: '/auth/login' },
 ];
 
 const router = createRouter({
@@ -127,7 +140,7 @@ router.beforeEach(async(to, from, next) => {
   
   // Jika halaman membutuhkan autentikasi tetapi pengguna belum login
   if (to.meta.requiresAuth && !isAuthenticated) {
-    return next({ name: 'Login' });
+    return next({ name: '/' });
   }
 
   if (to.meta.isAdmin === true && !isAdminUser && isAuthenticated) {

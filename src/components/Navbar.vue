@@ -27,7 +27,7 @@
       <!-- User Information -->
       <div class="user-info">
         <div class="department-container">
-          <p class="department">{{ userData.nama_puskesmas }}</p>
+          <p class="department">{{ userData.name || 'User' }}</p>
           <div class="dropdown-indicator" @click.stop="toggleDropdown">
             <font-awesome-icon :icon="['fas', 'chevron-down']" class="dropdown-icon" />
           </div>
@@ -43,8 +43,9 @@
           <img src="../../src/assets/profile.jpg" alt="Profile Icon" class="profile-icon" />
         </div>
         <div class="dropdown-user-info">
-          <p class="dropdown-department">{{ userData.nama_puskesmas }}</p>
-          <p class="dropdown-role">{{ userData.role }}</p>
+          <p class="dropdown-department">{{ userData.name || 'User' }}</p>
+          <p class="dropdown-role">{{ userData.role || 'User' }}</p>
+          <p v-if="userData.puskesmas" class="dropdown-role">{{ userData.puskesmas.nama_puskesmas }}</p>
         </div>
       </div>
       <hr class="dropdown-divider" />
@@ -76,7 +77,6 @@
 
 <script>
 import { ref, onMounted } from 'vue';
-import axios from 'axios';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth'; // Change this line
 import Swal from 'sweetalert2';
@@ -88,37 +88,26 @@ export default {
       required: true,
     },
   },
+  emits: ['toggle-sidebar'],
   setup() {
     const router = useRouter();
     const authStore = useAuthStore(); // Add this line to get the store instance
     const isDropdownOpen = ref(false);
     const userData = ref({
-      nama_puskesmas: 'Loading...',
+      name: 'Loading...',
       role: 'Loading...',
+      puskesmas: null
     });
 
     // Function to fetch user data from API
     const fetchUserData = async () => {
       try {
-        const token = localStorage.getItem('token'); // Ambil token dari localStorage
-        if (!token) {
-          console.error('Token tidak ditemukan');
-          return;
+        const response = await authStore.fetchUserData();
+        if (response && response.user) {
+          userData.value = response.user;
         }
-
-        const response = await axios.get('http://localhost:8000/api/users/me', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        const user = response.data.user;
-        userData.value = {
-          nama_puskesmas: user.name || 'Unknown User', // Menggunakan nama_puskesmas
-          role: user.role || 'Unknown Role',
-        };
       } catch (error) {
-        console.error('Gagal mengambil data user:', error);
+        console.error('Failed to fetch user data:', error);
       }
     };
 
@@ -150,27 +139,9 @@ export default {
         return;
       }
       try {
-        const token = localStorage.getItem('token'); // Ambil token dari localStorage
-        if (!token) {
-          console.error('Token tidak ditemukan');
-          return;
-        }
-
-        // Panggil API logout
-        await axios.post(
-          'http://localhost:8000/api/logout',
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        // Hapus sesi autentikasi
-        authStore.logout(); // Use the store's logout method
-
-        //Tampilkan notifikasi sukses
+        // Use the auth store to handle logout
+        authStore.logout();
+        // Show success notification
         Swal.fire({
           title: 'Berhasil',
           text: 'Anda telah berhasil logout.',
@@ -178,13 +149,10 @@ export default {
           timer: 2000,
           showConfirmButton: false,
         });
-
-        // Redirect ke halaman login
-        router.push({ name: 'Login' });
       } catch (error) {
-        console.error('Gagal logout:', error);
-
-        // Tampilkan notifikasi gagal
+        console.error('Failed to logout:', error);
+        
+        // Show failure notification
         Swal.fire({
           title: 'Gagal!',
           text: 'Terjadi kesalahan saat logout. Silakan coba lagi.',

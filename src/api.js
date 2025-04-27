@@ -22,8 +22,8 @@ const subscribeTokenRefresh = (callback) => {
   refreshSubscribers.push(callback);
 };
 
-const onTokenRefreshed = (newToken) => {
-  refreshSubscribers.forEach((callback) => callback(newToken));
+const onTokenRefreshed = () => {
+  refreshSubscribers.forEach((callback) => callback());
   refreshSubscribers = [];
 };
 
@@ -32,26 +32,27 @@ apiClient.interceptors.response.use(
   async (error) => {
     const authStore = useAuthStore();
     console.log("Interceptor detected error:", error); // Debugging
+
     if (error.response?.status === 401 && !error.config._retry) {
       console.log("401 detected, attempting to refresh token..."); // Debugging
       error.config._retry = true;
+
       if (!isRefreshing) {
         isRefreshing = true;
         try {
           await authStore.refreshToken();
           isRefreshing = false;
-          onTokenRefreshed(authStore.token);
-          error.config.headers.Authorization = `Bearer ${authStore.token}`;
+          onTokenRefreshed();
+
           return apiClient(error.config); // Retry request with new token
         } catch (refreshError) {
           isRefreshing = false;
-          //authStore.logout(); // Logout jika refresh token gagal
+          authStore.logout(); // Logout jika refresh token gagal
           return Promise.reject(refreshError);
         }
       } else {
-        return new Promise((resolve, reject) => {
-          subscribeTokenRefresh((newToken) => {
-            error.config.headers.Authorization = `Bearer ${newToken}`;
+        return new Promise((resolve) => {
+          subscribeTokenRefresh(() => {
             resolve(apiClient(error.config));
           });
         });
