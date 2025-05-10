@@ -1,146 +1,159 @@
 import { defineStore } from 'pinia';
-import axios from '../api'; // Import Axios instance
+import apiClient from '../api';
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    user: null,
-    isAdmin: false,
-    isRefreshing: false, // Flag untuk menghindari race condition
-    refreshSubscribers: [], // Queue untuk permintaan yang menunggu refresh token
+    user: JSON.parse(localStorage.getItem('user')) || null,
+    isAdmin: localStorage.getItem('isAdmin') === 'true',
+    isAuthenticated: localStorage.getItem('isLoggedIn') === 'true',
+    isCheckingAuth: false, // Flag untuk tracking status pengecekan auth
+    csrfTokenFetched: false, // Flag untuk tracking pengambilan CSRF token
   }),
 
   actions: {
     async login(username, password) {
       try {
-        const response = await fetch('http://localhost:8000/api/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password }),
-          credentials: 'include',
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(JSON.stringify(errorData));
+        // Dapatkan CSRF cookie terlebih dahulu (jika belum)
+        if (!this.csrfTokenFetched) {
+          await this.fetchCsrfToken();
         }
 
-        const result = await response.json();
-        console.log('API Response:', result);
+        // Kirim request login
+        const response = await apiClient.post('/api/login', {
+          username,
+          password
+        });
 
-        this.setUser(result);
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('userRole', this.user.role);
+        // Simpan data user
+        this.setUser(response.data.user);
+        
+        // Tandai bahwa user sudah terotentikasi
+        this.isAuthenticated = true;
 
-        return result;
+        return response.data;
       } catch (error) {
-        throw error;
+        throw error?.response?.data || error;
       }
     },
 
-    logout() {
-      this.$reset(); // Reset state ke nilai awal
-
-      // Hapus status login dari localStorage
-      localStorage.removeItem('isLoggedIn');
-      localStorage.removeItem('userRole');
-
-       // Hapus cookie dengan request ke backend
-       fetch('http://localhost:8000/api/logout', {
-        method: 'POST',
-        credentials: 'include',
-      }).finally(() => {
+    async logout() {
+      try {
+        await apiClient.post('/api/logout');
+      } finally {
+        this.clearAuth();
         window.location.href = '/auth/login';
-      });
+      }
     },
 
-    /**
-     * Fungsi untuk menyimpan user setelah login atau restore
-     */
-    setUser(data) {
-
-      if (!data || !data.user) {
-        console.error('Invalid user data', data);
+    setUser(userData) {
+      if (!userData) {
+        console.error('Invalid user data');
         return;
       }
 
-      // Update state
-      this.user = data.user;
-      this.isAdmin = data.user.role === 'admin';
-
-      console.log('State after update - refreshToken:', this.user, this.isAdmin);
+      this.user = userData;
+      this.isAdmin = userData.role === 'admin';
+      this.isAuthenticated = true;
+      
+      // Simpan data ke localStorage
+      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('isAdmin', this.isAdmin.toString());
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userRole', userData.role);
     },
 
-    /**
-     * Fungsi untuk refresh token
-     */
-    async refreshToken() {
-      try {
-        const response = await fetch('http://localhost:8000/api/refresh', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-        });
-        if (!response.ok) {
-          throw new Error('Gagal memperbarui token');
-        }
-
-        const result = await response.json();
-        console.log("Refresh token response:", result)
-
-       // Update user info if available
-        if (result.user) {
-          this.setUser(result);
-        }
-        return true;
-
-      } catch (error) {
-        console.error('Error refreshing token:', error);
-        this.logout(); // Logout jika refresh gagal
-        throw error;
-      }
+    clearAuth() {
+      // Hapus data dari localStorage
+      localStorage.removeItem('user');
+      localStorage.removeItem('isAdmin');
+      localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem('userRole');
+      
+      // Reset state
+      this.user = null;
+      this.isAdmin = false;
+      this.isAuthenticated = false;
+      this.csrfTokenFetched = false;
     },
 
     async fetchUserData() {
       try {
-        const response = await axios.get('users/me');
+        // Dapatkan CSRF cookie terlebih dahulu (jika belum)
+        if (!this.csrfTokenFetched) {
+          await this.fetchCsrfToken();
+        }
+        
+        const response = await apiClient.get('/api/users/me');
+        
         if (response.data && response.data.user) {
-          this.setUser({
-            user: response.data.user
-          });
+          this.setUser(response.data.user);
           return response.data;
         }
         return null;
       } catch (error) {
         console.error('Error fetching user data:', error);
+        
+        // Jika error 401, hapus data auth
+        if (error.response && error.response.status === 401) {
+          this.clearAuth();
+        }
+        
         return null;
       }
     },
+
+    async checkAuth() {
+      // Mencegah pemeriksaan bersamaan
+      if (this.isCheckingAuth) {
+        return this.isAuthenticated;
+      }
+      
+      this.isCheckingAuth = true;
+      
+      try {
+        // Jika sudah terotentikasi di state, periksa di server
+        if (this.isAuthenticated) {
+          // Dapatkan CSRF cookie terlebih dahulu (jika belum)
+          if (!this.csrfTokenFetched) {
+            await this.fetchCsrfToken();
+          }
+          
+          // Verifikasi di server
+          const response = await apiClient.get('/api/auth/check');
+          
+          // Jika tidak terotentikasi di server, hapus data lokal
+          if (!response.data.authenticated) {
+            this.clearAuth();
+            this.isCheckingAuth = false;
+            return false;
+          }
+          
+          // Jika server mengembalikan user data (opsional)
+          if (response.data.user) {
+            this.setUser(response.data.user);
+          }
+          
+          this.isCheckingAuth = false;
+          return true;
+        }
+        
+        // Jika belum terotentikasi di state, coba dapatkan data user
+        const userData = await this.fetchUserData();
+        this.isCheckingAuth = false;
+        return !!userData;
+      } catch (error) {
+        console.error('Error checking auth status:', error);
+        this.clearAuth();
+        this.isCheckingAuth = false;
+        return false;
+      }
+    },
     
-    checkAuth() {
-      const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-      const userRole = localStorage.getItem('userRole');
+    async fetchCsrfToken() {
+      if (this.csrfTokenFetched) return;
       
-      this.isAdmin = userRole === 'admin';
-      
-      return isLoggedIn;
-    }
+      await apiClient.get('/sanctum/csrf-cookie');
+      this.csrfTokenFetched = true;
+    },
   },
 });
-
-/**
- * Helper functions untuk mendapatkan state auth
- */
-export const getAuthState = () => {
-  const authStore = useAuthStore();
-  return {
-    token: document.cookie.includes('access_token'), // Cek keberadaan cookie saja
-    isAdmin: authStore.isAdmin,
-  };
-};
-
-export const isAdmin = () => {
-  const authStore = useAuthStore();
-  return authStore.isAdmin;
-};

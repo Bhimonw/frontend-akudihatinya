@@ -108,9 +108,9 @@
 
 <script>
 import brandImage from '../../assets/ptm.jpg';
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { useAuthStore } from '../../stores/auth.js'; // Import the Pinia store
+import { useAuthStore } from '../../stores/auth.js';
 import Swal from 'sweetalert2';
 import { nextTick } from 'vue';
 
@@ -122,7 +122,7 @@ export default {
   },
   setup() {
     const router = useRouter();
-    const authStore = useAuthStore(); // Initialize the Pinia store
+    const authStore = useAuthStore();
     const credentials = ref({
       username: '',
       password: '',
@@ -139,6 +139,38 @@ export default {
       details: '',
     });
     const currentYear = new Date().getFullYear();
+    const authCheckInProgress = ref(false);
+
+    // Cek jika user sudah login saat komponen ini dimuat
+    onMounted(async () => {
+      // Guard untuk mencegah panggilan duplikat
+      if (authCheckInProgress.value) return;
+      authCheckInProgress.value = true;
+
+      try {
+        // Cek jika user sudah login (berdasarkan localStorage)
+        if (localStorage.getItem('isLoggedIn') === 'true') {
+          // Verifikasi session dengan server (hanya sekali)
+          const isAuthenticated = await authStore.checkAuth();
+          
+          if (isAuthenticated) {
+            // Redirect ke dashboard sesuai peran
+            const userRole = authStore.user?.role || localStorage.getItem('userRole');
+            router.replace(userRole === 'admin' ? '/admin/dashboard' : '/user/dashboard');
+          } else {
+            // Jika session tidak valid, hapus data auth
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('user');
+            localStorage.removeItem('isAdmin');
+          }
+        }
+      } catch (error) {
+        console.error('Error checking authentication status:', error);
+      } finally {
+        authCheckInProgress.value = false;
+      }
+    });
 
     const resetErrors = () => {
       errors.value = {
@@ -164,54 +196,74 @@ export default {
     };
 
     const handleLogin = async () => {
-    if (!validateForm()) return;
-    isLoading.value = true;
-    resetErrors();
-    
-    try {
-      await authStore.login(credentials.value.username, credentials.value.password);
-      
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('userRole', authStore.user.role);
-
-      const userRole = localStorage.getItem('userRole');
-      const isAdmin = userRole === 'admin';
-
-      if (isAdmin) {
-          console.log('Redirecting to /admin/dashboard');
-          router.push({ path: '/admin/dashboard', replace: true });
-        } else {
-          console.log('Redirecting to /user/dashboard');
-          router.push({ path: '/user/dashboard', replace: true });
-        }
-
-      // Show success notification
-      Swal.fire({
-        title: 'Berhasil!',
-        text: 'Anda telah berhasil login.',
-        icon: 'success',
-        timer: 2000,
-        showConfirmButton: false,
-      });
-    } catch (error) {
-      // Handle login errors
+      if (!validateForm() || isLoading.value) return;
+      isLoading.value = true;
       resetErrors();
+      
       try {
-        const errorData = JSON.parse(error.message);
-        if (errorData.message) {
-          errors.value.general = errorData.message;
+        // Lakukan login (fetchCsrfToken sudah dihandle dalam login method)
+        const response = await authStore.login(credentials.value.username, credentials.value.password);
+        
+        // Cek status admin dari store
+        const isAdmin = authStore.isAdmin;
+        
+        // Redirect ke dashboard berdasarkan peran
+        await nextTick();
+        
+        // Show success notification
+        Swal.fire({
+          title: 'Berhasil!',
+          text: 'Anda telah berhasil login.',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false,
+          didClose: () => {
+            // Lakukan redirect setelah notifikasi hilang
+            if (isAdmin) {
+              console.log('Redirecting to /admin/dashboard');
+              router.replace('/admin/dashboard');
+            } else {
+              console.log('Redirecting to /user/dashboard');
+              router.replace('/user/dashboard');
+            }
+          }
+        });
+      } catch (error) {
+        console.error('Login error:', error);
+        
+        // Handle login errors
+        resetErrors();
+        
+        // Coba parse error message jika berbentuk JSON string
+        if (typeof error === 'string' || error?.message) {
+          try {
+            const errorMessage = error.message || error;
+            const errorData = typeof errorMessage === 'string' && errorMessage.startsWith('{') 
+              ? JSON.parse(errorMessage) 
+              : { message: errorMessage };
+              
+            if (errorData.message) {
+              errors.value.general = errorData.message;
+            }
+            
+            if (errorData.errors) {
+              // Handle errors object or string
+              errors.value.details = typeof errorData.errors === 'string' 
+                ? errorData.errors 
+                : Object.values(errorData.errors).join(', ');
+            }
+          } catch (parseError) {
+            // Jika parsing gagal, gunakan error message langsung
+            errors.value.general = error.message || 'Terjadi kesalahan saat login. Silakan coba lagi.';
+          }
+        } else {
+          // Fallback error message
+          errors.value.general = 'Terjadi kesalahan saat login. Silakan coba lagi.';
         }
-        if (errorData.errors) {
-          errors.value.details = errorData.errors;
-        }
-      } catch (parseError) {
-        errors.value.general = 'Terjadi kesalahan saat login. Silakan coba lagi.';
+      } finally {
+        isLoading.value = false;
       }
-    } finally {
-      isLoading.value = false;
-    }
-  };
-
+    };
 
     return {
       credentials,

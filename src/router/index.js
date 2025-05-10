@@ -127,34 +127,60 @@ const router = createRouter({
 });
 
 // Middleware untuk route guards
-router.beforeEach(async(to, from, next) => {
+// Middleware untuk route guards
+router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
+  
+  // Jika rute sebelumnya dan tujuan sama, hindari pemeriksaan duplikat
+  if (from.path === to.path) {
+    return next();
+  }
 
+  // Cek localStorage terlebih dahulu
   const isAuthenticated = localStorage.getItem('isLoggedIn') === 'true';
   const isAdminUser = localStorage.getItem('userRole') === 'admin';
 
   console.log('Route navigation:');
   console.log('to.path:', to.path);
-  console.log('isAuthenticated:', isAuthenticated);
-  console.log('isAdminUser:', isAdminUser);
+  console.log('isAuthenticated (local):', isAuthenticated);
   
-  // Jika halaman membutuhkan autentikasi tetapi pengguna belum login
-  if (to.meta.requiresAuth && !isAuthenticated) {
-    return next({ name: '/' });
+  // Untuk halaman login atau public, tidak perlu verifikasi server
+  if (to.path === '/auth/login' || to.path === '/') {
+    if (isAuthenticated) {
+      return next(isAdminUser ? '/admin/dashboard' : '/user/dashboard');
+    }
+    return next();
+  }
+  
+  // Untuk halaman yang memerlukan auth, verifikasi dengan server jika sudah login di localStorage
+  if (to.meta.requiresAuth) {
+    if (!isAuthenticated) {
+      return next('/auth/login');
+    }
+    
+    // Verifikasi di server hanya jika belum pernah diverifikasi (gunakan state checking dari store)
+    if (!authStore.isCheckingAuth && !authStore.user) {
+      try {
+        const isStillAuthenticated = await authStore.checkAuth();
+        
+        if (!isStillAuthenticated) {
+          return next('/auth/login');
+        }
+      } catch (error) {
+        console.error('Auth verification failed:', error);
+        return next('/auth/login');
+      }
+    }
   }
 
+  // Cek role sesuai rute
   if (to.meta.isAdmin === true && !isAdminUser && isAuthenticated) {
     return next({ path: '/user/dashboard' });
   }
 
-  if (to.meta.isAdmin === false && isAdminUser &&isAuthenticated) {
+  if (to.meta.isAdmin === false && isAdminUser && isAuthenticated) {
     return next({ path: '/admin/dashboard' });
   }
-
-    // Jika halaman login tetapi pengguna sudah login
-    if (to.meta.requiresGuest && isAuthenticated) {
-      return next(isAdminUser ? '/admin/dashboard' : '/user/dashboard');
-    }
 
   // Jika semua kondisi terpenuhi, lanjutkan ke halaman yang diminta
   next();
