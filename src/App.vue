@@ -1,34 +1,48 @@
 <template>
   <div id="app">
+    <loading-overlay :show="isLoading" message="Memverifikasi autentikasi..." />
     <router-view />
   </div>
 </template>
 
 <script>
-import { useAuthStore } from './stores/auth';
 
 export default {
   name: 'App',
-  setup() {
-    const authStore = useAuthStore();
+  data() {
+    return {
+      isLoading: false
+    }
+  },
+  created() {
+    console.log('App created - checking auth state...');
     
-    // Verifikasi autentikasi saat aplikasi dimulai
-    const verifyAuth = async () => {
-      if (localStorage.getItem('isLoggedIn') === 'true') {
-        try {
-          await authStore.fetchCsrfToken();
-          await authStore.checkAuth();
-        } catch (error) {
-          console.error('Failed to verify authentication:', error);
-          authStore.clearAuth();
-        }
-      }
+    // Check authentication status
+    const token = localStorage.getItem('token');
+    if (token) {
+      console.log('User is authenticated');
+    } else {
+      console.log('User is not authenticated');
+    }
+    
+    // Set loading state based on global state
+    this.isLoading = window.isAuthLoading;
+  },
+  mounted() {
+    // Update loading state when global state changes
+    const checkLoadingState = () => {
+      this.isLoading = window.isAuthLoading;
     };
     
-    // Panggil verifikasi saat komponen dibuat
-    verifyAuth();
+    // Check regularly until loading is complete
+    const interval = setInterval(() => {
+      checkLoadingState();
+      if (!window.isAuthLoading) {
+        clearInterval(interval);
+      }
+    }, 100);
   }
-}
+};
 </script>
 <style>
 /* Global styles */

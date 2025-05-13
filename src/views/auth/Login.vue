@@ -110,19 +110,19 @@
 import brandImage from '../../assets/ptm.jpg';
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { useAuthStore } from '../../stores/auth.js';
+import { authService } from '../../stores/auth.js'; // Import auth service
 import Swal from 'sweetalert2';
 import { nextTick } from 'vue';
 
 export default {
+  name: 'Login',
   data() {
     return {
       brandImage,
     };
   },
   setup() {
-    const router = useRouter();
-    const authStore = useAuthStore();
+    const router = useRouter();  
     const credentials = ref({
       username: '',
       password: '',
@@ -201,15 +201,9 @@ export default {
       resetErrors();
       
       try {
-        // Lakukan login (fetchCsrfToken sudah dihandle dalam login method)
-        const response = await authStore.login(credentials.value.username, credentials.value.password);
-        
-        // Cek status admin dari store
-        const isAdmin = authStore.isAdmin;
-        
-        // Redirect ke dashboard berdasarkan peran
-        await nextTick();
-        
+        // Call the login method from auth service
+        await authService.login(credentials.value.username, credentials.value.password);
+
         // Show success notification
         Swal.fire({
           title: 'Berhasil!',
@@ -228,36 +222,30 @@ export default {
             }
           }
         });
+
+        // Redirect based on user role
+        const isAdmin = authService.isAdmin();
+        if (isAdmin) {
+          router.push('/admin/dashboard'); // Admin dashboard
+        } else {
+          router.push('/user/dashboard'); // User dashboard
+        }
+
       } catch (error) {
         console.error('Login error:', error);
         
         // Handle login errors
         resetErrors();
-        
-        // Coba parse error message jika berbentuk JSON string
-        if (typeof error === 'string' || error?.message) {
-          try {
-            const errorMessage = error.message || error;
-            const errorData = typeof errorMessage === 'string' && errorMessage.startsWith('{') 
-              ? JSON.parse(errorMessage) 
-              : { message: errorMessage };
-              
-            if (errorData.message) {
-              errors.value.general = errorData.message;
-            }
-            
-            if (errorData.errors) {
-              // Handle errors object or string
-              errors.value.details = typeof errorData.errors === 'string' 
-                ? errorData.errors 
-                : Object.values(errorData.errors).join(', ');
-            }
-          } catch (parseError) {
-            // Jika parsing gagal, gunakan error message langsung
-            errors.value.general = error.message || 'Terjadi kesalahan saat login. Silakan coba lagi.';
+
+        try {
+          const errorData = JSON.parse(error.message);
+          if (errorData.message) {
+            errors.value.general = errorData.message;
           }
-        } else {
-          // Fallback error message
+          if (errorData.errors) {
+            errors.value.details = errorData.errors;
+          }
+        } catch (parseError) {
           errors.value.general = 'Terjadi kesalahan saat login. Silakan coba lagi.';
         }
       } finally {

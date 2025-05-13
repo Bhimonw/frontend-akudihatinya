@@ -49,7 +49,7 @@
         </div>
       </div>
       <hr class="dropdown-divider" />
-      <div class="dropdown-item">
+      <div class="dropdown-item" @click="$router.push({ name: 'ProfilePage' })">
         <div class="dropdown-icon">
           <font-awesome-icon :icon="['fas', 'user']" />
         </div>
@@ -78,7 +78,7 @@
 <script>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { useAuthStore } from '../stores/auth'; // Change this line
+import { authService } from '../stores/auth'; // Import auth service
 import Swal from 'sweetalert2';
 
 export default {
@@ -91,7 +91,6 @@ export default {
   emits: ['toggle-sidebar'],
   setup() {
     const router = useRouter();
-    const authStore = useAuthStore(); // Add this line to get the store instance
     const isDropdownOpen = ref(false);
     const userData = ref({
       name: 'Loading...',
@@ -102,10 +101,23 @@ export default {
     // Function to fetch user data from API
     const fetchUserData = async () => {
       try {
-        const response = await authStore.fetchUserData();
-        if (response && response.user) {
-          userData.value = response.user;
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.error('Token tidak ditemukan');
+          return;
         }
+
+        const response = await axios.get('http://localhost:8000/api/users/me', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const user = response.data.user;
+        userData.value = {
+          nama_puskesmas: user.name || 'Unknown User',
+          role: user.role || 'Unknown Role',
+        };
       } catch (error) {
         console.error('Failed to fetch user data:', error);
       }
@@ -138,10 +150,29 @@ export default {
       if (!confirmation.isConfirmed) {
         return;
       }
+      
       try {
-        // Use the auth store to handle logout
-        authStore.logout();
-        // Show success notification
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.error('Token tidak ditemukan');
+          authService.logout(); // Logout anyway to clear localStorage
+          return;
+        }
+
+        // Panggil API logout
+        await axios.post(
+          'http://localhost:8000/api/logout',
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        // Tampilkan notifikasi sukses
+        
         Swal.fire({
           title: 'Berhasil',
           text: 'Anda telah berhasil logout.',
@@ -149,20 +180,28 @@ export default {
           timer: 2000,
           showConfirmButton: false,
         });
+
+        // Use auth service to logout
+        authService.logout();
       } catch (error) {
-        console.error('Failed to logout:', error);
-        
-        // Show failure notification
+        console.error('Gagal logout:', error);
+
+        // Tampilkan notifikasi gagal tapi tetap logout
         Swal.fire({
-          title: 'Gagal!',
-          text: 'Terjadi kesalahan saat logout. Silakan coba lagi.',
-          icon: 'error',
+          title: 'Berhasil Logout',
+          text: 'Anda telah keluar dari aplikasi.',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false,
         });
+
+        // Force logout even if API fails
+        authService.logout();
       }
     };
 
     onMounted(() => {
-      fetchUserData(); // Fetch user data saat komponen dimuat
+      fetchUserData();
       window.addEventListener('click', closeDropdown);
     });
 
