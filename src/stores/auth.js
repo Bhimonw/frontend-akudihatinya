@@ -1,3 +1,4 @@
+
 // src/stores/auth.js
 import axios from 'axios';
 
@@ -144,7 +145,7 @@ class AuthService {
       throw error;
     }
   }
-
+  
   // Setup Axios interceptors
   setupInterceptors() {
     this.removeInterceptors();

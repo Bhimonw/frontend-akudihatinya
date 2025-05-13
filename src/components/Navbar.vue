@@ -27,7 +27,7 @@
       <!-- User Information -->
       <div class="user-info">
         <div class="department-container">
-          <p class="department">{{ userData.nama_puskesmas }}</p>
+          <p class="department">{{ userData.name || 'User' }}</p>
           <div class="dropdown-indicator" @click.stop="toggleDropdown">
             <font-awesome-icon :icon="['fas', 'chevron-down']" class="dropdown-icon" />
           </div>
@@ -43,8 +43,9 @@
           <img src="../../src/assets/profile.jpg" alt="Profile Icon" class="profile-icon" />
         </div>
         <div class="dropdown-user-info">
-          <p class="dropdown-department">{{ userData.nama_puskesmas }}</p>
-          <p class="dropdown-role">{{ userData.role }}</p>
+          <p class="dropdown-department">{{ userData.name || 'User' }}</p>
+          <p class="dropdown-role">{{ userData.role || 'User' }}</p>
+          <p v-if="userData.puskesmas" class="dropdown-role">{{ userData.puskesmas.nama_puskesmas }}</p>
         </div>
       </div>
       <hr class="dropdown-divider" />
@@ -76,7 +77,6 @@
 
 <script>
 import { ref, onMounted } from 'vue';
-import axios from 'axios';
 import { useRouter } from 'vue-router';
 import { authService } from '../stores/auth'; // Import auth service
 import Swal from 'sweetalert2';
@@ -88,12 +88,14 @@ export default {
       required: true,
     },
   },
+  emits: ['toggle-sidebar'],
   setup() {
     const router = useRouter();
     const isDropdownOpen = ref(false);
     const userData = ref({
-      nama_puskesmas: 'Loading...',
+      name: 'Loading...',
       role: 'Loading...',
+      puskesmas: null
     });
 
     // Function to fetch user data from API
@@ -117,7 +119,7 @@ export default {
           role: user.role || 'Unknown Role',
         };
       } catch (error) {
-        console.error('Gagal mengambil data user:', error);
+        console.error('Failed to fetch user data:', error);
       }
     };
 
@@ -150,6 +152,7 @@ export default {
       }
       
       try {
+
         const token = localStorage.getItem('token');
         if (!token) {
           console.error('Token tidak ditemukan');
@@ -169,6 +172,7 @@ export default {
         );
 
         // Tampilkan notifikasi sukses
+        
         Swal.fire({
           title: 'Berhasil',
           text: 'Anda telah berhasil logout.',

@@ -108,10 +108,11 @@
 
 <script>
 import brandImage from '../../assets/ptm.jpg';
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { authService } from '../../stores/auth.js'; // Import auth service
 import Swal from 'sweetalert2';
+import { nextTick } from 'vue';
 
 export default {
   name: 'Login',
@@ -121,8 +122,7 @@ export default {
     };
   },
   setup() {
-    const router = useRouter();
-    
+    const router = useRouter();  
     const credentials = ref({
       username: '',
       password: '',
@@ -139,6 +139,38 @@ export default {
       details: '',
     });
     const currentYear = new Date().getFullYear();
+    const authCheckInProgress = ref(false);
+
+    // Cek jika user sudah login saat komponen ini dimuat
+    onMounted(async () => {
+      // Guard untuk mencegah panggilan duplikat
+      if (authCheckInProgress.value) return;
+      authCheckInProgress.value = true;
+
+      try {
+        // Cek jika user sudah login (berdasarkan localStorage)
+        if (localStorage.getItem('isLoggedIn') === 'true') {
+          // Verifikasi session dengan server (hanya sekali)
+          const isAuthenticated = await authStore.checkAuth();
+          
+          if (isAuthenticated) {
+            // Redirect ke dashboard sesuai peran
+            const userRole = authStore.user?.role || localStorage.getItem('userRole');
+            router.replace(userRole === 'admin' ? '/admin/dashboard' : '/user/dashboard');
+          } else {
+            // Jika session tidak valid, hapus data auth
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('user');
+            localStorage.removeItem('isAdmin');
+          }
+        }
+      } catch (error) {
+        console.error('Error checking authentication status:', error);
+      } finally {
+        authCheckInProgress.value = false;
+      }
+    });
 
     const resetErrors = () => {
       errors.value = {
@@ -164,7 +196,7 @@ export default {
     };
 
     const handleLogin = async () => {
-      if (!validateForm()) return;
+      if (!validateForm() || isLoading.value) return;
       isLoading.value = true;
       resetErrors();
       
@@ -179,6 +211,16 @@ export default {
           icon: 'success',
           timer: 2000,
           showConfirmButton: false,
+          didClose: () => {
+            // Lakukan redirect setelah notifikasi hilang
+            if (isAdmin) {
+              console.log('Redirecting to /admin/dashboard');
+              router.replace('/admin/dashboard');
+            } else {
+              console.log('Redirecting to /user/dashboard');
+              router.replace('/user/dashboard');
+            }
+          }
         });
 
         // Redirect based on user role
@@ -188,9 +230,13 @@ export default {
         } else {
           router.push('/user/dashboard'); // User dashboard
         }
+
       } catch (error) {
+        console.error('Login error:', error);
+        
         // Handle login errors
         resetErrors();
+
         try {
           const errorData = JSON.parse(error.message);
           if (errorData.message) {

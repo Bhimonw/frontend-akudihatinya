@@ -3,9 +3,11 @@ import { createApp } from 'vue';
 import './style.css';
 import App from './App.vue';
 import router from './router/index.js';
+
 import { initAuth, authService } from './stores/auth.js';
 import apiClient from './api.js';
 import { tokenManager } from './stores/tokenManager.js';
+
 
 import './assets/styles/global.css';
 
@@ -15,6 +17,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import LoadingOverlay from './components/LoadingOverlay.vue';
 
 library.add(fas);
+
 
 // Global loading state
 window.isAuthLoading = true;
