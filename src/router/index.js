@@ -3,8 +3,9 @@ import { createRouter, createWebHistory } from 'vue-router';
 import DefaultLayout from '../layouts/DefaultLayout.vue';
 
 //Auth
-import Login from '../views/auth/Login.vue'
+import Login from '../views/auth/Login.vue';
 
+import Profile from '../views/user/ProfilePage.vue';
 // Admin Views
 import AdminDashboard from '../views/admin/Dashboard.vue';
 import ManajemenUser from '../views/admin/ManajemenUser.vue';
@@ -19,7 +20,7 @@ import TambahDataPeserta from '../views/user/TambahDataPeserta.vue';
 import DetailPasienDM from '../views/user/DetailPasienDM.vue';
 import DetailPasienHT from '../views/user/DetailPasienHT.vue';
 
-import { getAuthState, isAdmin } from '../stores/auth';
+import { authService } from '../stores/auth';
 
 const routes = [
   // Admin Routes
@@ -33,6 +34,18 @@ const routes = [
         meta: {requiresGuest: true},
       },
     ],
+  },
+  {
+    path: '/profile',
+    component: DefaultLayout,
+    children: [
+      {
+        path: '',
+        name: 'ProfilePage',
+        component: Profile,
+        meta: { requiresAuth: true, title: 'Profil Pengguna' },
+      }
+    ]
   },
   {
     path: '/admin',
@@ -103,8 +116,7 @@ const routes = [
     ],
   },
 
-  // Default Route (Redirect to User Dashboard)
-  // { path: '/', redirect: '/user/dashboard' },
+  // Default Route (Redirect to Login)
   { path: '/', redirect: '/auth/login' },
 ];
 
@@ -113,26 +125,54 @@ const router = createRouter({
   routes,
 });
 
+// Helper functions to check auth state from localStorage
+const getAuthState = () => {
+  const token = localStorage.getItem('token');
+  const isAdmin = localStorage.getItem('isadmin') === 'true';
+  
+  return {
+    token,
+    isAdmin
+  };
+};
+
+const isAuthenticated = () => {
+  return !!localStorage.getItem('token');
+};
+
+const isAdmin = () => {
+  return localStorage.getItem('isadmin') === 'true';
+};
+
 // Middleware untuk route guards
 router.beforeEach((to, from, next) => {
-  const isAuthenticated = !!getAuthState()?.token; // Periksa apakah pengguna sudah login
-  const isAdminUser = isAdmin(); // Periksa apakah pengguna adalah admin
+  const authenticated = isAuthenticated();
+  const isAdminUser = isAdmin();
 
-  // Jika halaman membutuhkan autentikasi tetapi pengguna belum login
-  if (to.meta.requiresAuth && !isAuthenticated) {
-    return next({ name: 'Login' });
-  }
-
-  // Jika halaman membutuhkan role admin tetapi pengguna bukan admin
-  if (to.meta.isAdmin !== undefined && to.meta.isAdmin !== isAdminUser) {
+  // Routes that require guest access (not authenticated)
+  if (to.meta.requiresGuest && authenticated) {
     if (isAdminUser) {
-      return next({ path: '/admin/dashboard' }); // Redirect ke admin dashboard
+      return next({ path: '/admin/dashboard' });
     } else {
-      return next({ path: '/user/dashboard' }); // Redirect ke user dashboard
+      return next({ path: '/user/dashboard' });
     }
   }
 
-  // Jika semua kondisi terpenuhi, lanjutkan ke halaman yang diminta
+  // Routes that require authentication
+  if (to.meta.requiresAuth && !authenticated) {
+    return next({ name: 'Login' });
+  }
+
+  // Routes that require admin role
+  if (to.meta.isAdmin !== undefined && to.meta.isAdmin !== isAdminUser) {
+    if (isAdminUser) {
+      return next({ path: '/admin/dashboard' });
+    } else {
+      return next({ path: '/user/dashboard' });
+    }
+  }
+
+  // All conditions satisfied, proceed
   next();
 });
 

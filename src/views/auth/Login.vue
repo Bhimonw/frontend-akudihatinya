@@ -110,10 +110,11 @@
 import brandImage from '../../assets/ptm.jpg';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useAuthStore } from '../../stores/auth.js'; // Import the Pinia store
+import { authService } from '../../stores/auth.js'; // Import auth service
 import Swal from 'sweetalert2';
 
 export default {
+  name: 'Login',
   data() {
     return {
       brandImage,
@@ -121,10 +122,7 @@ export default {
   },
   setup() {
     const router = useRouter();
-    const authStore = useAuthStore(); // Initialize the Pinia store
-    console.log('Pinia State:', authStore);
-    console.log('Token in Pinia:', authStore.token);
-    console.log('Refresh Token in Pinia:', authStore.refreshToken);
+    
     const credentials = ref({
       username: '',
       password: '',
@@ -169,12 +167,10 @@ export default {
       if (!validateForm()) return;
       isLoading.value = true;
       resetErrors();
+      
       try {
-        // Call the login function via the authStore instance
-        await authStore.login(credentials.value.username, credentials.value.password);
-
-        // Set up interceptors after successful login
-        authStore.setupInterceptors();
+        // Call the login method from auth service
+        await authService.login(credentials.value.username, credentials.value.password);
 
         // Show success notification
         Swal.fire({
@@ -186,7 +182,7 @@ export default {
         });
 
         // Redirect based on user role
-        const { isAdmin } = authStore;
+        const isAdmin = authService.isAdmin();
         if (isAdmin) {
           router.push('/admin/dashboard'); // Admin dashboard
         } else {
@@ -198,10 +194,10 @@ export default {
         try {
           const errorData = JSON.parse(error.message);
           if (errorData.message) {
-            errors.value.general = errorData.message; // General error message
+            errors.value.general = errorData.message;
           }
           if (errorData.errors) {
-            errors.value.details = errorData.errors; // Detailed error message
+            errors.value.details = errorData.errors;
           }
         } catch (parseError) {
           errors.value.general = 'Terjadi kesalahan saat login. Silakan coba lagi.';

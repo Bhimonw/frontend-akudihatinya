@@ -5,12 +5,10 @@
       <div class="profile-placeholder">
   <div class="circle">
     <img
-      v-if="profileImage"
-      :src="profileImage"
+      :src="profileImageSrc"
       alt="Profile Picture"
       class="profile-image"
     />
-    <div v-else class="placeholder"></div>
   </div>
 </div>
       <h3 v-if="isSidebarOpen" class="app-name">Akudihatinya</h3>
@@ -59,7 +57,7 @@
 </template>
 
 <script>
-import profileImage from '../assets/ptm-icon.jpg';
+import defaultProfileImage from '../assets/ptm-icon.jpg';
 export default {
   props: {
     isSidebarOpen: {
@@ -69,6 +67,7 @@ export default {
   },
   data() {
     return {
+      profileImageSrc: defaultProfileImage,
       activeMenu: 'dashboard',
       menuItems: [
         { key: 'dashboard', label: 'Dashboard', icon: 'chart-line' },

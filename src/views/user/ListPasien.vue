@@ -103,10 +103,7 @@
               </p>
             </div>
             <!-- Pagination Buttons -->
-            <nav
-              class="isolate inline-flex -space-x-px rounded-md shadow-xs"
-              aria-label="Pagination"
-            >
+            <nav class="isolate inline-flex -space-x-px rounded-md shadow-xs" aria-label="Pagination">
               <!-- Tombol Previous -->
               <button
                 class="pagination-button prev"
@@ -115,18 +112,27 @@
               >
                 <font-awesome-icon :icon="['fas', 'chevron-left']" />
               </button>
-              <!-- Nomor Halaman -->
-              <button
-                v-for="page in totalPages"
-                :key="page"
-                :class="[
-                  currentPage === page ? 'active' : '',
-                  'pagination-button',
-                ]"
-                @click="goToPage(page)"
-              >
-                {{ page }}
-              </button>
+              <!-- Page numbers and ellipsis -->
+              <template v-for="(item, index) in paginationItems">
+                <button
+                  v-if="item !== 'ellipsis'"
+                  :key="'page-' + index"
+                  :class="[
+                    currentPage === item ? 'active' : '',
+                    'pagination-button',
+                  ]"
+                  @click="goToPage(item)"
+                >
+                  {{ item }}
+                </button>
+                <div
+                  v-else
+                  :key="'ellipsis-' + index"
+                  class="pagination-ellipsis"
+                >
+                  ...
+                </div>
+              </template>
               <!-- Tombol Next -->
               <button
                 class="pagination-button next"
@@ -184,6 +190,51 @@ export default {
     },
     filteredPatients() {
       return this.patients;
+    },
+    paginationItems() {
+      const result = [];
+      const totalPages = this.totalPages;
+      const currentPage = this.currentPage;
+      
+      // For 7 or fewer pages, show all
+      if (totalPages <= 7) {
+        for (let i = 1; i <= totalPages; i++) {
+          result.push(i);
+        }
+        return result;
+      }
+      
+      // Always show first page
+      result.push(1);
+      
+      // Case 1: Current page is near the beginning
+      if (currentPage <= 4) {
+        for (let i = 2; i <= 5; i++) {
+          result.push(i);
+        }
+        result.push('ellipsis');
+        result.push(totalPages);
+        return result;
+      }
+      
+      // Case 2: Current page is near the end
+      if (currentPage >= totalPages - 3) {
+        result.push('ellipsis');
+        for (let i = totalPages - 4; i < totalPages; i++) {
+          result.push(i);
+        }
+        return result;
+      }
+      
+      // Case 3: Current page is in the middle
+      result.push('ellipsis');
+      result.push(currentPage - 1);
+      result.push(currentPage);
+      result.push(currentPage + 1);
+      result.push('ellipsis');
+      result.push(totalPages);
+      
+      return result;
     },
   },
   methods: {
@@ -726,6 +777,17 @@ export default {
   border-radius: 8px;
   cursor: pointer;
   transition: color 0.3s ease;
+}
+
+.pagination-ellipsis {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  color: #9aa0a8;
 }
 
 .pagination-button:hover {

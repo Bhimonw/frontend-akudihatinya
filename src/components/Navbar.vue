@@ -48,7 +48,7 @@
         </div>
       </div>
       <hr class="dropdown-divider" />
-      <div class="dropdown-item">
+      <div class="dropdown-item" @click="$router.push({ name: 'ProfilePage' })">
         <div class="dropdown-icon">
           <font-awesome-icon :icon="['fas', 'user']" />
         </div>
@@ -78,7 +78,7 @@
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
-import { useAuthStore } from '../stores/auth'; // Change this line
+import { authService } from '../stores/auth'; // Import auth service
 import Swal from 'sweetalert2';
 
 export default {
@@ -90,7 +90,6 @@ export default {
   },
   setup() {
     const router = useRouter();
-    const authStore = useAuthStore(); // Add this line to get the store instance
     const isDropdownOpen = ref(false);
     const userData = ref({
       nama_puskesmas: 'Loading...',
@@ -100,7 +99,7 @@ export default {
     // Function to fetch user data from API
     const fetchUserData = async () => {
       try {
-        const token = localStorage.getItem('token'); // Ambil token dari localStorage
+        const token = localStorage.getItem('token');
         if (!token) {
           console.error('Token tidak ditemukan');
           return;
@@ -114,7 +113,7 @@ export default {
 
         const user = response.data.user;
         userData.value = {
-          nama_puskesmas: user.name || 'Unknown User', // Menggunakan nama_puskesmas
+          nama_puskesmas: user.name || 'Unknown User',
           role: user.role || 'Unknown Role',
         };
       } catch (error) {
@@ -149,10 +148,12 @@ export default {
       if (!confirmation.isConfirmed) {
         return;
       }
+      
       try {
-        const token = localStorage.getItem('token'); // Ambil token dari localStorage
+        const token = localStorage.getItem('token');
         if (!token) {
           console.error('Token tidak ditemukan');
+          authService.logout(); // Logout anyway to clear localStorage
           return;
         }
 
@@ -167,10 +168,7 @@ export default {
           }
         );
 
-        // Hapus sesi autentikasi
-        authStore.logout(); // Use the store's logout method
-
-        //Tampilkan notifikasi sukses
+        // Tampilkan notifikasi sukses
         Swal.fire({
           title: 'Berhasil',
           text: 'Anda telah berhasil logout.',
@@ -179,22 +177,27 @@ export default {
           showConfirmButton: false,
         });
 
-        // Redirect ke halaman login
-        router.push({ name: 'Login' });
+        // Use auth service to logout
+        authService.logout();
       } catch (error) {
         console.error('Gagal logout:', error);
 
-        // Tampilkan notifikasi gagal
+        // Tampilkan notifikasi gagal tapi tetap logout
         Swal.fire({
-          title: 'Gagal!',
-          text: 'Terjadi kesalahan saat logout. Silakan coba lagi.',
-          icon: 'error',
+          title: 'Berhasil Logout',
+          text: 'Anda telah keluar dari aplikasi.',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false,
         });
+
+        // Force logout even if API fails
+        authService.logout();
       }
     };
 
     onMounted(() => {
-      fetchUserData(); // Fetch user data saat komponen dimuat
+      fetchUserData();
       window.addEventListener('click', closeDropdown);
     });
 

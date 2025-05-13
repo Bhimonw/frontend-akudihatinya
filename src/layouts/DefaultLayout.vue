@@ -20,7 +20,7 @@
 import Sidebar from '../components/Sidebar.vue';
 import SidebarAdmin from '../components/SidebarAdmin.vue';
 import Navbar from '../components/Navbar.vue';
-import { useAuthStore } from '../stores/auth.js'; // Fix this import
+import { authService } from '../stores/auth.js'; // Import auth service
 
 export default {
   components: {
@@ -38,9 +38,8 @@ export default {
       return this.$route.meta.title || 'Dashboard';
     },
     isUserAdmin() {
-      // Get the auth store instance and access its state
-      const authStore = useAuthStore();
-      return authStore.isAdmin; // Use the store's isAdmin property
+      // Check admin status from localStorage
+      return authService.isAdmin();
     }
   },
   methods: {
@@ -48,6 +47,12 @@ export default {
       this.isSidebarOpen = !this.isSidebarOpen; // Toggle sidebar state
     },
   },
+  mounted() {
+    // Setup auth interceptors when layout is mounted for authenticated users
+    if (authService.isAuthenticated()) {
+      authService.setupInterceptors();
+    }
+  }
 };
 </script>
 

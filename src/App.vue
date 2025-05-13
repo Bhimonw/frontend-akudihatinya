@@ -1,26 +1,46 @@
 <template>
   <div id="app">
+    <loading-overlay :show="isLoading" message="Memverifikasi autentikasi..." />
     <router-view />
   </div>
 </template>
 
 <script>
-import { onMounted } from 'vue';
-import { useAuthStore } from './stores/auth';
-
 export default {
   name: 'App',
+  data() {
+    return {
+      isLoading: false
+    }
+  },
   created() {
-    const authStore = useAuthStore();
-    authStore.restoreAuth();
+    console.log('App created - checking auth state...');
+    
+    // Check authentication status
+    const token = localStorage.getItem('token');
+    if (token) {
+      console.log('User is authenticated');
+    } else {
+      console.log('User is not authenticated');
+    }
+    
+    // Set loading state based on global state
+    this.isLoading = window.isAuthLoading;
   },
-  setup() {
-    const authStore = useAuthStore();
-    console.log('Current refreshToken:', authStore.refreshToken);
-    onMounted(() => {
-      authStore.restoreAuth();
-    });
-  },
+  mounted() {
+    // Update loading state when global state changes
+    const checkLoadingState = () => {
+      this.isLoading = window.isAuthLoading;
+    };
+    
+    // Check regularly until loading is complete
+    const interval = setInterval(() => {
+      checkLoadingState();
+      if (!window.isAuthLoading) {
+        clearInterval(interval);
+      }
+    }, 100);
+  }
 };
 </script>
 
