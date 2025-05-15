@@ -2,17 +2,9 @@
 import axios from "axios";
 import { authService } from "./stores/auth.js";
 
-
 const apiClient = axios.create({
-  baseURL: "http://localhost:8000",
-  withCredentials: true, // Penting: Memastikan cookie dikirim dengan setiap request
-  headers: {
-    'X-Requested-With': 'XMLHttpRequest', // Penting untuk Laravel Sanctum
-    'Accept': 'application/json',
-    'Content-Type': 'application/json'
-  }
+  baseURL: "http://localhost:8000/api",
 });
-
 
 let isRefreshing = false;
 let failedQueue = [];
@@ -99,8 +91,6 @@ apiClient.interceptors.response.use(
     } finally {
       isRefreshing = false;
     }
- 
-    return Promise.reject(error);
   }
 );
 

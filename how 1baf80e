@@ -1,0 +1,53 @@
+[33m914a694[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32m1baf80e[m[33m, [m[1;31morigin/main[m[33m, [m[1;32mmain[m[33m)[m HEAD@{0}: checkout: moving from 1baf80e to 1baf80e
+[33m914a694[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32m1baf80e[m[33m, [m[1;31morigin/main[m[33m, [m[1;32mmain[m[33m)[m HEAD@{1}: checkout: moving from main to 1baf80e
+[33m914a694[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32m1baf80e[m[33m, [m[1;31morigin/main[m[33m, [m[1;32mmain[m[33m)[m HEAD@{2}: checkout: moving from main to main
+[33m914a694[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32m1baf80e[m[33m, [m[1;31morigin/main[m[33m, [m[1;32mmain[m[33m)[m HEAD@{3}: checkout: moving from 1baf80e69b35fd531005bdcd23dbc14440668b90 to main
+[33m1baf80e[m HEAD@{4}: commit: delete cookie (use local storage token again), improvement on F5(refresh) api calls when token expired, and add ellipsis to pagination on List patient
+[33m1dbb224[m HEAD@{5}: checkout: moving from main to 1dbb224821c4afc8fdcc7369bba9825cadeb8715
+[33m914a694[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32m1baf80e[m[33m, [m[1;31morigin/main[m[33m, [m[1;32mmain[m[33m)[m HEAD@{6}: commit: update auth cookie
+[33m702bfed[m HEAD@{7}: checkout: moving from de02ce13b1146addd77a6bdc6cf30bcc5757319b to main
+[33mde02ce1[m HEAD@{8}: checkout: moving from main to de02ce13b1146addd77a6bdc6cf30bcc5757319b
+[33m702bfed[m HEAD@{9}: checkout: moving from 1dbb224821c4afc8fdcc7369bba9825cadeb8715 to main
+[33m1dbb224[m HEAD@{10}: checkout: moving from logoHome to 1dbb224821c4afc8fdcc7369bba9825cadeb8715
+[33m4cf446a[m[33m ([m[1;31morigin/logoHome[m[33m, [m[1;32mlogoHome[m[33m)[m HEAD@{11}: commit: update auth cookie sementara
+[33m9919d27[m HEAD@{12}: checkout: moving from main to logoHome
+[33m702bfed[m HEAD@{13}: reset: moving to HEAD
+[33m702bfed[m HEAD@{14}: commit: add home page and update fetch data for users/me
+[33mde02ce1[m HEAD@{15}: commit: update auth via http-only cookies
+[33m1dbb224[m HEAD@{16}: commit: perbaikan pada refresh token dan konfirmasi error message pada modal tambah data di page daftar pasien
+[33m69d1af5[m HEAD@{17}: commit: Update Dashboard
+[33m8852374[m HEAD@{18}: commit: update fitur ht
+[33m258bac9[m HEAD@{19}: commit: update detail pasien from diabetes mellitus page
+[33m3071539[m HEAD@{20}: commit: update
+[33me957122[m HEAD@{21}: commit: bnyk yg diupdate
+[33m115484c[m[33m ([m[1;31morigin/inputPasien[m[33m, [m[1;31morigin/DashboardAdmin[m[33m)[m HEAD@{22}: commit: update(gainget apa aja yg diupdate
+[33m51db41e[m HEAD@{23}: commit: pokoknya ngeupdate isinya deh
+[33m7ad8091[m HEAD@{24}: commit: Nambahin notification login dan logout
+[33mab0ad1d[m HEAD@{25}: commit: integrasi api ke fitur login
+[33m3eb9285[m HEAD@{26}: commit: perubahan dan penambahan kode di Diabetes Mellitus Page, Login Page, dan Sidebar
+[33m6401dba[m HEAD@{27}: commit: Update DiabetesMellitus.vue file
+[33m431edd0[m HEAD@{28}: checkout: moving from mainn to main
+[33m5bbd7c1[m HEAD@{29}: checkout: moving from main to mainn
+[33m431edd0[m HEAD@{30}: checkout: moving from 00303b910608f0f52e16649f15713fbc45606118 to main
+[33m00303b9[m HEAD@{31}: checkout: moving from main to 00303b910608f0f52e16649f15713fbc45606118
+[33m431edd0[m HEAD@{32}: checkout: moving from main to main
+[33m431edd0[m HEAD@{33}: checkout: moving from 431edd089b9e26c00f96f875e954c932bf8c6c35 to main
+[33m431edd0[m HEAD@{34}: checkout: moving from main to 431edd089b9e26c00f96f875e954c932bf8c6c35
+[33m431edd0[m HEAD@{35}: checkout: moving from backend to main
+[33m00303b9[m HEAD@{36}: checkout: moving from main to backend
+[33m431edd0[m HEAD@{37}: commit: Update .gitignore file
+[33m5bbd7c1[m HEAD@{38}: checkout: moving from main to main
+[33m5bbd7c1[m HEAD@{39}: Branch: renamed refs/heads/frontend to refs/heads/main
+[33m5bbd7c1[m HEAD@{41}: checkout: moving from frontend to frontend
+[33m5bbd7c1[m HEAD@{42}: checkout: moving from temp-branch to frontend
+[33m5bbd7c1[m HEAD@{43}: checkout: moving from 00303b910608f0f52e16649f15713fbc45606118 to frontend
+[33m00303b9[m HEAD@{44}: checkout: moving from frontend to 00303b910608f0f52e16649f15713fbc45606118
+[33m5bbd7c1[m HEAD@{45}: reset: moving to HEAD
+[33m5bbd7c1[m HEAD@{46}: checkout: moving from main to frontend
+[33m976d005[m HEAD@{47}: checkout: moving from backend to main
+[33m00303b9[m HEAD@{48}: checkout: moving from frontend to backend
+[33m5bbd7c1[m HEAD@{49}: checkout: moving from backend to frontend
+[33m00303b9[m HEAD@{50}: checkout: moving from main to backend
+[33m976d005[m HEAD@{51}: checkout: moving from frontend to main
+[33m5bbd7c1[m HEAD@{52}: checkout: moving from frontend to frontend
+[33m5bbd7c1[m HEAD@{53}: commit (initial): new project file

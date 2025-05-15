@@ -3,7 +3,7 @@ import { authService } from './auth.js';
 
 // Interval waktu untuk memeriksa token (dalam milidetik)
 // 5 menit = 300000 ms
-const TOKEN_CHECK_INTERVAL = 60000;
+const TOKEN_CHECK_INTERVAL = 300000;
 
 class TokenManager {
   constructor() {

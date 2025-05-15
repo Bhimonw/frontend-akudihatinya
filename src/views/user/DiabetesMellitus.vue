@@ -401,7 +401,6 @@ export default {
     },
     handlePatientSubmit(formData) {
       console.log("Data yang disimpan:", formData);
-      alert("Data berhasil disimpan!");
       this.closeAddPatientModal();
       this.fetchPatients(); // Muat ulang data setelah menambahkan pasien
     },
