@@ -78,7 +78,6 @@
             </table>
           </div>
           <!-- Pagination -->
-          <!-- Pagination -->
           <div class="pagination-container">
             <div class="flex items-center justify-between bg-white px-4 py-3 sm:px-6">
               <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
@@ -115,18 +114,27 @@
                   >
                     <font-awesome-icon :icon="['fas', 'chevron-left']" />
                   </button>
-                  <!-- Nomor Halaman -->
-                  <button
-                    v-for="page in totalPages"
-                    :key="page"
-                    :class="[
-                      currentPage === page ? 'active' : '',
-                      'pagination-button',
-                    ]"
-                    @click="goToPage(page)"
-                  >
-                    {{ page }}
-                  </button>
+                  <!-- Page numbers and ellipsis -->
+                  <template v-for="(item, index) in paginationItems">
+                    <button
+                      v-if="item !== 'ellipsis'"
+                      :key="'page-' + index"
+                      :class="[
+                        currentPage === item ? 'active' : '',
+                        'pagination-button',
+                      ]"
+                      @click="goToPage(item)"
+                    >
+                      {{ item }}
+                    </button>
+                    <div
+                      v-else
+                      :key="'ellipsis-' + index"
+                      class="pagination-ellipsis"
+                    >
+                      ...
+                    </div>
+                  </template>
                   <!-- Tombol Next -->
                   <button
                     class="pagination-button next"
@@ -243,6 +251,49 @@ export default {
     filteredPatients() {
       return this.patients;
     },
+    paginationItems() {
+      const result = [];
+      const totalPages = this.totalPages;
+      const currentPage = this.currentPage;
+
+      // For 7 or fewer pages, show all
+      if (totalPages <= 7) {
+        for (let i = 1; i <= totalPages; i++) {
+          result.push(i);
+        }
+        return result;
+      }
+      // Always show first page
+      result.push(1);
+
+    // Case 1: Current page is near the beginning
+    if (currentPage <= 4) {
+      for (let i = 2; i <= 5; i++) {
+        result.push(i);
+      }
+      result.push('ellipsis');
+      result.push(totalPages);
+      return result;
+    }
+    // Case 2: Current page is near the end
+    if (currentPage >= totalPages - 3) {
+        result.push('ellipsis');
+        for (let i = totalPages - 4; i < totalPages; i++) {
+          result.push(i);
+        }
+        return result;
+      }
+
+      // Case 3: Current page is in the middle
+      result.push('ellipsis');
+      result.push(currentPage - 1);
+      result.push(currentPage);
+      result.push(currentPage + 1);
+      result.push('ellipsis');
+      result.push(totalPages);
+
+      return result;
+    },
   },
   methods: {
     prevPage() {
@@ -254,12 +305,14 @@ export default {
     nextPage() {
       if (this.currentPage < this.totalPages) {
         this.currentPage++;
-        this.fetchPatients(this.currentPage);
+        this.fetchPatients();
       }
     },
     goToPage(page) {
-      this.currentPage = page;
-      this.fetchPatients();
+      if (page !== 'ellipsis') {
+        this.currentPage = page;
+        this.fetchPatients();
+      }
     },
     resetPagination() {
       this.currentPage = 1;
@@ -317,12 +370,15 @@ export default {
       this.resetForm();
     },
     async selectPatient(patient) {
-
       try {
-        // Validate selectedYear
+        // Validasi selectedYear
         if (!this.selectedYear) {
           console.error("Selected year is missing or invalid.");
-          alert("Tahun pemeriksaan tidak valid. Silakan pilih tahun yang sesuai.");
+          Swal.fire({
+            icon: "error",
+            title: "Kesalahan",
+            text: "Tahun pemeriksaan tidak valid. Silakan pilih tahun yang sesuai.",
+          });
           return;
         }
 
@@ -330,11 +386,30 @@ export default {
         const yearAsNumber = parseInt(this.selectedYear, 10);
         if (isNaN(yearAsNumber)) {
           console.error("Invalid year format:", this.selectedYear);
-          alert("Format tahun tidak valid. Harap periksa input.");
+          Swal.fire({
+            icon: "error",
+            title: "Kesalahan",
+            text: "Format tahun tidak valid. Harap periksa input.",
+          });
           return;
         }
 
-        // Construct the payload with year as a number
+        // Tampilkan dialog konfirmasi dengan SweetAlert2
+        const confirmation = await Swal.fire({
+          title: "Konfirmasi",
+          html: `Apakah Anda yakin akan menambahkan <strong>${patient.name}</strong> ke data pasien Diabetes Mellitus tahun <strong>${this.selectedYear}</strong>?`,
+          icon: "question",
+          showCancelButton: true,
+          confirmButtonText: "Ya, Tambahkan",
+          cancelButtonText: "Batal",
+        });
+
+        // Jika pengguna membatalkan, hentikan proses
+        if (!confirmation.isConfirmed) {
+          return;
+        }
+
+        // Buat payload untuk API
         const payload = {
           year: yearAsNumber, // Ensure year is a number
           examination_type: "dm",
@@ -342,13 +417,19 @@ export default {
 
         console.log("Payload being sent:", payload); // Debugging: Log the payload
 
+        // Ambil token dari localStorage
         const token = localStorage.getItem("token");
         if (!token) {
           console.error("Token tidak ditemukan");
-          alert("Session expired. Please log in again.");
+          Swal.fire({
+            icon: "error",
+            title: "Sesi Berakhir",
+            text: "Silakan login kembali.",
+          });
           return;
         }
 
+        // Kirim data ke API
         const response = await axios.post(
           `http://localhost:8000/api/puskesmas/patients/${patient.id}/examination-year`,
           payload,
@@ -361,18 +442,38 @@ export default {
 
         console.log("API Response:", response.data);
 
+        // Validasi respons API
         if (!response.data || !response.data.message) {
           console.error("Invalid API response structure:", response.data);
-          alert("Terjadi kesalahan: Struktur respons API tidak sesuai.");
+          Swal.fire({
+            icon: "error",
+            title: "Kesalahan",
+            text: "Struktur respons API tidak sesuai.",
+          });
           return;
         }
 
-        alert("Data berhasil ditambahkan!");
+        // Tampilkan notifikasi sukses menggunakan SweetAlert
+        Swal.fire({
+          icon: "success",
+          title: "Berhasil!",
+          text: "Data pasien berhasil ditambahkan!",
+        });
+
+        // Emit event ke parent component
         this.$emit("submit", patient);
+
+        // Tutup modal
         this.closeModal();
       } catch (error) {
         console.error("Error adding examination year:", error.response?.data || error.message);
-        alert("Gagal menambahkan tahun pemeriksaan. Silakan coba lagi.");
+
+        // Tampilkan notifikasi gagal menggunakan SweetAlert
+        Swal.fire({
+          icon: "error",
+          title: "Kesalahan",
+          text: "Gagal menambahkan tahun pemeriksaan. Silakan coba lagi.",
+        });
       }
     },
     async submitNewPatient() {
@@ -837,6 +938,16 @@ export default {
   border-radius: 8px;
 }
 
+.pagination-ellipsis {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  color: #9aa0a8;
+}
 /* Pagination Buttons */
 .pagination-button {
   display: flex;
