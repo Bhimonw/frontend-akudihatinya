@@ -2,9 +2,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import DefaultLayout from '../layouts/DefaultLayout.vue';
 
-//Home Page
-import Home from '../views/Home.vue'
-
 //Auth
 import Login from '../views/auth/Login.vue';
 
@@ -25,17 +22,8 @@ import DetailPasienHT from '../views/user/DetailPasienHT.vue';
 
 import { authService } from '../stores/auth';
 
-
 const routes = [
-  // Homepage Route
-  {
-    path: '/',
-    name: 'Home',
-    component: Home,
-    meta: { requiresGuest: false }
-  },
-
-  // Auth Routes
+  // Admin Routes
   {
     path: '/auth',
     children: [
@@ -47,8 +35,6 @@ const routes = [
       },
     ],
   },
-
-  //Admin Routes
   {
     path: '/profile',
     component: DefaultLayout,
@@ -159,7 +145,6 @@ const isAdmin = () => {
 };
 
 // Middleware untuk route guards
-
 router.beforeEach((to, from, next) => {
   const authenticated = isAuthenticated();
   const isAdminUser = isAdmin();
@@ -185,37 +170,6 @@ router.beforeEach((to, from, next) => {
     } else {
       return next({ path: '/user/dashboard' });
     }
-    return next();
-  }
-  
-  // Untuk halaman yang memerlukan auth, verifikasi dengan server jika sudah login di localStorage
-  if (to.meta.requiresAuth) {
-    if (!isAuthenticated) {
-      return next('/auth/login');
-    }
-    
-    // Verifikasi di server hanya jika belum pernah diverifikasi (gunakan state checking dari store)
-    if (!authStore.isCheckingAuth && !authStore.user) {
-      try {
-        const isStillAuthenticated = await authStore.checkAuth();
-        
-        if (!isStillAuthenticated) {
-          return next('/auth/login');
-        }
-      } catch (error) {
-        console.error('Auth verification failed:', error);
-        return next('/auth/login');
-      }
-    }
-  }
-
-  // Cek role sesuai rute
-  if (to.meta.isAdmin === true && !isAdminUser && isAuthenticated) {
-    return next({ path: '/user/dashboard' });
-  }
-
-  if (to.meta.isAdmin === false && isAdminUser && isAuthenticated) {
-    return next({ path: '/admin/dashboard' });
   }
 
   // All conditions satisfied, proceed
