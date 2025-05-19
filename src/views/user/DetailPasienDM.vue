@@ -181,11 +181,12 @@
       </div>
     </div>
     <!-- Modal Tambah Data -->
-    <ModalTambahData
-      :visible="isModalOpen"
-      :patient-id="patientId"
-      @close="closeModal"
-      @submit="handleModalSubmit"
+    <AddExaminationDataDM
+          :visible="isModalOpen"
+          :patient-id="patientId"
+          :selected-year="selectedYear"
+          @close="closeModal"
+          @submit="fetchExaminations"
     />
 
     <EditPatientDetail
@@ -202,20 +203,21 @@
       @close="closeEditExamModal"
       @submit="handleEditExamSubmit"
     />
+
   </div>
 </template>
 
 <script>
 import Swal from 'sweetalert2';
 import axios from 'axios';
-import ModalTambahData from "../../components/modals/AddExaminationDataDM.vue";
+import AddExaminationDataDM from "../../components/modals/AddExaminationDataDM.vue";
 import EditPatientDetail from '../../components/modals/EditPatientDetail.vue';
 import EditExaminationModal from '../../components/modals/EditExaminationModal.vue';
 
 export default {
   name: "DetailPasienDM",
   components: {
-    ModalTambahData,
+    AddExaminationDataDM,
     EditPatientDetail,
     EditExaminationModal
   },
@@ -238,6 +240,7 @@ export default {
       isLoadingExams: false,
       selectedExam: null,
       isEditExamModalOpen: false,
+      exams: [],
     };
   },
   computed: {
@@ -563,6 +566,9 @@ export default {
     this.fetchPatientDetails();
     this.fetchExaminations();
   },
+  created() {
+    this.fetchExaminations();
+  }
 };
 </script>
 
