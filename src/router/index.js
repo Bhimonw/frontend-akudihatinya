@@ -1,6 +1,7 @@
 // src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router';
 import DefaultLayout from '../layouts/DefaultLayout.vue';
+import ProfileLayout from '../layouts/ProfileLayout.vue';
 
 //Auth
 import Login from '../views/auth/Login.vue';
@@ -37,7 +38,7 @@ const routes = [
   },
   {
     path: '/profile',
-    component: DefaultLayout,
+    component: ProfileLayout,
     children: [
       {
         path: '',

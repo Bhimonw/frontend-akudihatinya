@@ -1,19 +1,25 @@
 <template>
+  <!-- Removed the outermost dashboard div with page-container -->
+  <!-- Page now starts directly with the content -->
+  
+  <!-- Header with Year Dropdown and Print Report Button -->
   <div class="toolbar">
+    <!-- Bagian Kiri -->
     <div class="left-section">
-      <!-- Dropdown Tahun -->
+      <!-- Bagian Dropdown Tahun -->
       <div class="dropdown-container-year">
-        <select id="yearPicker" class="dropdown-select" v-model="selectedYear" @change="updateData">
+        <select id="yearPicker" class="dropdown-select" v-model="selectedYear">
           <option v-for="year in years" :key="year" :value="String(year)">{{ year }}</option>
         </select>
       </div>
+
       <!-- Dropdown Program Kesehatan -->
       <div class="dropdown-container-program">
-        <select id="programPicker" class="dropdown-select" v-model="selectedProgram" @change="updateData">
+        <select id="programPicker" class="dropdown-select" v-model="selectedProgram">
           <option v-for="program in programs" :key="program" :value="program">{{ program }}</option>
         </select>
       </div>
-      <!-- Print Button -->
+
       <button class="print-report-button" @click="printReport">
         <font-awesome-icon :icon="['fas', 'print']" />
         Print Laporan
@@ -22,109 +28,162 @@
     </div>
   </div>
 
-  <!-- Summary Cards Section -->
-  <div class="summary-cards">
-    <div class="summary-card">
-      <div class="icon-container">
-        <font-awesome-icon :icon="['fas', 'users']" class="summary-icon" />
+  <!-- Main Content Area with Statistik and Overview side by side -->
+  <div class="main-content">
+    <!-- Statistics Section - Left Side -->
+    <div class="statistics-section">
+      <h2 class="section-title">Statistik</h2>
+      
+      <!-- Legends -->
+      <div class="chart-legends">
+        <div class="legend-item">
+          <div class="legend-dot male"></div>
+          <span>Laki-laki</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot female"></div>
+          <span>Perempuan</span>
+        </div>
       </div>
-      <div class="card-content">
-        <h3 class="card-title">Sasaran</h3>
-        <p class="card-value">{{ summaryCards.sasaran }}</p>
-        <p class="card-subtitle">(Jumlah)</p>
+      
+      <!-- Chart Container -->
+      <div class="chart-container">
+        <!-- Y-Axis Values -->
+        <div class="y-axis-values">
+          <div>100</div>
+          <div>80</div>
+          <div>60</div>
+          <div>40</div>
+          <div>20</div>
+          <div>0</div>
+        </div>
+        
+        <!-- Chart Placeholder -->
+        <div class="chart">
+          <!-- This would be your actual chart implementation -->
+          <div class="chart-placeholder">
+            <div class="chart-date">16 Aug 2022</div>
+            <div class="chart-value">$59,492.10</div>
+            <!-- Mock chart lines -->
+            <div class="chart-line male"></div>
+            <div class="chart-line female"></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- X-Axis Values -->
+      <div class="x-axis-values">
+        <div>Jan</div>
+        <div>Feb</div>
+        <div>Mar</div>
+        <div>Apr</div>
+        <div>May</div>
+        <div>Jun</div>
+        <div>Jul</div>
       </div>
     </div>
-    <div class="summary-card">
-      <div class="icon-container">
-        <font-awesome-icon :icon="['fas', 'check-circle']" class="summary-icon standar" />
-      </div>
-      <div class="card-content">
-        <h3 class="card-title">Capaian Standar</h3>
-        <p class="card-value">{{ summaryCards.capaianStandar }}</p>
-        <p class="card-subtitle">(Sesuai Standar)</p>
-      </div>
-    </div>
-    <div class="summary-card">
-      <div class="icon-container">
-        <font-awesome-icon :icon="['fas', 'times-circle']" class="summary-icon non-standar" />
-      </div>
-      <div class="card-content">
-        <h3 class="card-title">Capaian Tidak Standar</h3>
-        <p class="card-value">{{ summaryCards.capaianTidakStandar }}</p>
-        <p class="card-subtitle">(Tidak Sesuai Standar)</p>
-      </div>
-    </div>
-    <div class="summary-card">
-      <div class="icon-container">
-        <font-awesome-icon :icon="['fas', 'hospital']" class="summary-icon" />
-      </div>
-      <div class="card-content">
-        <h3 class="card-title">Total Pelayanan</h3>
-        <p class="card-value">{{ summaryCards.totalPelayanan }}</p>
-        <p class="card-subtitle">(Jumlah)</p>
-      </div>
-    </div>
-    <div class="summary-card">
-      <div class="icon-container">
-        <font-awesome-icon :icon="['fas', 'percent']" class="summary-icon" />
-      </div>
-      <div class="card-content">
-        <h3 class="card-title">% Capaian Pelayanan</h3>
-        <p class="card-value">{{ summaryCards.persenCapaianPelayanan }}</p>
-        <p class="card-subtitle">(Sesuai Standar)</p>
+
+    <!-- Overview Section - Right Side -->
+    <div class="overview-section">
+      <h2 class="section-title">Overview</h2>
+      
+      <div class="overview-list">
+        <div class="overview-item">
+          <div class="item-number">1</div>
+          <div class="item-details">
+            <span class="item-name">Martapura 1</span>
+            <span class="item-value">169,72 %</span>
+          </div>
+        </div>
+        
+        <div class="overview-item">
+          <div class="item-number">2</div>
+          <div class="item-details">
+            <span class="item-name">Gambut</span>
+            <span class="item-value">152,44 %</span>
+          </div>
+        </div>
+        
+        <div class="overview-item">
+          <div class="item-number">3</div>
+          <div class="item-details">
+            <span class="item-name">Astambul</span>
+            <span class="item-value">122,31 %</span>
+          </div>
+        </div>
+        
+        <div class="overview-item">
+          <div class="item-number">4</div>
+          <div class="item-details">
+            <span class="item-name">Cintapuri Darussalam</span>
+            <span class="item-value">103,10 %</span>
+          </div>
+        </div>
+        
+        <div class="overview-item">
+          <div class="item-number">5</div>
+          <div class="item-details">
+            <span class="item-name">Sambung Makmur</span>
+            <span class="item-value">99,44 %</span>
+          </div>
+        </div>
+        
+        <div class="overview-item">
+          <div class="item-number">6</div>
+          <div class="item-details">
+            <span class="item-name">Kertak Hanyar</span>
+            <span class="item-value">93,90 %</span>
+          </div>
+        </div>
+        
+        <div class="overview-item">
+          <div class="item-number">7</div>
+          <div class="item-details">
+            <span class="item-name">Sungai Tabuk 2</span>
+            <span class="item-value">85,07 %</span>
+          </div>
+        </div>
+        
+        <div class="overview-item">
+          <div class="item-number">8</div>
+          <div class="item-details">
+            <span class="item-name">Aranto</span>
+            <span class="item-value">83,02 %</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Statistics Section -->
-  <div class="statistics-card">
-    <h2 class="section-title">Statistik</h2>
-    <div class="chart-legends">
-      <div class="legend-item">
-        <div class="legend-dot male"></div>
-        <span>Laki-laki</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-dot female"></div>
-        <span>Perempuan</span>
-      </div>
-    </div>
-    <div class="chart-container">
-      <div class="y-axis-values">
-        <div>100</div>
-        <div>80</div>
-        <div>60</div>
-        <div>40</div>
-        <div>20</div>
-        <div>0</div>
-      </div>
-      <canvas id="chart"></canvas>
-    </div>
-    <div class="x-axis-values">
-      <div>Jan</div>
-      <div>Feb</div>
-      <div>Mar</div>
-      <div>Apr</div>
-      <div>May</div>
-      <div>Jun</div>
-      <div>Jul</div>
-      <div>Aug</div>
-      <div>Sep</div>
-      <div>Oct</div>
-      <div>Nov</div>
-      <div>Dec</div>
-    </div>
-  </div>
-
-  <!-- Data Table Section -->
+  <!-- Data Table Section - Full Width Below with Card styling -->
   <div class="table-section table-card">
     <div class="table-header">
-      <h2 class="section-title">Rekap Data {{ selectedProgram }}</h2>
+      <h2 class="section-title">Rekap Data Diabetes Mellitus</h2>
+      
+      <div class="table-actions">
+        <div class="search-container">
+          <font-awesome-icon :icon="['fas', 'search']" class="search-icon" />
+          <input type="text" placeholder="Search..." class="search-input" v-model="searchQuery" />
+        </div>
+        
+        <button class="download-button">
+          <font-awesome-icon :icon="['fas', 'download']" />
+        </button>
+        
+        <button class="view-all-button">
+          Lihat Semua
+        </button>
+      </div>
     </div>
+    
+    <!-- Table Container -->
     <div class="table-container">
       <table class="data-table">
         <thead>
           <tr>
+            <th rowspan="2">NO</th>
+            <th rowspan="2">NAMA PKM</th>
+            <th rowspan="2">SASARAN</th>
             <th colspan="2" class="th-group">JUMLAH</th>
             <th colspan="3" class="th-group">JANUARI</th>
             <th colspan="3" class="th-group">FEBRUARI</th>
@@ -181,46 +240,50 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(row, index) in tableData" :key="index">
-            <td>{{ row.jenisKelamin }}</td>
-            <td>{{ row.jenisKelamin }}</td>
-            <td>{{ row.januari.s }}</td>
-            <td>{{ row.januari.ts }}</td>
-            <td>{{ row.januari.persen }}</td>
-            <td>{{ row.februari.s }}</td>
-            <td>{{ row.februari.ts }}</td>
-            <td>{{ row.februari.persen }}</td>
-            <td>{{ row.maret.s }}</td>
-            <td>{{ row.maret.ts }}</td>
-            <td>{{ row.maret.persen }}</td>
-            <td>{{ row.april.s }}</td>
-            <td>{{ row.april.ts }}</td>
-            <td>{{ row.april.persen }}</td>
-            <td>{{ row.mei.s }}</td>
-            <td>{{ row.mei.ts }}</td>
-            <td>{{ row.mei.persen }}</td>
-            <td>{{ row.juni.s }}</td>
-            <td>{{ row.juni.ts }}</td>
-            <td>{{ row.juni.persen }}</td>
-            <td>{{ row.juli.s }}</td>
-            <td>{{ row.juli.ts }}</td>
-            <td>{{ row.juli.persen }}</td>
-            <td>{{ row.agustus.s }}</td>
-            <td>{{ row.agustus.ts }}</td>
-            <td>{{ row.agustus.persen }}</td>
-            <td>{{ row.september.s }}</td>
-            <td>{{ row.september.ts }}</td>
-            <td>{{ row.september.persen }}</td>
-            <td>{{ row.oktober.s }}</td>
-            <td>{{ row.oktober.ts }}</td>
-            <td>{{ row.oktober.persen }}</td>
-            <td>{{ row.november.s }}</td>
-            <td>{{ row.november.ts }}</td>
-            <td>{{ row.november.persen }}</td>
-            <td>{{ row.desember.s }}</td>
-            <td>{{ row.desember.ts }}</td>
-            <td>{{ row.desember.persen }}</td>
+          <tr>
+            <td>1</td>
+            <td>Puskesmas 1</td>
+            <td>200</td>
+            <td>40</td>
+            <td>38</td>
+            <td>48</td>
+            <td>154</td>
+            <td>24%</td>
+            <td>48</td>
+            <td>154</td>
+            <td>24%</td>
+            <td>48</td>
+            <td>154</td>
+            <td>24%</td>
+            <td>48</td>
+            <td>154</td>
+            <td>24%</td>
+            <td>48</td>
+            <td>154</td>
+            <td>24%</td>
+            <td>48</td>
+            <td>154</td>
+            <td>24%</td>
+            <td>48</td>
+            <td>154</td>
+            <td>24%</td>
+            <td>48</td>
+            <td>154</td>
+            <td>24%</td>
+            <td>48</td>
+            <td>154</td>
+            <td>24%</td>
+            <td>48</td>
+            <td>154</td>
+            <td>24%</td>
+            <td>48</td>
+            <td>154</td>
+            <td>24%</td>
+            <td>48</td>
+            <td>154</td>
+            <td>24%</td>
           </tr>
+          <!-- Add more rows as needed -->
         </tbody>
       </table>
     </div>
@@ -228,80 +291,36 @@
 </template>
 
 <script>
-import { Chart } from "chart.js/auto";
-import { dummyData } from "../../data/dummyData.js";
-
 export default {
   name: "Dashboard",
   data() {
     const currentYear = new Date().getFullYear();
     const startYear = 2020;
     const years = Array.from({ length: currentYear - startYear + 1 }, (_, i) => startYear + i).reverse();
+
     return {
-      chartInstance: null,
       selectedYear: String(currentYear),
-      years: years.filter((year) => year >= 2024 && year <= 2025), // Hanya 2024 dan 2025
+      years: years,
       selectedProgram: "Diabetes Mellitus",
       programs: ["Diabetes Mellitus", "Hipertensi"],
-      summaryCards: {},
-      tableData: [],
-      chartData: {},
+      searchQuery: "",
+      chartData: {
+        // Your chart data would go here
+      }
     };
   },
-  mounted() {
-    this.updateData();
-  },
   methods: {
-  updateData() {
-    const data = dummyData[this.selectedYear]?.[this.selectedProgram];
-    if (!data) {
-      console.error("Data tidak ditemukan untuk tahun dan program yang dipilih.");
-      return;
+    printReport() {
+      console.log("Mencetak laporan...");
+      alert("Mencetak laporan untuk " + this.selectedProgram + " tahun " + this.selectedYear);
     }
-
-    this.summaryCards = data.summaryCards;
-    this.tableData = data.tableData;
-    this.chartData = data.chartData;
-
-    // Render ulang chart
-    this.renderChart();
-  },
-  renderChart() {
-    const ctx = document.getElementById("chart").getContext("2d");
-    if (this.chartInstance) {
-      this.chartInstance.destroy(); // Hapus chart sebelumnya jika ada
-    }
-    this.chartInstance = new Chart(ctx, {
-      type: "line",
-      data: {
-        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-        datasets: [
-          {
-            label: "Laki-laki",
-            data: this.chartData.lakiLaki,
-            borderColor: "#3b82f6",
-            fill: false,
-          },
-          {
-            label: "Perempuan",
-            data: this.chartData.perempuan,
-            borderColor: "#f59e0b",
-            fill: false,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-      },
-    });
-  },
-},
+  }
 };
 </script>
 
 <style scoped>
-/* Root Styles */
+/* Root Styles - Removed the dashboard and page-container classes */
+/* Background color applied to the body or parent element in your main app */
 body {
   background-color: #f7f8f9;
   min-height: 100vh;
@@ -309,14 +328,25 @@ body {
   padding: 20px;
 }
 
-/* Toolbar - Adjusted as per sketch */
+/* Toolbar */
 .toolbar {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 20px;
+  flex-wrap: wrap;
 }
 
-/* Left Section - Modified to match sketch */
+/* Bagian Kiri */
 .left-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* Bagian Kanan */
+.right-section {
   display: flex;
   align-items: center;
   gap: 16px;
@@ -390,92 +420,20 @@ body {
   margin-bottom: 16px;
 }
 
-/* Summary Cards - Modified to have 5 cards with grid */
-.summary-cards {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
+/* Main Content Area - Side by side layout */
+.main-content {
+  display: flex;
   gap: 20px;
   margin-bottom: 30px;
 }
 
-.summary-card {
+/* Statistics Section */
+.statistics-section {
+  flex: 3;
+  padding: 20px;
   background: #ffffff;
   border-radius: 10px;
   box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.05);
-  padding: 20px;
-  display: flex;
-  align-items: center;
-}
-
-.icon-container {
-  background-color: rgba(16, 185, 129, 0.1);
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-right: 16px;
-}
-
-.summary-icon {
-  color: #10b981;
-  font-size: 20px;
-}
-
-/* Custom colors for standar and non-standar icons */
-.summary-icon.standar {
-  color: #3b82f6; /* Blue for standard */
-}
-
-.icon-container .standar {
-  background-color: rgba(59, 130, 246, 0.1);
-}
-
-.summary-icon.non-standar {
-  color: #ef4444; /* Red for non-standard */
-}
-
-.icon-container .non-standar {
-  background-color: rgba(239, 68, 68, 0.1);
-}
-
-.card-content {
-  flex-grow: 1;
-}
-
-.card-title {
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  color: #4f5867;
-  margin: 0;
-  margin-bottom: 4px;
-}
-
-.card-value {
-  font-family: "Inter", sans-serif;
-  font-size: 24px;
-  font-weight: 600;
-  color: #333333;
-  margin: 0;
-  margin-bottom: 2px;
-}
-
-.card-subtitle {
-  font-family: "Inter", sans-serif;
-  font-size: 12px;
-  color: #9aa0a8;
-  margin: 0;
-}
-
-/* Statistics Card - Adjusted to full width as per sketch */
-.statistics-card {
-  background: #ffffff;
-  border-radius: 10px;
-  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.05);
-  padding: 20px;
-  margin-bottom: 30px;
-  width: 100%;
 }
 
 /* Chart Legends */
@@ -534,6 +492,51 @@ body {
   border-bottom: 1px solid #eaeaea;
 }
 
+/* Chart Placeholder (replace with your actual chart) */
+.chart-placeholder {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.chart-date {
+  position: absolute;
+  top: 20px;
+  left: 100px;
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  color: #4f5867;
+}
+
+.chart-value {
+  position: absolute;
+  top: 40px;
+  left: 100px;
+  font-family: "Inter", sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333333;
+}
+
+/* Mock chart lines */
+.chart-line {
+  position: absolute;
+  height: 2px;
+  bottom: 50px;
+  left: 0;
+  right: 0;
+}
+
+.chart-line.male {
+  bottom: 120px;
+  background: linear-gradient(90deg, transparent, #3b82f6, #3b82f6, #3b82f6, transparent);
+}
+
+.chart-line.female {
+  bottom: 80px;
+  background: linear-gradient(90deg, transparent, #f59e0b, #f59e0b, #f59e0b, transparent);
+}
+
 .x-axis-values {
   display: flex;
   justify-content: space-between;
@@ -543,11 +546,66 @@ body {
   color: #9aa0a8;
 }
 
-/* Table Section - Already styled as a card */
+/* Overview Section */
+.overview-section {
+  flex: 1;
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.overview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.overview-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.item-number {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 24px;
+  height: 24px;
+  background-color: #3b82f6;
+  color: #ffffff;
+  border-radius: 50%;
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.item-details {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.item-name {
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  color: #4f5867;
+}
+
+.item-value {
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333333;
+}
+
+/* Table Section - Added card styling */
 .table-section {
   margin-bottom: 30px;
 }
 
+/* New class for table card */
 .table-card {
   background: #ffffff;
   border-radius: 10px;
@@ -556,7 +614,84 @@ body {
 }
 
 .table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 16px;
+}
+
+.table-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Search Container */
+.search-container {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  color: #9aa0a8;
+  font-size: 16px;
+  pointer-events: none;
+}
+
+.search-input {
+  width: 251px;
+  height: 42px;
+  padding: 10px 40px 10px 40px;
+  border: 1px solid #cdcfD4;
+  border-radius: 10px;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  color: #4f5867;
+  outline: none;
+}
+
+.search-input:hover {
+  border-color: var(--primary-500, #10b981);
+}
+
+.download-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid #eaeaea;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #4f5867;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.download-button:hover {
+  background: #f3f4f6;
+  color: var(--primary-500, #10b981);
+}
+
+.view-all-button {
+  padding: 10px 20px;
+  border: 1px solid #eaeaea;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #4f5867;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.view-all-button:hover {
+  background: #f3f4f6;
+  color: var(--primary-500, #10b981);
 }
 
 /* Table Container */
@@ -612,29 +747,35 @@ body {
 }
 
 /* Responsive Styles */
-@media (max-width: 1200px) {
-  .summary-cards {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
 @media (max-width: 992px) {
-  .toolbar {
+  .toolbar,
+  .table-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
   }
-  .left-section {
+
+  .left-section,
+  .right-section,
+  .table-actions {
     width: 100%;
   }
-  .summary-cards {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
 
-@media (max-width: 576px) {
-  .summary-cards {
-    grid-template-columns: 1fr;
+  .search-container {
+    width: 100%;
+  }
+
+  .search-input {
+    width: 100%;
+  }
+
+  .main-content {
+    flex-direction: column;
+  }
+
+  .statistics-section,
+  .overview-section {
+    width: 100%;
   }
 }
 </style>
