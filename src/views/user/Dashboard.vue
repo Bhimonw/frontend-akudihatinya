@@ -1,4 +1,12 @@
 <template>
+  <LoadingPage 
+    v-if="isLoading" 
+    :apiStatus="apiStatus" 
+    @loading-complete="onLoadingComplete" 
+    @loading-error="onLoadingError" 
+  />
+  
+  <div v-show="!isLoading" class="dashboard-content"></div>
   <div class="toolbar">
     <div class="left-section">
       <!-- Dropdown Tahun -->
@@ -21,6 +29,15 @@
       </button>
     </div>
   </div>
+
+  <!-- Error message jika ada error -->
+  <div v-if="error" class="error-message">
+      <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
+      {{ error }}
+      <button @click="fetchData" class="retry-button">
+        <font-awesome-icon :icon="['fas', 'sync']" /> Coba Lagi
+      </button>
+    </div>
 
   <!-- Summary Cards Section -->
   <div class="summary-cards">
@@ -116,6 +133,7 @@
     </div>
   </div>
 
+
   <!-- Data Table Section -->
   <div class="table-section table-card">
     <div class="table-header">
@@ -142,6 +160,9 @@
           <tr>
             <th>LAKI-LAKI</th>
             <th>PEREMPUAN</th>
+            <th>S</th>
+            <th>TS</th>
+            <th>%</th>
             <th>S</th>
             <th>TS</th>
             <th>%</th>
@@ -229,10 +250,14 @@
 
 <script>
 import { Chart } from "chart.js/auto";
-import { dummyData } from "../../data/dummyData.js";
+import apiClient from "../../api.js";
+import LoadingPage from "../../components/LoadingPage.vue";
 
 export default {
   name: "Dashboard",
+  components: {
+    LoadingPage
+  },
   data() {
     const currentYear = new Date().getFullYear();
     const startYear = 2020;
@@ -246,62 +271,232 @@ export default {
       summaryCards: {},
       tableData: [],
       chartData: {},
+      isLoading: true,
+      apiStatus: 'idle',
+      error: null
     };
   },
   mounted() {
-    this.updateData();
+    this.fetchData();
   },
   methods: {
-  updateData() {
-    const data = dummyData[this.selectedYear]?.[this.selectedProgram];
-    if (!data) {
-      console.error("Data tidak ditemukan untuk tahun dan program yang dipilih.");
-      return;
+    onLoadingComplete() {
+      this.isLoading = false;
+    },
+    onLoadingError() {
+      // Jika terjadi error saat loading, tetap tampilkan dashboard dengan pesan error
+      this.isLoading = false;
+    },
+    updateData() {
+      this.fetchData();
+    },
+    async fetchData() {
+      this.error = null;
+      this.apiStatus = 'loading';
+      
+      try {
+        // Konversi nama program ke parameter type yang sesuai dengan API
+        const type = this.selectedProgram === "Hipertensi" ? "ht" : "dm";
+        
+        // Panggil API dengan parameter year dan type
+        const response = await apiClient.get("/statistics", {
+          params: {
+            year: this.selectedYear,
+            type: type
+          }
+        });
+        
+        // Proses data dari API
+        this.processApiData(response.data);
+        this.apiStatus = 'success';
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        this.error = "Gagal memuat data. Silakan coba lagi nanti.";
+        this.apiStatus = 'error';
+        // Tampilkan pesan error ke pengguna
+        this.$toast.error("Gagal memuat data: " + (error.response?.data?.message || error.message));
+      }
+    },
+    processApiData(apiData) {
+      if (!apiData || !apiData.data || apiData.data.length === 0) {
+        this.error = "Tidak ada data yang tersedia.";
+        this.apiStatus = 'error';
+        return;
+      }
+      
+      // Ambil data puskesmas pertama (atau yang sesuai dengan kebutuhan)
+      const puskesmasData = apiData.data[0];
+      
+      // Tentukan jenis data berdasarkan program yang dipilih
+      const dataType = this.selectedProgram === "Hipertensi" ? "ht" : "dm";
+      const data = puskesmasData[dataType.toLowerCase()];
+      
+      if (!data) {
+        this.error = `Data ${this.selectedProgram} tidak tersedia.`;
+        this.apiStatus = 'error';
+        return;
+      }
+      
+      // Proses data untuk summary cards
+      this.summaryCards = {
+        sasaran: data.target,
+        capaianStandar: data.standard_patients,
+        capaianTidakStandar: data.non_standard_patients,
+        totalPelayanan: data.total_patients,
+        persenCapaianPelayanan: data.achievement_percentage + "%"
+      };
+      
+      // Proses data untuk tabel
+      this.tableData = [
+        {
+          jenisKelamin: "Laki-laki",
+          jumlah: data.male_patients,
+          januari: this.getMonthData(data.monthly_data["1"], "male"),
+          februari: this.getMonthData(data.monthly_data["2"], "male"),
+          maret: this.getMonthData(data.monthly_data["3"], "male"),
+          april: this.getMonthData(data.monthly_data["4"], "male"),
+          mei: this.getMonthData(data.monthly_data["5"], "male"),
+          juni: this.getMonthData(data.monthly_data["6"], "male"),
+          juli: this.getMonthData(data.monthly_data["7"], "male"),
+          agustus: this.getMonthData(data.monthly_data["8"], "male"),
+          september: this.getMonthData(data.monthly_data["9"], "male"),
+          oktober: this.getMonthData(data.monthly_data["10"], "male"),
+          november: this.getMonthData(data.monthly_data["11"], "male"),
+          desember: this.getMonthData(data.monthly_data["12"], "male")
+        },
+        {
+          jenisKelamin: "Perempuan",
+          jumlah: data.female_patients,
+          januari: this.getMonthData(data.monthly_data["1"], "female"),
+          februari: this.getMonthData(data.monthly_data["2"], "female"),
+          maret: this.getMonthData(data.monthly_data["3"], "female"),
+          april: this.getMonthData(data.monthly_data["4"], "female"),
+          mei: this.getMonthData(data.monthly_data["5"], "female"),
+          juni: this.getMonthData(data.monthly_data["6"], "female"),
+          juli: this.getMonthData(data.monthly_data["7"], "female"),
+          agustus: this.getMonthData(data.monthly_data["8"], "female"),
+          september: this.getMonthData(data.monthly_data["9"], "female"),
+          oktober: this.getMonthData(data.monthly_data["10"], "female"),
+          november: this.getMonthData(data.monthly_data["11"], "female"),
+          desember: this.getMonthData(data.monthly_data["12"], "female")
+        }
+      ];
+      
+      // Proses data untuk chart
+      this.chartData = {
+        lakiLaki: Object.keys(data.monthly_data).map(month => data.monthly_data[month].male),
+        perempuan: Object.keys(data.monthly_data).map(month => data.monthly_data[month].female)
+      };
+      
+      // Render chart
+      this.$nextTick(() => {
+        this.renderChart();
+      });
+    },
+    getMonthData(monthData, gender) {
+      if (!monthData) {
+        return { s: 0, ts: 0, persen: "0%" };
+      }
+      
+      // Untuk data laki-laki, kita hanya perlu nilai male dari data bulanan
+      // Untuk data perempuan, kita hanya perlu nilai female dari data bulanan
+      // Nilai standard dan non_standard adalah total, jadi kita perlu memperkirakan berdasarkan proporsi
+      
+      const genderCount = monthData[gender] || 0;
+      const totalCount = monthData.total || 0;
+      
+      // Hitung perkiraan standard dan non-standard berdasarkan proporsi gender
+      let standardCount = 0;
+      let nonStandardCount = 0;
+      
+      if (totalCount > 0) {
+        const genderRatio = genderCount / totalCount;
+        standardCount = Math.round((monthData.standard || 0) * genderRatio);
+        nonStandardCount = Math.round((monthData.non_standard || 0) * genderRatio);
+      }
+      
+      return {
+        s: standardCount,
+        ts: nonStandardCount,
+        persen: monthData.percentage ? monthData.percentage + "%" : "0%"
+      };
+    },
+    renderChart() {
+      const ctx = document.getElementById("chart");
+      if (!ctx) return;
+      
+      const context = ctx.getContext("2d");
+      if (this.chartInstance) {
+        this.chartInstance.destroy(); // Hapus chart sebelumnya jika ada
+      }
+      this.chartInstance = new Chart(context, {
+        type: "line",
+        data: {
+          labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+          datasets: [
+            {
+              label: "Laki-laki",
+              data: this.chartData.lakiLaki,
+              borderColor: "#3b82f6",
+              fill: false,
+            },
+            {
+              label: "Perempuan",
+              data: this.chartData.perempuan,
+              borderColor: "#f59e0b",
+              fill: false,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+        },
+      });
+    },
+    printReport() {
+      window.print();
     }
-
-    this.summaryCards = data.summaryCards;
-    this.tableData = data.tableData;
-    this.chartData = data.chartData;
-
-    // Render ulang chart
-    this.renderChart();
   },
-  renderChart() {
-    const ctx = document.getElementById("chart").getContext("2d");
-    if (this.chartInstance) {
-      this.chartInstance.destroy(); // Hapus chart sebelumnya jika ada
-    }
-    this.chartInstance = new Chart(ctx, {
-      type: "line",
-      data: {
-        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-        datasets: [
-          {
-            label: "Laki-laki",
-            data: this.chartData.lakiLaki,
-            borderColor: "#3b82f6",
-            fill: false,
-          },
-          {
-            label: "Perempuan",
-            data: this.chartData.perempuan,
-            borderColor: "#f59e0b",
-            fill: false,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-      },
-    });
-  },
-},
 };
 </script>
 
 <style scoped>
 /* Root Styles */
+.dashboard-content {
+  opacity: 1;
+  transition: opacity 0.5s ease;
+}
+
+/* Error Message */
+.error-message {
+  background-color: #fee2e2;
+  border: 1px solid #ef4444;
+  color: #b91c1c;
+  padding: 16px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.retry-button {
+  margin-left: auto;
+  background-color: #b91c1c;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.retry-button:hover {
+  background-color: #991b1b;
+}
 body {
   background-color: #f7f8f9;
   min-height: 100vh;
@@ -309,6 +504,65 @@ body {
   padding: 20px;
 }
 
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.loading-spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #10b981;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 10px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Error Message */
+.error-message {
+  background-color: #fee2e2;
+  border: 1px solid #ef4444;
+  color: #b91c1c;
+  padding: 16px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.retry-button {
+  margin-left: auto;
+  background-color: #b91c1c;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.retry-button:hover {
+  background-color: #991b1b;
+}
 /* Toolbar - Adjusted as per sketch */
 .toolbar {
   display: flex;
