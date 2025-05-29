@@ -151,6 +151,10 @@ router.beforeEach((to, from, next) => {
   const isAdminUser = isAdmin();
 
   // Routes that require guest access (not authenticated)
+  if (to.meta.requiresAuth === false) {
+    return next();
+  }
+  // Routes that require guest access but are already authenticated
   if (to.meta.requiresGuest && authenticated) {
     if (isAdminUser) {
       return next({ path: '/admin/dashboard' });

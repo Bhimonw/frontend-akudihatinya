@@ -17,13 +17,10 @@
           <div class="form-section">
             <div class="section-header">
               <font-awesome-icon :icon="['fas', 'calendar-alt']" class="section-icon" />
-              <h3>Tanggal Pemeriksaan</h3>
+              <h3>Tanggal Pemeriksaan<span class="required">*</span></h3>
             </div>
             
             <div class="form-group">
-              <label for="date">
-                Tanggal Pemeriksaan <span class="required">*</span>
-              </label>
               <div class="input-wrapper">
                 <font-awesome-icon :icon="['fas', 'calendar-alt']" class="input-icon" />
                 <flatpickr
@@ -48,8 +45,8 @@
             <!-- GDS -->
             <div class="form-group">
               <label for="gdsp">Gula Darah Sewaktu</label>
-              <div class="input-wrapper input-unit-wrapper">
-                <font-awesome-icon :icon="['fas', 'heartbeat']" class="input-icon" />
+              <div class="input-wrapper input-unit-wrapper" :class="{ 'input-error-wrapper': errors.gdsp }">
+                <font-awesome-icon :icon="['fas', 'heartbeat']" class="input-icon" :class="{ 'error-icon': errors.gdsp }" />
                 <input 
                   type="number" 
                   id="gdsp"
@@ -58,6 +55,7 @@
                   placeholder="Masukkan nilai" 
                   class="form-input unit-input"
                   :class="{ 'input-error': errors.gdsp }"
+                  ref="gdspInput"
                 />
                 <span class="unit-label">mg/dL</span>
               </div>
@@ -72,8 +70,8 @@
             <!-- GDP -->
             <div class="form-group">
               <label for="gdp">Gula Darah Puasa</label>
-              <div class="input-wrapper input-unit-wrapper">
-                <font-awesome-icon :icon="['fas', 'tint']" class="input-icon" />
+              <div class="input-wrapper input-unit-wrapper" :class="{ 'input-error-wrapper': errors.gdp }">
+                <font-awesome-icon :icon="['fas', 'tint']" class="input-icon" :class="{ 'error-icon': errors.gdp }" />
                 <input 
                   type="number" 
                   id="gdp"
@@ -82,6 +80,7 @@
                   placeholder="Masukkan nilai" 
                   class="form-input unit-input"
                   :class="{ 'input-error': errors.gdp }"
+                  ref="gdpInput"
                 />
                 <span class="unit-label">mg/dL</span>
               </div>
@@ -96,8 +95,8 @@
             <!-- GD2JPP -->
             <div class="form-group">
               <label for="gd2jpp">Gula Darah 2 Jam PP</label>
-              <div class="input-wrapper input-unit-wrapper" v-if="formData.gdp !== null && formData.gdp !== ''">
-                <font-awesome-icon :icon="['fas', 'clock']" class="input-icon" />
+              <div class="input-wrapper input-unit-wrapper" v-if="formData.gdp !== null && formData.gdp !== ''" :class="{ 'input-error-wrapper': errors.gd2jpp }">
+                <font-awesome-icon :icon="['fas', 'clock']" class="input-icon" :class="{ 'error-icon': errors.gd2jpp }" />
                 <input 
                   type="number" 
                   id="gd2jpp"
@@ -106,6 +105,7 @@
                   placeholder="Masukkan nilai" 
                   class="form-input unit-input"
                   :class="{ 'input-error': errors.gd2jpp }"
+                  ref="gd2jppInput"
                 />
                 <span class="unit-label">mg/dL</span>
               </div>
@@ -134,8 +134,8 @@
             <!-- Hba1c (Dimasukkan dalam section Gula Darah) -->
             <div class="form-group">
               <label for="hba1c">HbA1c</label>
-              <div class="input-wrapper input-unit-wrapper hba1c-wrapper">
-                <font-awesome-icon :icon="['fas', 'percent']" class="input-icon" />
+              <div class="input-wrapper input-unit-wrapper hba1c-wrapper" :class="{ 'input-error-wrapper': errors.hba1c }">
+                <font-awesome-icon :icon="['fas', 'percent']" class="input-icon" :class="{ 'error-icon': errors.hba1c }" />
                 <div class="hba1c-inputs">
                   <input
                     type="number"
@@ -148,8 +148,9 @@
                     placeholder="0"
                     class="form-input hba1c-input"
                     :class="{ 'input-error': errors.hba1c }"
+                    ref="hba1cIntInput"
                   />
-                  <span class="dot">.</span>
+                  <span class="dot" :class="{ 'error-dot': errors.hba1c }">.</span>
                   <input
                     type="number"
                     id="hba1c-dec"
@@ -161,6 +162,7 @@
                     placeholder="0"
                     class="form-input hba1c-input"
                     :class="{ 'input-error': errors.hba1c }"
+                    ref="hba1cDecInput"
                   />
                 </div>
                 <span class="unit-label">%</span>
@@ -293,6 +295,48 @@ export default {
     },
   },
   methods: {
+    validateForm() {
+      // Jalankan semua validasi manual
+      this.validateGdsp();
+      this.validateGdp();
+      this.validateGd2jpp();
+      this.validateHba1c();
+
+      // Cek apakah ada error
+      const hasError = Object.values(this.errors).some(error => error);
+
+      if (hasError) {
+        // Temukan field pertama yang error
+        const firstErrorKey = Object.keys(this.errors).find(key => this.errors[key]);
+        
+        // Arahkan fokus ke field tersebut
+        if (firstErrorKey) {
+          let inputRef;
+          switch(firstErrorKey) {
+            case 'gdsp':
+              inputRef = this.$refs.gdspInput;
+              break;
+            case 'gdp':
+              inputRef = this.$refs.gdpInput;
+              break;
+            case 'gd2jpp':
+              inputRef = this.$refs.gd2jppInput;
+              break;
+            case 'hba1c':
+              inputRef = this.$refs.hba1cIntInput || this.$refs.hba1cDecInput;
+              break;
+          }
+
+          if (inputRef && inputRef.focus) {
+            inputRef.focus();
+          }
+        }
+
+        return false; // Form tidak boleh disubmit
+      }
+
+      return true; // Semua valid
+    },
     validateGdsp() {
       const val = this.formData.gdsp;
       if (val === null || val === undefined || val === '') {
@@ -382,6 +426,10 @@ export default {
     },
     async handleSubmit() {
       try {
+        if (!this.validateForm()) {
+          // Jika ada error, hentikan proses
+          return;
+        }
         this.isSubmitting = true;
 
         // Validasi input minimal satu nilai pemeriksaan
@@ -540,612 +588,791 @@ export default {
 </script>
 
 <style scoped>
-/* Variables for consistent colors - Menggunakan skema warna hijau dari AddNewPatient */
-:root {
-  --primary-50: #ECFDF5;
-  --primary-100: #D1FAE5;
-  --primary-200: #A7F3D0;
-  --primary-300: #6EE7B7;
-  --primary-400: #34D399;
-  --primary-500: #10B981; /* Main primary color */
-  --primary-600: #059669;
-  --primary-700: #047857;
-  --primary-800: #065F46;
-  --primary-900: #064E3B;
-  
-  --neutral-50: #F9FAFB;
-  --neutral-100: #F3F4F6;
-  --neutral-200: #E5E7EB;
-  --neutral-300: #D1D5DB;
-  --neutral-400: #9CA3AF;
-  --neutral-500: #6B7280;
-  --neutral-600: #4B5563;
-  --neutral-700: #374151;
-  --neutral-800: #1F2937;
-  --neutral-900: #111827;
-  
-  --danger-50: #FEF2F2;
-  --danger-500: #EF4444;
-  --danger-700: #B91C1C;
-  
-  --warning-500: #F59E0B;
-  
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-}
-
-/* Modal Backdrop - Improved with animation */
+/* Modal Backdrop - Slightly softer blur, smoother transition */
 .modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(2px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  animation: fadeIn 0.2s ease-out;
+ position: fixed;
+ top: 0;
+ left: 0;
+ width: 100%;
+ height: 100%;
+ background-color: rgba(0, 0, 0, 0.55); /* Slightly darker for better focus on modal */
+ backdrop-filter: blur(3px); /* Slightly more blur */
+ display: flex;
+ justify-content: center;
+ align-items: center;
+ z-index: 1000;
+ animation: fadeIn 0.25s ease-out; /* Slightly longer animation */
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+ from { opacity: 0; }
+ to { opacity: 1; }
 }
 
-/* Modal Container - Updated with smoother corners and shadow */
+/* Modal Container - Refined shadow, increased border-radius */
 .modal-container {
-  width: 90%;
-  max-width: 580px; /* Lebih sempit untuk layout sebaris */
-  max-height: 90vh;
-  background-color: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  animation: slideIn 0.2s ease-out;
+ width: 90%;
+ max-width: 600px; /* Slightly wider for comfort */
+ max-height: 90vh;
+ background-color: #ffffff;
+ border-radius: 16px; /* Softer corners */
+ box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.15), 0 8px 15px -10px rgba(0, 0, 0, 0.1); /* Refined shadow */
+ overflow: hidden;
+ display: flex;
+ flex-direction: column;
+ animation: slideIn 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Smoother easing */
 }
 
 @keyframes slideIn {
-  from { transform: translateY(10px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+ from { transform: translateY(15px) scale(0.98); opacity: 0; }
+ to { transform: translateY(0) scale(1); opacity: 1; }
 }
 
-/* Modal Header - Updated with more emphasis and better spacing */
+/* Modal Header - Enhanced padding and visual separation */
 .modal-header {
-  padding: 16px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid var(--neutral-200);
-  background-color: var(--primary-50);
+ padding: 20px 24px; /* Increased padding */
+ display: flex;
+ justify-content: space-between;
+ align-items: center;
+ border-bottom: 1px solid var(--neutral-200);
+ background-color: var(--primary-50); /* Lighter background for a cleaner look */
 }
 
 .modal-header h2 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--primary-700);
-  display: flex;
-  align-items: center;
+ margin: 0;
+ font-size: 1.15rem; /* Slightly larger */
+ font-weight: 600;
+ color: var(--neutral-800); /* Darker for better contrast on light bg */
+ display: flex;
+ align-items: center;
 }
 
 .icon-margin {
-  margin-right: 10px;
-  color: var(--primary-500);
+ margin-right: 12px; /* Increased margin */
+ color: var(--primary-500);
+ font-size: 1.2em; /* Slightly larger icon */
 }
 
 .close-button {
-  background: transparent;
-  border: none;
-  font-size: 18px;
-  color: var(--neutral-500);
-  cursor: pointer;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
+ background: transparent;
+ border: none;
+ font-size: 20px; /* Larger close icon */
+ color: var(--neutral-500);
+ cursor: pointer;
+ width: 36px; /* Larger touch target */
+ height: 36px;
+ border-radius: 8px; /* Rounded square for a modern feel */
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ transition: all 0.2s ease;
 }
 
 .close-button:hover {
-  background-color: var(--neutral-200);
-  color: var(--neutral-800);
+ background-color: var(--neutral-200);
+ color: var(--neutral-900);
 }
 
-/* Modal Body - Improved scrolling and padding */
+/* Modal Body - Improved padding and scrollbar aesthetics */
 .modal-body {
-  padding: 16px 20px;
-  flex-grow: 1;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--neutral-400) var(--neutral-100);
+ padding: 20px 24px; /* Consistent padding with header */
+ flex-grow: 1;
+ overflow-y: auto;
+ scrollbar-width: thin;
+ scrollbar-color: var(--neutral-300) var(--neutral-100); /* Softer scrollbar */
 }
 
 .modal-body::-webkit-scrollbar {
-  width: 6px;
+ width: 8px; /* Slightly wider scrollbar */
 }
 
 .modal-body::-webkit-scrollbar-track {
-  background: var(--neutral-100);
-  border-radius: 10px;
+ background: var(--neutral-100);
+ border-radius: 10px;
 }
 
 .modal-body::-webkit-scrollbar-thumb {
-  background-color: var(--neutral-400);
-  border-radius: 10px;
+ background-color: var(--neutral-300);
+ border-radius: 10px;
+ border: 2px solid var(--neutral-100); /* Creates a "floating" thumb effect */
 }
 
-/* Form Sections - Simplified spacing for sebaris layout */
+.modal-body::-webkit-scrollbar-thumb:hover {
+ background-color: var(--neutral-400);
+}
+
+/* Form Sections - Cleaner look, more spacing */
 .form-section {
-  background-color: white;
-  border-radius: 10px;
-  border: 1px solid var(--neutral-200);
-  padding: 16px;
-  margin-bottom: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  transition: box-shadow 0.3s ease;
+ background-color: white;
+ border-radius: 12px; /* Consistent with modal container */
+ border: 1px solid var(--neutral-200);
+ padding: 20px; /* Increased padding */
+ margin-bottom: 24px; /* More space between sections */
+ box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); /* Softer shadow */
+ transition: box-shadow 0.3s ease;
+}
+
+.form-section:last-child {
+    margin-bottom: 16px; /* Reduced bottom margin for the last section */
 }
 
 .form-section:hover {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+ box-shadow: 0 5px 12px -2px rgba(0, 0, 0, 0.08), 0 3px 7px -3px rgba(0, 0, 0, 0.07); /* Refined hover shadow */
 }
 
 .section-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--neutral-200);
+ display: flex;
+ align-items: center;
+ margin-bottom: 18px; /* Increased margin */
+ padding-bottom: 12px; /* Increased padding */
+ border-bottom: 1px solid var(--neutral-200);
 }
 
 .section-icon {
-  font-size: 16px;
-  color: var(--primary-500);
-  margin-right: 10px;
+ font-size: 1.1rem; /* Slightly larger */
+ color: var(--primary-500);
+ margin-right: 12px; /* Increased margin */
 }
 
 .section-header h3 {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--neutral-700);
+ margin: 0;
+ font-size: 1rem; /* Standardized size */
+ font-weight: 600; /* Semi-bold for clarity */
+ color: var(--neutral-700);
 }
 
 .examination-form {
-  width: 100%;
+ width: 100%;
 }
 
-/* Form Groups - Improved spacing for sebaris layout */
+/* Form Groups - Better spacing */
 .form-group {
-  margin-bottom: 16px;
+ margin-bottom: 20px; /* Increased spacing */
 }
 
 .form-group:last-child {
-  margin-bottom: 0;
+ margin-bottom: 0;
 }
 
 .form-group label {
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 6px;
-  color: var(--neutral-700);
-  display: block;
+ font-size: 0.875rem; /* 14px */
+ font-weight: 500;
+ margin-bottom: 8px; /* More space below label */
+ color: var(--neutral-700);
+ display: block;
 }
 
 .required {
-  color: var(--danger-500);
-  margin-left: 4px;
+ color: var(--danger-500);
+ margin-left: 3px;
+ font-weight: 600;
 }
 
 /* Input Wrappers with Icons */
 .input-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
+ position: relative;
+ display: flex;
+ align-items: center;
 }
 
 .input-icon {
-  position: absolute;
-  left: 12px;
-  color: var(--neutral-500);
-  font-size: 16px;
-  pointer-events: none;
-  transition: color 0.3s ease;
+ position: absolute;
+ left: 14px; /* Adjusted for padding */
+ color: var(--neutral-400); /* Lighter default icon color */
+ font-size: 1rem; /* 16px */
+ pointer-events: none;
+ transition: color 0.2s ease;
 }
 
 /* Input with Unit Styling */
 .input-unit-wrapper {
-  border: 1px solid var(--neutral-300);
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
+  display: flex; /* Added to ensure children align well */
+ border: 1px solid var(--neutral-300);
+ border-radius: 10px; /* Slightly more rounded */
+ overflow: hidden; /* Crucial for child border-radius */
+ box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03); /* Softer shadow */
+ transition: all 0.2s ease;
 }
 
 .input-unit-wrapper:hover {
-  border-color: var(--primary-300);
+ border-color: var(--neutral-400); /* Softer hover */
 }
 
 .input-unit-wrapper:focus-within {
-  border-color: var(--primary-500);
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+ border-color: var(--primary-500);
+ box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25); /* Slightly more prominent focus shadow */
 }
+.input-unit-wrapper:focus-within .input-icon {
+  color: var(--primary-500); /* Change icon color on focus-within */
+}
+
 
 .input-unit-wrapper.disabled {
-  background-color: var(--neutral-100);
-  opacity: 0.7;
-  cursor: not-allowed;
+ background-color: var(--neutral-100);
+ opacity: 0.8; /* Slightly more visible when disabled */
+ cursor: not-allowed;
+  border-color: var(--neutral-200);
+}
+.input-unit-wrapper.disabled .input-icon,
+.input-unit-wrapper.disabled .unit-label {
+  color: var(--neutral-400);
+}
+.input-unit-wrapper.disabled .unit-input { /* Target child input when wrapper is disabled */
+  background-color: var(--neutral-100); /* Ensure input bg matches */
+  color: var(--neutral-500);
 }
 
+
 .unit-input {
-  border: none !important;
-  box-shadow: none !important;
-  flex: 1;
-  border-radius: 0;
+ border: none !important;
+ box-shadow: none !important;
+ flex: 1;
+  /* Remove individual border-radius if it's inside a wrapper that has overflow:hidden and its own border-radius */
+ border-radius: 0; 
+  min-width: 0; /* Allow shrinking */
+  background-color: white; /* Ensure it's white by default */
 }
 
 .unit-label {
-  padding: 0 12px;
-  color: var(--neutral-500);
-  font-size: 14px;
-  background-color: var(--neutral-50);
-  height: 100%;
-  display: flex;
-  align-items: center;
-  border-left: 1px solid var(--neutral-300);
-  min-width: 60px;
-  justify-content: center;
-  font-weight: 500;
-}
-
-.unit-label.disabled {
-  color: var(--neutral-400);
+ padding: 0 14px; /* Slightly more padding */
+ color: var(--neutral-600); /* Darker for better readability */
+ font-size: 0.875rem; /* 14px */
+ background-color: var(--neutral-100); /* Slightly different from disabled bg for contrast */
+ height: auto; /* Let it size with input */
+  align-self: stretch; /* Make it fill height */
+ display: flex;
+ align-items: center;
+ border-left: 1px solid var(--neutral-300);
+ min-width: 65px; /* Slightly wider */
+ justify-content: center;
+ font-weight: 500;
 }
 
 /* Input Styling - Enhanced with icons and focus states */
 .form-input {
-  width: 100%;
-  padding: 10px 10px 10px 36px;
-  border: 1px solid var(--neutral-300);
-  border-radius: 8px;
-  font-size: 14px;
-  color: var(--neutral-800);
-  background-color: white;
-  transition: all 0.3s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+ width: 100%;
+ padding: 12px 12px 12px 42px; /* Increased padding, adjusted for icon */
+ border: 1px solid var(--neutral-300);
+ border-radius: 10px; /* Consistent rounding */
+ font-size: 0.9375rem; /* 15px, slightly larger for readability */
+ color: var(--neutral-800);
+ background-color: white;
+ transition: all 0.2s ease;
+ box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.form-input::placeholder {
+  color: var(--neutral-400);
+  font-size: 0.9rem;
 }
 
 .form-input:hover {
-  border-color: var(--primary-300);
+ border-color: var(--neutral-400);
 }
 
 .form-input:focus {
-  border-color: var(--primary-500);
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
-  outline: none;
+ border-color: var(--primary-500);
+ box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+ outline: none;
 }
 
-.form-input:focus + .input-icon {
-  color: var(--primary-500);
+/* Selector for icon color change when input is focused (if icon is sibling) or wrapper is focused */
+.form-input:focus + .input-icon, 
+.input-wrapper:focus-within .input-icon {
+ color: var(--primary-500);
 }
 
 .form-input.disabled {
-  background-color: var(--neutral-100);
-  color: var(--neutral-500);
-  cursor: not-allowed;
+ background-color: var(--neutral-100);
+ color: var(--neutral-500);
+ cursor: not-allowed;
+  border-color: var(--neutral-200);
 }
 
-.input-error {
-  border-color: var(--danger-500) !important;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+.input-error { /* This class applies directly to the input field */
+ border-color: var(--danger-500) !important;
+  /* The box-shadow might be better on the wrapper if using .input-error-wrapper */
 }
+.input-error:focus {
+  border-color: var(--danger-500) !important; 
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25) !important; 
+}
+
+/* Add this class to the .input-unit-wrapper or .input-wrapper if its child input has an error */
+.input-error-wrapper { 
+  border-color: var(--danger-500) !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+}
+.input-error-wrapper:focus-within { /* Maintain error indication on focus */
+  border-color: var(--danger-500) !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25) !important;
+}
+.input-error-wrapper .input-icon { /* Optionally change icon color in error state */
+  color: var(--danger-500) !important;
+}
+
 
 .date-input {
-  padding-right: 10px; /* Allow space for date picker icon */
+ padding-right: 12px; /* Allow space for date picker icon */
 }
 
-/* HbA1c Input styling */
-.hba1c-wrapper {
-  display: flex;
-  align-items: center;
+/* HbA1c Input styling - Improved clarity */
+.hba1c-wrapper { /* This is an .input-unit-wrapper, specific styling below applies to its children */
+ display: flex;
+ align-items: center;
+  /* .input-error-wrapper class should be applied here if errors.hba1c is true */
 }
 
 .hba1c-inputs {
-  display: flex;
-  align-items: center;
-  flex: 1;
-  padding-left: 36px;
+ display: flex;
+ align-items: center;
+ flex-grow: 1; /* Allow it to take available space */
+ padding-left: 42px; /* Consistent with .form-input padding (icon width + space) */
 }
 
 .hba1c-input {
-  width: 60px;
-  text-align: center;
-  padding: 10px 6px !important;
-  border-radius: 0 !important;
-  border: none !important;
-  box-shadow: none !important;
+ width: auto; /* Allow flexible width */
+  min-width: 50px; /* Minimum width */
+  flex: 1; /* Distribute space */
+ text-align: center;
+ padding: 12px 8px !important; /* Match .form-input padding, reduced horizontal for less space */
+ border-radius: 0 !important;
+ border: none !important;
+ box-shadow: none !important;
+  font-size: 0.9375rem; /* Consistent font size */
+  background-color: transparent; /* Ensure no double background from wrapper */
+  color: var(--neutral-800);
+}
+.hba1c-input::placeholder {
+  color: var(--neutral-400);
+  font-size: 0.9rem;
+}
+/* If .hba1c-wrapper has .input-error-wrapper, the individual inputs don't need specific error styles unless desired */
+.input-error-wrapper .hba1c-input {
+  /* color: var(--danger-700); /* Optionally make text red too */
 }
 
 .dot {
-  font-weight: bold;
-  font-size: 18px;
-  margin: 0 2px;
-  color: var(--neutral-700);
+ font-weight: bold;
+ font-size: 1.2rem; /* Slightly larger dot */
+ margin: 0 4px; /* More space around dot */
+ color: var(--neutral-600); /* Darker dot for clarity */
+  align-self: center; /* Vertically center the dot */
+  padding-bottom: 2px; /* Fine-tune vertical alignment if needed */
+}
+.input-error-wrapper .dot { /* Optionally color the dot red in error state */
+  /* color: var(--danger-500); */
 }
 
 /* Helper text */
 .helper-text {
-  margin-top: 4px;
-  font-size: 12px;
-  color: var(--neutral-500);
-  display: flex;
-  align-items: center;
-  gap: 6px;
+ margin-top: 6px; /* More space */
+ font-size: 0.8125rem; /* 13px */
+ color: var(--neutral-600); /* Slightly darker for readability */
+ display: flex;
+ align-items: center;
+ gap: 6px;
 }
+.helper-text .fas { /* Assuming Font Awesome is used via class */
+  font-size: 0.9em; /* Adjust icon size within helper text */
+}
+
 
 /* Error Message - Improved with icon and animation */
-.error-message {
-  margin-top: 4px;
-  font-size: 12px;
-  color: var(--danger-500);
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.error-icon {
+  color: var(--danger-500) !important;
 }
 
-/* Fade transition for error messages */
+.error-dot {
+  color: var(--danger-500) !important;
+}
+
+.input-error-wrapper {
+  border-color: var(--danger-500) !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15) !important;
+  transition: all 0.2s ease;
+}
+
+.input-error {
+  border-color: var(--danger-500) !important;
+  background-color: rgba(254, 242, 242, 0.2) !important;
+}
+
+.error-message {
+ margin-top: 6px; /* More space */
+ font-size: 0.8125rem; /* 13px */
+ color: var(--danger-700); /* Darker red for better contrast */
+ font-weight: 500; /* Slightly bolder for emphasis */
+ display: flex;
+ align-items: center;
+ gap: 6px;
+ opacity: 1;
+ transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.error-message .fas {
+  font-size: 0.9em;
+}
+
+/* Fade transition for error messages (UNCHANGED) */
 .fade-enter-active, .fade-leave-active {
-  transition: opacity 0.3s, transform 0.3s;
+ transition: opacity 0.3s, transform 0.3s;
 }
 .fade-enter-from, .fade-leave-to {
-  opacity: 0;
-  transform: translateY(-5px);
+ opacity: 0;
+ transform: translateY(-5px);
 }
 
-/* Form Actions - Better button styling and position */
+/* Form Actions - Clearer separation and button styling */
 .form-actions {
-  margin-top: 24px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  padding-top: 16px;
-  border-top: 1px solid var(--neutral-200);
+ margin-top: 28px; /* More space before actions */
+ display: flex;
+ justify-content: flex-end;
+ gap: 12px; /* More space between buttons */
+ padding-top: 20px; /* Increased padding */
+ border-top: 1px solid var(--neutral-200);
 }
 
 /* Cancel Button */
 .btn-cancel {
-  padding: 10px 16px;
-  background-color: white;
-  border: 1px solid var(--neutral-300);
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--neutral-700);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+ padding: 10px 20px; /* Increased padding */
+ background-color: white;
+ border: 1px solid var(--neutral-300);
+ border-radius: 8px;
+ font-size: 0.9rem; /* 14.4px */
+ font-weight: 600; /* Bolder */
+ color: var(--neutral-700);
+ cursor: pointer;
+ transition: all 0.2s ease;
+ display: flex;
+ align-items: center;
+ gap: 8px;
 }
 
 .btn-cancel:hover {
-  background-color: var(--neutral-100);
-  border-color: var(--neutral-400);
+ background-color: var(--neutral-100);
+ border-color: var(--neutral-400);
+  color: var(--neutral-800);
 }
+.btn-cancel:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.25); /* Neutral focus ring */
+}
+
 
 /* Save Button */
 .btn-save {
-  padding: 10px 16px;
-  background-color: var(--primary-500);
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  color: white;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 120px;
-  justify-content: center;
+ padding: 10px 20px; /* Increased padding */
+ background-color: var(--primary-500);
+ border: 1px solid var(--primary-500); /* Added border for consistency */
+ border-radius: 8px;
+ font-size: 0.9rem; /* 14.4px */
+ font-weight: 600; /* Bolder */
+ color: white;
+ cursor: pointer;
+ transition: all 0.2s ease;
+ display: flex;
+ align-items: center;
+ gap: 8px;
+ min-width: 130px; /* Slightly wider */
+ justify-content: center;
 }
 
 .btn-save:hover {
-  background-color: var(--primary-600);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+ background-color: var(--primary-600);
+ border-color: var(--primary-600);
+ box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.1); /* Softer hover shadow */
+}
+.btn-save:focus {
+  outline: none;
+  background-color: var(--primary-600); /* Darken on focus too */
+  border-color: var(--primary-700);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3); /* Primary focus ring */
 }
 
 .btn-save:active {
-  background-color: var(--primary-700);
-  transform: translateY(1px);
+ background-color: var(--primary-700);
+  border-color: var(--primary-700);
+ transform: translateY(1px);
+  box-shadow: none; /* Remove shadow on active */
 }
 
 .btn-save:disabled {
-  background-color: var(--neutral-400);
-  cursor: not-allowed;
-  opacity: 0.7;
+ background-color: var(--neutral-300); /* Lighter disabled bg */
+  border-color: var(--neutral-300);
+ color: var(--neutral-500); /* Darker disabled text for readability */
+ cursor: not-allowed;
+ opacity: 1; /* Remove opacity, rely on color changes */
+  box-shadow: none;
+}
+.btn-save:disabled:hover {
+  background-color: var(--neutral-300); /* Keep same on hover when disabled */
+  border-color: var(--neutral-300);
 }
 
-/* Style untuk Flatpickr */
+
+/* Style untuk Flatpickr (minor adjustments for cohesion) */
 :deep(.flatpickr-calendar) {
-  border-radius: 12px;
-  overflow: hidden;
-  border: 1px solid var(--neutral-300);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+ border-radius: 12px;
+ overflow: hidden;
+ border: 1px solid var(--neutral-200); /* Lighter border */
+ box-shadow: 0 6px 25px rgba(0, 0, 0, 0.12); /* Refined shadow */
+  font-family: var(--font-sans); /* Ensure consistent font */
 }
 
 :deep(.flatpickr-month) {
-  background-color: var(--primary-500);
-  color: white;
-  padding: 12px 0 8px;
+ background-color: var(--primary-500);
+ color: white;
+ padding: 14px 0 10px; /* Adjusted padding */
+  height: auto; /* Ensure it wraps content */
 }
 
 :deep(.flatpickr-current-month) {
-  padding-top: 0;
+ padding-top: 0;
+  font-size: 1.1rem; /* Larger month/year text */
+  font-weight: 500;
 }
 
 :deep(.flatpickr-monthDropdown-months) {
-  font-weight: 600;
-  color: white;
+ font-weight: 500; /* Adjusted from 600 */
+ color: white;
+  font-size: 1.1rem; /* Match */
 }
 
 :deep(.flatpickr-prev-month), 
 :deep(.flatpickr-next-month) {
-  top: 6px;
-  padding: 6px;
+ top: 10px; /* Adjusted position */
+ padding: 8px; /* Larger touch area */
+  width: 38px; /* Consistent size */
+  height: 38px;
 }
 
 :deep(.flatpickr-prev-month svg), 
 :deep(.flatpickr-next-month svg) {
-  fill: rgba(255, 255, 255, 0.8);
+ fill: rgba(255, 255, 255, 0.85); /* Slightly more opaque */
+  width: 18px; /* Larger arrows */
+  height: 18px;
 }
 
 :deep(.flatpickr-prev-month:hover svg), 
 :deep(.flatpickr-next-month:hover svg) {
-  fill: white;
+ fill: white;
 }
 
 :deep(.flatpickr-day) {
-  border-radius: 8px;
-  margin: 2px;
-  line-height: 34px;
-  height: 34px;
+ border-radius: 8px;
+ margin: 1px; /* Slightly less margin for a tighter grid */
+ line-height: 38px; /* Taller days */
+ height: 38px;
+  font-weight: 400;
 }
 
-:deep(.flatpickr-day.selected) {
-  background: var(--primary-500);
-  border-color: var(--primary-500);
+:deep(.flatpickr-day.selected),
+:deep(.flatpickr-day.startRange),
+:deep(.flatpickr-day.endRange) {
+ background: var(--primary-500);
+ border-color: var(--primary-500);
+  color: white;
 }
 
-:deep(.flatpickr-day.selected:hover) {
-  background: var(--primary-600);
-  border-color: var(--primary-600);
+:deep(.flatpickr-day.selected:hover),
+:deep(.flatpickr-day.startRange:hover),
+:deep(.flatpickr-day.endRange:hover) {
+ background: var(--primary-600);
+ border-color: var(--primary-600);
+  color: white;
 }
 
 :deep(.flatpickr-day:hover) {
-  background: var(--primary-100);
-  border-color: var(--primary-100);
-  color: var(--primary-700);
+ background: var(--primary-100);
+ border-color: var(--primary-100);
+ color: var(--primary-700);
 }
 
 :deep(.flatpickr-day.today) {
-  border-color: var(--primary-500);
-  color: var(--primary-500);
-  font-weight: 600;
+ border-color: var(--primary-300); /* Softer border for today */
+ color: var(--primary-600);
+ font-weight: 500; /* Slightly bolder for today */
 }
+:deep(.flatpickr-day.today:not(.selected):hover) {
+  background: var(--primary-100);
+  border-color: var(--primary-300);
+}
+
 
 :deep(.flatpickr-weekday) {
-  color: var(--primary-700);
-  font-weight: 600;
+ color: var(--primary-600); /* Match 'today' color */
+ font-weight: 500;
+  font-size: 0.75rem; /* Smaller weekday names */
+  height: 28px; /* Adjust height */
+  line-height: 28px;
 }
 
+/* Hide year input in Flatpickr (UNCHANGED from original intent) */
 :deep(.flatpickr-current-month .numInputWrapper) {
-  display: none !important;
+ display: none !important;
 }
-
 :deep(.flatpickr-current-month .cur-month) {
-  padding: 0 !important;
+ padding: 0 !important;
 }
 
-/* Customize SweetAlert */
+/* Customize SweetAlert (minor adjustments for cohesion) */
 :deep(.swal2-popup) {
-  border-radius: 12px;
-  padding: 24px;
+ border-radius: 16px; /* Match modal */
+ padding: 28px; /* More padding */
+  font-family: var(--font-sans); /* Consistent font */
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1); /* Softer shadow */
 }
 
 :deep(.swal2-title) {
-  color: var(--neutral-800);
-  font-size: 18px;
+ color: var(--neutral-800);
+ font-size: 1.25rem; /* Slightly larger */
+  font-weight: 600;
+  padding-top: 10px; /* Add some space if icon is present */
+  margin-bottom: 0.8em; /* Space between title and content */
 }
 
-:deep(.swal2-content) {
-  color: var(--neutral-600);
-  font-size: 14px;
+:deep(.swal2-html-container) { /* Target this for main text */
+ color: var(--neutral-600);
+ font-size: 0.95rem; /* 15.2px */
+  line-height: 1.6;
+  margin-top: 0; /* Reset if title provides bottom margin */
+  margin-bottom: 1.2em; /* Space before actions */
 }
 
 :deep(.swal2-confirm) {
-  background-color: var(--primary-500) !important;
-  border-radius: 8px;
-  font-size: 14px;
-  padding: 10px 20px;
+ background-color: var(--primary-500) !important;
+ border-radius: 8px;
+ font-size: 0.9rem; /* Match buttons */
+  font-weight: 600;
+ padding: 12px 24px; /* More padding */
+  transition: background-color 0.2s ease;
+}
+:deep(.swal2-confirm:hover) {
+  background-color: var(--primary-600) !important;
 }
 
 :deep(.swal2-confirm:focus) {
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2) !important;
+ box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3) !important; /* Match button focus */
+}
+
+:deep(.swal2-icon) { /* General icon styling */
+  margin-top: 1em; /* Ensure space from top of popup */
+  margin-bottom: 1.5em; /* More space below icon */
 }
 
 :deep(.swal2-icon.swal2-success) {
-  border-color: var(--primary-500) !important;
+ border-color: var(--primary-500) !important;
 }
 
 :deep(.swal2-icon.swal2-success [class^=swal2-success-line]) {
-  background-color: var(--primary-500) !important;
+ background-color: var(--primary-500) !important;
 }
 
 :deep(.swal2-icon.swal2-error) {
-  border-color: var(--danger-500) !important;
+ border-color: var(--danger-500) !important;
 }
 
 :deep(.swal2-icon.swal2-error [class^=swal2-x-mark-line]) {
-  background-color: var(--danger-500) !important;
+ background-color: var(--danger-500) !important;
 }
 
-/* Remove number input spinners */
+/* Remove number input spinners (UNCHANGED) */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
+ -webkit-appearance: none;
+ margin: 0;
 }
 
 input[type="number"] {
-  -moz-appearance: textfield;
+ -moz-appearance: textfield;
 }
 
-/* Responsive Design Improvements */
-@media (max-width: 576px) {
-  .modal-container {
-    width: 95%;
-    max-height: 95vh;
+/* Responsive Design Improvements (adjustments for new padding/sizing) */
+@media (max-width: 640px) { /* Adjusted breakpoint for more granular control */
+ .modal-container {
+  width: 95%;
+  max-height: 95vh;
+    border-radius: 12px; /* Slightly smaller radius on small screens */
+ }
+ 
+  .modal-header {
+    padding: 16px 20px;
   }
-  
   .modal-header h2 {
-    font-size: 16px;
+  font-size: 1.05rem; /* Adjusted size */
+ }
+  .icon-margin {
+    margin-right: 10px;
+    font-size: 1.1em;
   }
-  
-  .section-header h3 {
-    font-size: 15px;
+  .close-button {
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
   }
-  
-  .form-actions {
-    flex-direction: column-reverse;
+
+  .modal-body {
+    padding: 16px 20px;
   }
-  
-  .btn-cancel, .btn-save {
-    width: 100%;
-    justify-content: center;
+ 
+  .form-section {
+    padding: 16px;
+    margin-bottom: 20px;
   }
-  
-  .input-wrapper {
-    width: 100%;
+ .section-header h3 {
+  font-size: 0.95rem; /* Adjusted size */
+ }
+  .section-icon {
+    font-size: 1rem;
+    margin-right: 10px;
   }
-  
-  .form-input {
-    padding-left: 32px;
+ 
+ .form-actions {
+  flex-direction: column-reverse; /* Keep this for mobile */
+    gap: 10px; /* Reduced gap for stacked buttons */
+    margin-top: 20px;
+    padding-top: 16px;
+ }
+ 
+ .btn-cancel, .btn-save {
+  width: 100%;
+  justify-content: center;
+    padding: 12px 16px; /* Adjusted padding for full-width buttons */
+    font-size: 0.875rem;
+ }
+ 
+ .input-wrapper { /* Ensure this is not overriding children's width needs */
+  width: 100%;
+ }
+ 
+ .form-input {
+ padding-left: 38px; /* Adjusted for icon */
+    font-size: 0.9rem;
+ }
+  .form-input::placeholder {
+    font-size: 0.85rem;
   }
-  
-  .input-icon {
-    left: 10px;
-    font-size: 14px;
+ 
+.input-icon {
+left: 12px; /* Adjusted */
+font-size: 0.9rem; /* Adjusted */
+}
+
+.hba1c-inputs {
+padding-left: 38px; /* Adjusted */
+}
+  .hba1c-input {
+    font-size: 0.9rem;
+    min-width: 40px; /* Adjust min-width for smaller screens if needed */
   }
-  
-  .hba1c-inputs {
-    padding-left: 32px;
+  .hba1c-input::placeholder {
+    font-size: 0.85rem;
+  }
+
+  .unit-label {
+    padding: 0 10px;
+    font-size: 0.8125rem;
+    min-width: 55px;
   }
 }
 </style>

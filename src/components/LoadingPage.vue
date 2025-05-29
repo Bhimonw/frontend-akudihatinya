@@ -1,27 +1,31 @@
 <template>
-  <div class="loading-page">
-    <div class="loading-container">
-      <div class="logo-container">
-        <img src="../assets/ptm-icon.jpg" alt="Logo" class="logo" />
-      </div>
-      <h1 class="loading-title">Dinas Kesehatan</h1>
-      <p class="loading-subtitle">Sistem Informasi Pemantauan PTM</p>
-      
-      <div class="loading-animation">
-        <div class="circle"></div>
-        <div class="circle"></div>
-        <div class="circle"></div>
-        <div class="circle"></div>
-        <div class="circle"></div>
-      </div>
-      
-      <p class="loading-text">{{ loadingText }}</p>
-      <div class="progress-bar">
-        <div class="progress" :style="{ width: `${progress}%` }"></div>
+    <div class="loading-page">
+      <div class="loading-container">
+        <div class="content-wrapper">
+          <div class="logo-container">
+            <img src="../assets/ptm-icon.jpg" alt="Logo" class="logo" />
+          </div>
+          <div class="text-container">
+            <h1 class="loading-title">Akudihatinya</h1>
+            <p class="loading-subtitle">Dinas Kesehatan Kab. Banjar</p>
+          </div>
+        </div>
+        
+        <div class="loading-animation">
+          <div class="circle"></div>
+          <div class="circle"></div>
+          <div class="circle"></div>
+          <div class="circle"></div>
+          <div class="circle"></div>
+        </div>
+        
+        <p class="loading-text">{{ loadingText }}</p>
+        <div class="progress-bar">
+          <div class="progress" :style="{ width: `${progress}%` }"></div>
+        </div>
       </div>
     </div>
-  </div>
-</template>
+  </template>
 
 <script>
 export default {
@@ -113,6 +117,35 @@ export default {
 </script>
 
 <style scoped>
+.content-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.logo-container {
+  margin-bottom: 0;
+}
+
+.text-container {
+  text-align: left;
+}
+
+.loading-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #10b981;
+  margin: 0;
+}
+
+.loading-subtitle {
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  color: #4b5563;
+  margin: 5px 0 0 0;
+}
 .loading-page {
   position: fixed;
   top: 0;

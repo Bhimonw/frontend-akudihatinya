@@ -217,6 +217,11 @@
 import Swal from 'sweetalert2';
 
 export default {
+  name: 'AddNewPatientModal',
+  props: {
+    show: Boolean,
+    // properti lain jika ada
+  },
   data() {
     return {
       form: {

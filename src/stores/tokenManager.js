@@ -2,8 +2,8 @@
 import { authService } from './auth.js';
 
 // Interval waktu untuk memeriksa token (dalam milidetik)
-// 5 menit = 300000 ms
-const TOKEN_CHECK_INTERVAL = 300000;
+// 30 menit = 1800000 ms
+const TOKEN_CHECK_INTERVAL = 1800000;
 
 class TokenManager {
   constructor() {
@@ -20,8 +20,8 @@ class TokenManager {
       this.checkAndRefreshToken();
     }, TOKEN_CHECK_INTERVAL);
     
-    // Juga periksa segera saat aplikasi dimulai
-    this.checkAndRefreshToken();
+    // Hapus pemanggilan langsung saat aplikasi dimulai
+    // this.checkAndRefreshToken(); -- Hapus atau komentari baris ini
     
     console.log('Token refresher started');
   }
@@ -46,18 +46,18 @@ class TokenManager {
     }
     
     try {
-      // Sebagai optimasi, kita bisa melakukan refresh token
-      // tanpa perlu memeriksa validitas token terlebih dahulu
-      // Ini akan mengurangi jumlah API call dan waktu yang dibutuhkan
+      // Periksa validitas token terlebih dahulu
+      const isTokenValid = await authService.validateToken();
       
-      // Jika token mendekati kadaluarsa atau sudah kadaluarsa
-      // akan ditangani dengan refresh token secara otomatis
-      console.log('Proactively refreshing token...');
-      await authService.refreshToken();
+      // Hanya refresh jika token tidak valid
+      if (!isTokenValid) {
+        console.log('Token tidak valid, melakukan refresh...');
+        await authService.refreshToken();
+      } else {
+        console.log('Token masih valid, tidak perlu refresh');
+      }
     } catch (error) {
       console.error('Failed to refresh token:', error);
-      // Jika gagal, mungkin refreshToken juga kadaluarsa
-      // authService.logout() akan dipanggil dalam refreshToken() jika diperlukan
     }
   }
 }

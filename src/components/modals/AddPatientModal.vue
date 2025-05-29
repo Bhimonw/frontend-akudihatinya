@@ -151,61 +151,13 @@
             <button class="cancel-button" @click="closeModal">Batal</button>
           </div>
         </div>
-        <!-- Form Tambah Pasien Baru -->
-        <div v-else class="new-patient-form">
-          <h3>Tambah Pasien Baru</h3>
-          <form @submit.prevent="submitNewPatient">
-            <div class="form-row">
-              <div class="form-group">
-                <label for="name">Nama</label>
-                <input type="text" id="name" v-model="formData.name" placeholder="Masukkan nama" required />
-              </div>
-              <div class="form-group">
-                <label for="nik">NIK</label>
-                <input type="text" id="nik" v-model="formData.nik" placeholder="Masukkan NIK" required />
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label for="bpjs">No. BPJS</label>
-                <input type="text" id="bpjs" v-model="formData.bpjs" placeholder="Masukkan No. BPJS" />
-              </div>
-              <div class="form-group">
-                <label for="gender">Jenis Kelamin</label>
-                <select id="gender" v-model="formData.gender" required>
-                  <option value="">Pilih Jenis Kelamin</option>
-                  <option value="Laki-laki">Laki-laki</option>
-                  <option value="Perempuan">Perempuan</option>
-                </select>
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label for="dob">Tanggal Lahir</label>
-                <input type="date" id="dob" v-model="formData.dob" required />
-              </div>
-              <div class="form-group">
-                <label for="age">Umur</label>
-                <input type="number" id="age" v-model="formData.age" placeholder="Masukkan umur" min="0" required />
-              </div>
-            </div>
-            <div class="form-group full-width">
-              <label for="address">Alamat</label>
-              <textarea 
-                id="address" 
-                v-model="formData.address" 
-                placeholder="Masukkan alamat" 
-                rows="3" 
-                required
-              ></textarea>
-            </div>
-            <div class="button-container">
-              <button type="button" class="cancel-button" @click="showNewPatientForm = false">
-                Kembali
-              </button>
-              <button type="submit" class="submit-button">Simpan</button>
-            </div>
-          </form>
+         <!-- Form Tambah Pasien Baru (Menggunakan Komponen AddNewPatient) -->
+        <div v-else>
+          <AddNewPatientModal
+            :show="showNewPatientForm" 
+            @close="showNewPatientForm = false"
+            @submit="handleNewPatientSubmit"
+          />
         </div>
       </div>
     </div>
@@ -215,8 +167,12 @@
 <script>
 import Swal from 'sweetalert2';
 import axios from "axios";
+import AddNewPatientModal from "../../components/modals/AddNewPatient.vue";
 
 export default {
+  components: {
+    AddNewPatientModal
+  },
   props: {
     show: {
       type: Boolean,
@@ -229,13 +185,24 @@ export default {
   },
   data() {
     return {
-      patients: [], // Array untuk menyimpan data pasien dari API
+      patients: [], 
       searchPatientQuery: "",
-      showNewPatientForm: false,
-      isLoading: false, // State untuk loading
+      showNewPatientForm: false, // Untuk <AddNewPatientModal> yang terpisah
+      isLoading: false, 
       currentPage: 1,
       pageSize: 10,
       totalPatients: 0,
+      totalPages: 0,
+      formData: { // Data untuk form internal
+        id: null,
+        name: "",
+        nik: "",
+        bpjs: "",
+        gender: "",
+        dob: "",
+        age: "",
+        address: "",
+      },
     };
   },
   computed: {
@@ -369,6 +336,17 @@ export default {
       this.$emit("close");
       this.resetForm();
     },
+    handleNewPatientSubmit(patientData) {
+      // Proses data pasien baru yang diterima dari AddNewPatientModal
+      console.log("Data pasien baru diterima:", patientData);
+      
+      // Bisa tambahkan pasien baru ke daftar atau langsung kirim ke parent
+      this.$emit("submit", patientData);
+      
+      // Tutup modal dan reset form
+      this.showNewPatientForm = false;
+      this.closeModal();
+    },
     async selectPatient(patient) {
       try {
         // Validasi selectedYear
@@ -476,52 +454,6 @@ export default {
         });
       }
     },
-    async submitNewPatient() {
-      // Tampilkan dialog konfirmasi dengan SweetAlert2
-      const result = await Swal.fire({
-        title: 'Konfirmasi',
-        text: 'Apakah Anda yakin akan menyimpan data ini?',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Ya',
-        cancelButtonText: 'Batal',
-      });
-
-      // Jika pengguna membatalkan, hentikan proses
-      if (!result.isConfirmed) {
-        return;
-      }
-
-      try {
-        // Buat objek pasien baru
-        const newPatient = {
-          ...this.formData,
-          id: Date.now(),
-        };
-
-        // Emit data ke parent component
-        this.$emit("submit", newPatient);
-
-        // Tampilkan notifikasi sukses
-        Swal.fire({
-          icon: 'success',
-          title: 'Berhasil!',
-          text: 'Data berhasil disimpan!',
-        });
-
-        // Tutup modal
-        this.closeModal();
-      } catch (error) {
-        console.error("Error saving patient:", error);
-
-        // Tampilkan notifikasi error jika terjadi kesalahan
-        Swal.fire({
-          icon: 'error',
-          title: 'Kesalahan',
-          text: 'Gagal menyimpan data. Silakan coba lagi.',
-        });
-      }
-    },
     resetForm() {
       this.formData = {
         id: null,
@@ -559,73 +491,135 @@ export default {
 </script>
 
 <style scoped>
+/* Variables for consistent colors */
+:root {
+  --primary-50: #ECFDF5;
+  --primary-100: #D1FAE5;
+  --primary-200: #A7F3D0;
+  --primary-300: #6EE7B7;
+  --primary-400: #34D399;
+  --primary-500: #10B981; /* Main primary color */
+  --primary-600: #059669;
+  --primary-700: #047857;
+  --primary-800: #065F46;
+  --primary-900: #064E3B;
+  
+  --neutral-50: #F9FAFB;
+  --neutral-100: #F3F4F6;
+  --neutral-200: #E5E7EB;
+  --neutral-300: #D1D5DB;
+  --neutral-400: #9CA3AF;
+  --neutral-500: #6B7280;
+  --neutral-600: #4B5563;
+  --neutral-700: #374151;
+  --neutral-800: #1F2937;
+  --neutral-900: #111827;
+  
+  --danger-50: #FEF2F2;
+  --danger-500: #EF4444;
+  --danger-700: #B91C1C;
+  
+  --warning-500: #F59E0B;
+  
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .modal-container {
-  background: #ffffff;
-  border-radius: 10px;
   width: 90%;
   max-width: 900px;
   max-height: 90vh;
-  box-shadow: 0px 4px 25px rgba(0, 0, 0, 0.25);
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  animation: slideIn 0.2s ease-out;
+}
+
+@keyframes slideIn {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 .modal-header {
-  padding: 20px;
+  padding: 18px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #eaeaea;
-  flex-shrink: 0;
+  border-bottom: 1px solid var(--neutral-200);
+  background-color: var(--primary-50);
 }
 
 .modal-header h2 {
-  font-family: "Inter", sans-serif;
-  font-size: 18px;
-  font-weight: 600;
-  color: #333333;
   margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--primary-700);
+  display: flex;
+  align-items: center;
 }
 
 .close-button {
   background: transparent;
   border: none;
   font-size: 20px;
-  color: #9aa0a8;
+  color: var(--neutral-500);
   cursor: pointer;
-  padding: 5px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .close-button:hover {
-  color: #333333;
-  background-color: #f3f4f6;
+  background-color: var(--neutral-200);
+  color: var(--neutral-800);
 }
 
 .modal-body {
-  padding: 20px;
-  overflow-y: auto;
+  padding: 24px;
   flex-grow: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--neutral-400) var(--neutral-100);
+}
+
+.modal-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: var(--neutral-100);
+  border-radius: 10px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background-color: var(--neutral-400);
+  border-radius: 10px;
 }
 
 /* Patient Selection View Styles */
@@ -640,6 +634,11 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  padding: 16px;
+  background-color: var(--neutral-50);
+  border-radius: 10px;
+  border: 1px solid var(--neutral-200);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .search-container {
@@ -650,28 +649,32 @@ export default {
 
 .search-icon {
   position: absolute;
-  left: 10px;
+  left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: #9aa0a8;
+  color: var(--neutral-500);
 }
 
 .search-input {
   width: 100%;
   height: 42px;
   padding: 10px 10px 10px 36px;
-  border: 1px solid #cdcfd4;
-  border-radius: 10px;
-  font-family: "Inter", sans-serif;
+  border: 1px solid var(--neutral-300);
+  border-radius: 8px;
+  font-family: var(--font-sans);
   font-size: 14px;
-  color: #333333;
+  color: var(--neutral-800);
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .search-input:focus {
   outline: none;
   border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
 }
 
+/* Tetap mempertahankan warna button sesuai permintaan */
 .add-new-patient-button {
   display: flex;
   align-items: center;
@@ -679,17 +682,19 @@ export default {
   padding: 10px 20px;
   background: var(--primary-500);
   color: #ffffff;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
   font-size: 14px;
   font-weight: 500;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
   transition: background-color 0.3s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .add-new-patient-button:hover {
-  background: var(--primary-700);
+  background: var(--primary-600);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 /* Table Styles */
@@ -697,9 +702,9 @@ export default {
   overflow-x: auto;
   margin-bottom: 20px;
   border-radius: 10px;
-  border: 1px solid #eaeaea;
+  border: 1px solid var(--neutral-200);
   flex-grow: 1;
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .data-table {
@@ -707,44 +712,50 @@ export default {
   min-width: 800px;
   border-collapse: separate;
   border-spacing: 0;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
   font-size: 14px;
-  color: #333333;
+  color: var(--neutral-800);
 }
 
 .data-table thead th {
-  background: #f3f4f6;
-  color: #333333;
+  background: var(--neutral-100);
+  color: var(--neutral-700);
   font-weight: 600;
   text-align: center;
-  padding: 12px;
+  padding: 14px 12px;
   position: sticky;
   top: 0;
   z-index: 10;
+  border-bottom: 1px solid var(--neutral-200);
+}
+
+.data-table tbody tr {
+  transition: background-color 0.2s ease;
 }
 
 .data-table tbody tr:hover {
-  background: #f9fafb;
+  background: var(--neutral-50);
 }
 
 .data-table td {
   text-align: center;
   padding: 12px;
-  border-bottom: 1px solid #eaeaea;
+  border-bottom: 1px solid var(--neutral-200);
 }
 
 .no-data-message {
   text-align: center;
   padding: 20px;
-  color: #666;
+  color: var(--neutral-500);
   font-style: italic;
+  font-weight: 500;
 }
 
 .action-button.select {
-  padding: 6px 12px;
-  background: var(--primary-100);
-  color: var(--primary-500);
-  border: 1px solid var(--primary-300);
+  padding: 8px 14px;
+  background: var(--primary-50);
+  color: var(--primary-600);
+  border: 1px solid var(--primary-200);
   border-radius: 6px;
   font-size: 13px;
   font-weight: 500;
@@ -753,131 +764,38 @@ export default {
 }
 
 .action-button.select:hover {
-  background: var(--primary-200);
+  background: var(--primary-100);
+  border-color: var(--primary-300);
 }
 
-/* New Patient Form Styles */
-.new-patient-form {
-  width: 100%;
-}
-
-.new-patient-form h3 {
-  font-family: "Inter", sans-serif;
-  font-size: 16px;
-  font-weight: 600;
-  color: #333333;
-  margin: 0 0 20px 0;
-}
-
-.form-row {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 15px;
-}
-
-.form-group {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.form-group.full-width {
-  width: 100%;
-}
-
-.form-group label {
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 6px;
-  color: #4f5867;
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
-  padding: 10px;
-  border: 1px solid #cdcfd4;
-  border-radius: 8px;
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  color: #333333;
-}
-
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: var(--primary-500);
-}
-
-.button-container {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
-}
-
+/* Modal Footer */
 .modal-footer {
   display: flex;
   justify-content: flex-end;
-  padding-top: 10px;
-  border-top: 1px solid #eaeaea;
+  padding: 16px 24px;
+  border-top: 1px solid var(--neutral-200);
+  background-color: var(--neutral-50);
 }
 
 .cancel-button {
   padding: 10px 20px;
   background: #ffffff;
-  color: #4f5867;
-  border: 1px solid #cdcfd4;
+  color: var(--neutral-700);
+  border: 1px solid var(--neutral-300);
   border-radius: 8px;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .cancel-button:hover {
-  background: #f3f4f6;
-}
-
-.submit-button {
-  padding: 10px 20px;
-  background: var(--primary-500);
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.submit-button:hover {
-  background: var(--primary-700);
-}
-
-@media (max-width: 768px) {
-  .modal-container {
-    width: 95%;
-    max-height: 95vh;
-  }
-  
-  .form-row {
-    flex-direction: column;
-    gap: 15px;
-  }
-  
-  .patient-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-  
-  .search-container {
-    max-width: none;
-  }
+  background: var(--neutral-100);
+  border-color: var(--neutral-400);
 }
 
 /* Loading Container Style */
@@ -898,7 +816,7 @@ export default {
 
 /* Spinner Style */
 .spinner {
-  border: 4px solid #f3f3f3;
+  border: 4px solid var(--neutral-200);
   border-top: 4px solid var(--primary-500);
   border-radius: 50%;
   width: 40px;
@@ -908,34 +826,24 @@ export default {
 }
 
 @keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* Loading Text Style */
 .loading-content p {
   margin: 0;
-  color: var(--primary-500);
-  font-weight: 600;
-}
-
-/* Pesan "Tidak Ada Data" */
-.no-data-message {
-  text-align: center;
-  color: #9aa0a8;
-  font-size: 16px;
+  color: var(--primary-600);
   font-weight: 500;
-  padding: 20px 0;
+  font-family: var(--font-sans);
 }
 
-/* Pagination */
+/* Pagination - Mempertahankan warna sesuai permintaan */
 .pagination-container {
   background-color: #ffffff;
   border-radius: 8px;
+  padding: 12px;
+  border-top: 1px solid var(--neutral-200);
 }
 
 .pagination-ellipsis {
@@ -944,10 +852,11 @@ export default {
   justify-content: center;
   width: 40px;
   height: 40px;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
   font-size: 14px;
-  color: #9aa0a8;
+  color: var(--neutral-500);
 }
+
 /* Pagination Buttons */
 .pagination-button {
   display: flex;
@@ -956,27 +865,29 @@ export default {
   width: 40px;
   height: 40px;
   padding: 0;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
   font-size: 14px;
   font-weight: 500;
-  color: #9aa0a8;
+  color: var(--neutral-500);
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: color 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .pagination-button:hover {
   color: var(--primary-500);
+  background-color: var(--neutral-100);
 }
 
 /* Halaman Aktif */
 .pagination-button.active {
   color: var(--primary-500);
   font-weight: 600;
+  background-color: var(--primary-50);
 }
 
-/* Tombol Previous dan Next */
+/* Tombol Previous dan Next - Mempertahankan warna sesuai permintaan */
 .pagination-button.prev,
 .pagination-button.next {
   background-color: var(--primary-500);
@@ -993,9 +904,41 @@ export default {
 
 /* Tombol Disabled */
 .pagination-button:disabled {
-  background-color: #9aa0a8;
+  background-color: var(--neutral-400);
   color: #ffffff;
   cursor: not-allowed;
 }
 
+/* Responsive Design */
+@media (max-width: 768px) {
+  .modal-container {
+    width: 95%;
+    max-height: 95vh;
+  }
+  
+  .form-row {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .patient-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  
+  .search-container {
+    max-width: none;
+  }
+  
+  .modal-footer {
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+  
+  .cancel-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
 </style>

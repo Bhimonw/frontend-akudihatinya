@@ -54,16 +54,6 @@
         </div>
         <p>Lihat Profil</p>
       </div>
-      <div class="dropdown-item">
-        <div class="dropdown-icon">
-          <font-awesome-icon :icon="['fas', 'moon']" />
-        </div>
-        <p>Mode Gelap</p>
-        <label class="switch">
-          <input type="checkbox" />
-          <span class="slider round"></span>
-        </label>
-      </div>
       <div class="dropdown-item" @click="handleLogout">
         <div class="dropdown-icon">
           <font-awesome-icon :icon="['fas', 'sign-out-alt']" />

@@ -1,249 +1,219 @@
 <template>
-  <LoadingPage 
-    v-if="isLoading" 
-    :apiStatus="apiStatus" 
-    @loading-complete="onLoadingComplete" 
-    @loading-error="onLoadingError" 
-  />
-  
-  <div v-show="!isLoading" class="dashboard-content"></div>
-  <div class="toolbar">
-    <div class="left-section">
-      <!-- Dropdown Tahun -->
-      <div class="dropdown-container-year">
-        <select id="yearPicker" class="dropdown-select" v-model="selectedYear" @change="updateData">
-          <option v-for="year in years" :key="year" :value="String(year)">{{ year }}</option>
-        </select>
-      </div>
-      <!-- Dropdown Program Kesehatan -->
-      <div class="dropdown-container-program">
-        <select id="programPicker" class="dropdown-select" v-model="selectedProgram" @change="updateData">
-          <option v-for="program in programs" :key="program" :value="program">{{ program }}</option>
-        </select>
-      </div>
-      <!-- Print Button -->
-      <button class="print-report-button" @click="printReport">
-        <font-awesome-icon :icon="['fas', 'print']" />
-        Print Laporan
-        <font-awesome-icon :icon="['fas', 'chevron-down']" />
-      </button>
-    </div>
+  <div v-if="apiStatus === 'loading'" class="top-loading-bar">
+    <div class="loading-bar-progress"></div>
   </div>
 
-  <!-- Error message jika ada error -->
-  <div v-if="error" class="error-message">
-      <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
+  <div class="dashboard-content"> <div class="toolbar-card">
+      <div class="toolbar-content">
+        <div class="controls-section">
+          <div class="control-group">
+            <label class="control-label">
+              <span class="label-icon">📅</span>
+              Tahun
+            </label>
+            <div class="select-wrapper">
+              <select v-model="selectedYear" @change="updateData" class="modern-select">
+                <option v-for="year in years" :key="year" :value="String(year)">{{ year }}</option>
+              </select>
+              <span class="select-arrow">
+                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                  <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <label class="control-label">
+              <span class="label-icon">🏥</span>
+              Program Kesehatan
+            </label>
+            <div class="select-wrapper">
+              <select v-model="selectedProgram" @change="updateData" class="modern-select">
+                <option v-for="program in programs" :key="program" :value="program">{{ program }}</option>
+              </select>
+              <span class="select-arrow">
+                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                  <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <button class="print-button" @click="printReport">
+          <span class="button-icon">🖨️</span>
+          <span>Unduh Laporan</span>
+          <div class="button-shine"></div>
+        </button>
+      </div>
+    </div>
+
+    <div v-if="error && apiStatus === 'error'" class="error-message"> <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
       {{ error }}
       <button @click="fetchData" class="retry-button">
         <font-awesome-icon :icon="['fas', 'sync']" /> Coba Lagi
       </button>
     </div>
 
-  <!-- Summary Cards Section -->
-  <div class="summary-cards">
-    <div class="summary-card">
-      <div class="icon-container">
-        <font-awesome-icon :icon="['fas', 'users']" class="summary-icon" />
-      </div>
-      <div class="card-content">
-        <h3 class="card-title">Sasaran</h3>
-        <p class="card-value">{{ summaryCards.sasaran }}</p>
-        <p class="card-subtitle">(Jumlah)</p>
-      </div>
-    </div>
-    <div class="summary-card">
-      <div class="icon-container">
-        <font-awesome-icon :icon="['fas', 'check-circle']" class="summary-icon standar" />
-      </div>
-      <div class="card-content">
-        <h3 class="card-title">Capaian Standar</h3>
-        <p class="card-value">{{ summaryCards.capaianStandar }}</p>
-        <p class="card-subtitle">(Sesuai Standar)</p>
-      </div>
-    </div>
-    <div class="summary-card">
-      <div class="icon-container">
-        <font-awesome-icon :icon="['fas', 'times-circle']" class="summary-icon non-standar" />
-      </div>
-      <div class="card-content">
-        <h3 class="card-title">Capaian Tidak Standar</h3>
-        <p class="card-value">{{ summaryCards.capaianTidakStandar }}</p>
-        <p class="card-subtitle">(Tidak Sesuai Standar)</p>
-      </div>
-    </div>
-    <div class="summary-card">
-      <div class="icon-container">
-        <font-awesome-icon :icon="['fas', 'hospital']" class="summary-icon" />
-      </div>
-      <div class="card-content">
-        <h3 class="card-title">Total Pelayanan</h3>
-        <p class="card-value">{{ summaryCards.totalPelayanan }}</p>
-        <p class="card-subtitle">(Jumlah)</p>
-      </div>
-    </div>
-    <div class="summary-card">
-      <div class="icon-container">
-        <font-awesome-icon :icon="['fas', 'percent']" class="summary-icon" />
-      </div>
-      <div class="card-content">
-        <h3 class="card-title">% Capaian Pelayanan</h3>
-        <p class="card-value">{{ summaryCards.persenCapaianPelayanan }}</p>
-        <p class="card-subtitle">(Sesuai Standar)</p>
-      </div>
-    </div>
-  </div>
+    <div class="metrics-section">
+      <div class="metrics-grid">
+        <div class="metric-card primary">
+          <div class="metric-header">
+            <div class="metric-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7Z" stroke="currentColor" stroke-width="2"/>
+                <path d="M12 14C8.13401 14 5 17.134 5 21H19C19 17.134 15.866 14 12 14Z" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </div>
+            <span class="metric-trend">📈</span>
+          </div>
+          <div class="metric-content">
+            <h3 class="metric-title">Total Sasaran</h3>
+            <p class="metric-value">{{ summaryCards.sasaran || '0' }}</p>
+            <p class="metric-subtitle">Target Population</p>
+          </div>
+        </div>
 
-  <!-- Statistics Section -->
-  <div class="statistics-card">
-    <h2 class="section-title">Statistik</h2>
-    <div class="chart-legends">
-      <div class="legend-item">
-        <div class="legend-dot male"></div>
-        <span>Laki-laki</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-dot female"></div>
-        <span>Perempuan</span>
-      </div>
-    </div>
-    <div class="chart-container">
-      <div class="y-axis-values">
-        <div>100</div>
-        <div>80</div>
-        <div>60</div>
-        <div>40</div>
-        <div>20</div>
-        <div>0</div>
-      </div>
-      <canvas id="chart"></canvas>
-    </div>
-    <div class="x-axis-values">
-      <div>Jan</div>
-      <div>Feb</div>
-      <div>Mar</div>
-      <div>Apr</div>
-      <div>May</div>
-      <div>Jun</div>
-      <div>Jul</div>
-      <div>Aug</div>
-      <div>Sep</div>
-      <div>Oct</div>
-      <div>Nov</div>
-      <div>Dec</div>
-    </div>
-  </div>
+        <div class="metric-card success">
+          <div class="metric-header">
+            <div class="metric-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <span class="metric-trend">✅</span>
+          </div>
+          <div class="metric-content">
+            <h3 class="metric-title">Capaian Standar</h3>
+            <p class="metric-value">{{ summaryCards.capaianStandar || '0' }}</p>
+            <p class="metric-subtitle">Sesuai Standar</p>
+          </div>
+        </div>
 
+        <div class="metric-card warning">
+          <div class="metric-header">
+            <div class="metric-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M10 14L12 12M12 12L14 10M12 12L10 10M12 12L14 14M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <span class="metric-trend">❌</span>
+          </div>
+          <div class="metric-content">
+            <h3 class="metric-title">Tidak Standar</h3>
+            <p class="metric-value">{{ summaryCards.capaianTidakStandar || '0' }}</p>
+            <p class="metric-subtitle">Perlu Perhatian</p>
+          </div>
+        </div>
 
-  <!-- Data Table Section -->
-  <div class="table-section table-card">
-    <div class="table-header">
-      <h2 class="section-title">Rekap Data {{ selectedProgram }}</h2>
+        <div class="metric-card info">
+          <div class="metric-header">
+            <div class="metric-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M19 14C20.49 12.54 22 10.79 22 8.5C22 7.04131 21.4205 5.64236 20.3891 4.61091C19.3576 3.57946 17.9587 3 16.5 3C15.74 3 15.04 3.16 14.38 3.46C13.75 3.14 13.02 3 12.19 3C10.77 3 9.39 3.64 8.41 4.61C7.43 5.58 6.81 6.94 6.81 8.31C6.81 10.5 8.26 12.36 9.71 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </div>
+            <span class="metric-trend">🏥</span>
+          </div>
+          <div class="metric-content">
+            <h3 class="metric-title">Total Pelayanan</h3>
+            <p class="metric-value">{{ summaryCards.totalPelayanan || '0' }}</p>
+            <p class="metric-subtitle">Total Services</p>
+          </div>
+        </div>
+
+        <div class="metric-card accent">
+          <div class="metric-header">
+            <div class="metric-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M9 7H6C4.89543 7 4 7.89543 4 9V15C4 16.1046 4.89543 17 6 17H9M15 7H18C19.1046 7 20 7.89543 20 9V15C20 16.1046 19.1046 17 18 17H15M9 7V17M15 7V17M9 12H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <span class="metric-trend">📊</span>
+          </div>
+          <div class="metric-content">
+            <h3 class="metric-title">% Capaian</h3>
+            <p class="metric-value">{{ summaryCards.persenCapaianPelayanan || '0%' }}</p>
+            <p class="metric-subtitle">Achievement Rate</p>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="table-container">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th colspan="2" class="th-group">JUMLAH</th>
-            <th colspan="3" class="th-group">JANUARI</th>
-            <th colspan="3" class="th-group">FEBRUARI</th>
-            <th colspan="3" class="th-group">MARET</th>
-            <th colspan="3" class="th-group">APRIL</th>
-            <th colspan="3" class="th-group">MEI</th>
-            <th colspan="3" class="th-group">JUNI</th>
-            <th colspan="3" class="th-group">JULI</th>
-            <th colspan="3" class="th-group">AGUSTUS</th>
-            <th colspan="3" class="th-group">SEPTEMBER</th>
-            <th colspan="3" class="th-group">OKTOBER</th>
-            <th colspan="3" class="th-group">NOVEMBER</th>
-            <th colspan="3" class="th-group">DESEMBER</th>
-          </tr>
-          <tr>
-            <th>LAKI-LAKI</th>
-            <th>PEREMPUAN</th>
-            <th>S</th>
-            <th>TS</th>
-            <th>%</th>
-            <th>S</th>
-            <th>TS</th>
-            <th>%</th>
-            <th>S</th>
-            <th>TS</th>
-            <th>%</th>
-            <th>S</th>
-            <th>TS</th>
-            <th>%</th>
-            <th>S</th>
-            <th>TS</th>
-            <th>%</th>
-            <th>S</th>
-            <th>TS</th>
-            <th>%</th>
-            <th>S</th>
-            <th>TS</th>
-            <th>%</th>
-            <th>S</th>
-            <th>TS</th>
-            <th>%</th>
-            <th>S</th>
-            <th>TS</th>
-            <th>%</th>
-            <th>S</th>
-            <th>TS</th>
-            <th>%</th>
-            <th>S</th>
-            <th>TS</th>
-            <th>%</th>
-            <th>S</th>
-            <th>TS</th>
-            <th>%</th>
-            <th>S</th>
-            <th>TS</th>
-            <th>%</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(row, index) in tableData" :key="index">
-            <td>{{ row.jenisKelamin }}</td>
-            <td>{{ row.jenisKelamin }}</td>
-            <td>{{ row.januari.s }}</td>
-            <td>{{ row.januari.ts }}</td>
-            <td>{{ row.januari.persen }}</td>
-            <td>{{ row.februari.s }}</td>
-            <td>{{ row.februari.ts }}</td>
-            <td>{{ row.februari.persen }}</td>
-            <td>{{ row.maret.s }}</td>
-            <td>{{ row.maret.ts }}</td>
-            <td>{{ row.maret.persen }}</td>
-            <td>{{ row.april.s }}</td>
-            <td>{{ row.april.ts }}</td>
-            <td>{{ row.april.persen }}</td>
-            <td>{{ row.mei.s }}</td>
-            <td>{{ row.mei.ts }}</td>
-            <td>{{ row.mei.persen }}</td>
-            <td>{{ row.juni.s }}</td>
-            <td>{{ row.juni.ts }}</td>
-            <td>{{ row.juni.persen }}</td>
-            <td>{{ row.juli.s }}</td>
-            <td>{{ row.juli.ts }}</td>
-            <td>{{ row.juli.persen }}</td>
-            <td>{{ row.agustus.s }}</td>
-            <td>{{ row.agustus.ts }}</td>
-            <td>{{ row.agustus.persen }}</td>
-            <td>{{ row.september.s }}</td>
-            <td>{{ row.september.ts }}</td>
-            <td>{{ row.september.persen }}</td>
-            <td>{{ row.oktober.s }}</td>
-            <td>{{ row.oktober.ts }}</td>
-            <td>{{ row.oktober.persen }}</td>
-            <td>{{ row.november.s }}</td>
-            <td>{{ row.november.ts }}</td>
-            <td>{{ row.november.persen }}</td>
-            <td>{{ row.desember.s }}</td>
-            <td>{{ row.desember.ts }}</td>
-            <td>{{ row.desember.persen }}</td>
-          </tr>
-        </tbody>
-      </table>
+
+    <div class="charts-section">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title-section">
+            <h2 class="chart-title">
+              <span class="title-accent"></span>
+              Statistik Berdasarkan Jenis Kelamin
+            </h2>
+            <p class="chart-subtitle">Distribusi pasien per bulan dalam tahun {{ selectedYear }}</p>
+          </div>
+          <div class="chart-legends">
+            <div class="legend-item male">
+              <div class="legend-dot"></div>
+              <span>Laki-laki</span>
+            </div>
+            <div class="legend-item female">
+              <div class="legend-dot"></div>
+              <span>Perempuan</span>
+            </div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="chart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-section">
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title-section">
+            <h2 class="table-title">
+              <span class="title-accent"></span>
+              Rekap Data {{ selectedProgram }}
+            </h2>
+            <p class="table-subtitle">Data detail per bulan untuk tahun {{ selectedYear }}</p>
+          </div>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+              <thead>
+                <tr>
+                  <th rowspan="2" class="th-month">Bulan</th>
+                  <th colspan="3" class="th-group">Jumlah</th>
+                  <th colspan="2" class="th-group">Jenis Kelamin</th>
+                </tr>
+                <tr>
+                  <th class="th-sub">S</th>
+                  <th class="th-sub">TS</th>
+                  <th class="th-sub">%</th>
+                  <th class="th-sub">Laki-laki</th>
+                  <th class="th-sub">Perempuan</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(month, index) in monthlyTableData" :key="index" class="table-row">
+                  <td class="month-name">{{ month.name }}</td>
+                  <td class="data-cell">{{ month.standard }}</td>
+                  <td class="data-cell">{{ month.nonStandard }}</td>
+                  <td class="data-cell">
+                    <span class="percentage-value">{{ month.percentage }}%</span>
+                    <div class="percentage-bar">
+                      <div class="percentage-fill" :style="{ width: month.percentage + '%' }"></div>
+                    </div>
+                  </td>
+                  <td class="data-cell">{{ month.male }}</td>
+                  <td class="data-cell">{{ month.female }}</td>
+                </tr>
+              </tbody>
+            </table>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -251,13 +221,11 @@
 <script>
 import { Chart } from "chart.js/auto";
 import apiClient from "../../api.js";
-import LoadingPage from "../../components/LoadingPage.vue";
+// import LoadingPage from "../../components/LoadingPage.vue"; // Dihapus
 
 export default {
   name: "Dashboard",
-  components: {
-    LoadingPage
-  },
+  // components: { LoadingPage }, // Dihapus
   data() {
     const currentYear = new Date().getFullYear();
     const startYear = 2020;
@@ -265,14 +233,16 @@ export default {
     return {
       chartInstance: null,
       selectedYear: String(currentYear),
-      years: years.filter((year) => year >= 2024 && year <= 2025), // Hanya 2024 dan 2025
+      years: years.filter((year) => year >= 2024 && year <= 2025),
       selectedProgram: "Diabetes Mellitus",
       programs: ["Diabetes Mellitus", "Hipertensi"],
       summaryCards: {},
       tableData: [],
+      data: {},
+      monthlyTableData: [],
       chartData: {},
-      isLoading: true,
-      apiStatus: 'idle',
+      // isLoading: true, // Dihapus
+      apiStatus: 'idle', // Tetap: 'idle', 'loading', 'success', 'error'
       error: null
     };
   },
@@ -280,154 +250,139 @@ export default {
     this.fetchData();
   },
   methods: {
-    onLoadingComplete() {
-      this.isLoading = false;
-    },
-    onLoadingError() {
-      // Jika terjadi error saat loading, tetap tampilkan dashboard dengan pesan error
-      this.isLoading = false;
-    },
+    // onLoadingComplete() dan onLoadingError() dihapus
+
     updateData() {
       this.fetchData();
     },
     async fetchData() {
       this.error = null;
-      this.apiStatus = 'loading';
-      
+      this.apiStatus = 'loading'; // Set status ke loading
+
       try {
-        // Konversi nama program ke parameter type yang sesuai dengan API
         const type = this.selectedProgram === "Hipertensi" ? "ht" : "dm";
-        
-        // Panggil API dengan parameter year dan type
         const response = await apiClient.get("/statistics", {
           params: {
             year: this.selectedYear,
             type: type
           }
         });
-        
-        // Proses data dari API
+
         this.processApiData(response.data);
         this.apiStatus = 'success';
       } catch (error) {
         console.error("Error fetching data:", error);
         this.error = "Gagal memuat data. Silakan coba lagi nanti.";
         this.apiStatus = 'error';
-        // Tampilkan pesan error ke pengguna
-        this.$toast.error("Gagal memuat data: " + (error.response?.data?.message || error.message));
+
+        // Kosongkan data jika terjadi error untuk mencegah tampilan data lama/salah
+        this.summaryCards = {};
+        this.monthlyTableData = this.generateMonthlyTableData({}); // Kirim objek kosong untuk membersihkan tabel
+        this.chartData = { lakiLaki: [], perempuan: [] };
+        if (this.chartInstance) {
+             this.chartInstance.data.datasets[0].data = [];
+             this.chartInstance.data.datasets[1].data = [];
+             this.chartInstance.update();
+        }
+        
+        // Tampilkan pesan toast jika tersedia
+        if (this.$toast && typeof this.$toast.error === 'function') {
+            this.$toast.error("Gagal memuat data: " + (error.response?.data?.message || error.message));
+        } else {
+            // console.warn("$toast.error is not a function. Pastikan library toast dikonfigurasi dengan benar jika ingin digunakan.");
+        }
       }
     },
     processApiData(apiData) {
-      if (!apiData || !apiData.data || apiData.data.length === 0) {
-        this.error = "Tidak ada data yang tersedia.";
+    // Periksa apakah apiData atau apiData.data ada dan tidak kosong
+    if (!apiData || !apiData.data || apiData.data.length === 0) {
+        this.error = "Tidak ada data yang tersedia untuk parameter yang dipilih.";
         this.apiStatus = 'error';
+        this.summaryCards = { // Inisialisasi dengan nilai default atau kosong
+            sasaran: '0',
+            capaianStandar: '0',
+            capaianTidakStandar: '0',
+            totalPelayanan: '0',
+            persenCapaianPelayanan: '0%'
+        };
+        this.monthlyTableData = this.generateMonthlyTableData({}); // Menggunakan objek kosong
+        this.chartData = { lakiLaki: Array(12).fill(0), perempuan: Array(12).fill(0) };
+        if (this.chartInstance) {
+            this.chartInstance.data.datasets[0].data = this.chartData.lakiLaki;
+            this.chartInstance.data.datasets[1].data = this.chartData.perempuan;
+            this.chartInstance.update();
+        }
         return;
-      }
-      
-      // Ambil data puskesmas pertama (atau yang sesuai dengan kebutuhan)
-      const puskesmasData = apiData.data[0];
-      
-      // Tentukan jenis data berdasarkan program yang dipilih
-      const dataType = this.selectedProgram === "Hipertensi" ? "ht" : "dm";
-      const data = puskesmasData[dataType.toLowerCase()];
-      
-      if (!data) {
+    }
+
+    const puskesmasData = apiData.data[0];
+    const dataType = this.selectedProgram === "Hipertensi" ? "ht" : "dm";
+    const data = puskesmasData[dataType.toLowerCase()];
+
+    if (!data) {
         this.error = `Data ${this.selectedProgram} tidak tersedia.`;
         this.apiStatus = 'error';
-        return;
-      }
-      
-      // Proses data untuk summary cards
-      this.summaryCards = {
-        sasaran: data.target,
-        capaianStandar: data.standard_patients,
-        capaianTidakStandar: data.non_standard_patients,
-        totalPelayanan: data.total_patients,
-        persenCapaianPelayanan: data.achievement_percentage + "%"
-      };
-      
-      // Proses data untuk tabel
-      this.tableData = [
-        {
-          jenisKelamin: "Laki-laki",
-          jumlah: data.male_patients,
-          januari: this.getMonthData(data.monthly_data["1"], "male"),
-          februari: this.getMonthData(data.monthly_data["2"], "male"),
-          maret: this.getMonthData(data.monthly_data["3"], "male"),
-          april: this.getMonthData(data.monthly_data["4"], "male"),
-          mei: this.getMonthData(data.monthly_data["5"], "male"),
-          juni: this.getMonthData(data.monthly_data["6"], "male"),
-          juli: this.getMonthData(data.monthly_data["7"], "male"),
-          agustus: this.getMonthData(data.monthly_data["8"], "male"),
-          september: this.getMonthData(data.monthly_data["9"], "male"),
-          oktober: this.getMonthData(data.monthly_data["10"], "male"),
-          november: this.getMonthData(data.monthly_data["11"], "male"),
-          desember: this.getMonthData(data.monthly_data["12"], "male")
-        },
-        {
-          jenisKelamin: "Perempuan",
-          jumlah: data.female_patients,
-          januari: this.getMonthData(data.monthly_data["1"], "female"),
-          februari: this.getMonthData(data.monthly_data["2"], "female"),
-          maret: this.getMonthData(data.monthly_data["3"], "female"),
-          april: this.getMonthData(data.monthly_data["4"], "female"),
-          mei: this.getMonthData(data.monthly_data["5"], "female"),
-          juni: this.getMonthData(data.monthly_data["6"], "female"),
-          juli: this.getMonthData(data.monthly_data["7"], "female"),
-          agustus: this.getMonthData(data.monthly_data["8"], "female"),
-          september: this.getMonthData(data.monthly_data["9"], "female"),
-          oktober: this.getMonthData(data.monthly_data["10"], "female"),
-          november: this.getMonthData(data.monthly_data["11"], "female"),
-          desember: this.getMonthData(data.monthly_data["12"], "female")
+        this.summaryCards = {
+            sasaran: '0',
+            capaianStandar: '0',
+            capaianTidakStandar: '0',
+            totalPelayanan: '0',
+            persenCapaianPelayanan: '0%'
+        };
+        this.monthlyTableData = this.generateMonthlyTableData({});
+        this.chartData = { lakiLaki: Array(12).fill(0), perempuan: Array(12).fill(0) };
+        if (this.chartInstance) {
+            this.chartInstance.data.datasets[0].data = this.chartData.lakiLaki;
+            this.chartInstance.data.datasets[1].data = this.chartData.perempuan;
+            this.chartInstance.update();
         }
-      ];
-      
-      // Proses data untuk chart
-      this.chartData = {
-        lakiLaki: Object.keys(data.monthly_data).map(month => data.monthly_data[month].male),
-        perempuan: Object.keys(data.monthly_data).map(month => data.monthly_data[month].female)
-      };
-      
-      // Render chart
-      this.$nextTick(() => {
+        return;
+    }
+    
+    // Reset error jika data berhasil diproses
+    this.error = null;
+
+    this.summaryCards = {
+        sasaran: data.target || '0',
+        capaianStandar: data.standard_patients || '0',
+        capaianTidakStandar: data.non_standard_patients || '0',
+        totalPelayanan: data.total_patients || '0',
+        persenCapaianPelayanan: (data.achievement_percentage || 0) + "%"
+    };
+
+    this.monthlyTableData = this.generateMonthlyTableData(data.monthly_data || {});
+
+    const monthlyDataForChart = data.monthly_data && typeof data.monthly_data === 'object' ? data.monthly_data : {};
+    
+    const allMonthsMaleData = [];
+    const allMonthsFemaleData = [];
+
+    for (let i = 1; i <= 12; i++) {
+        const monthKey = String(i);
+        const currentMonthData = monthlyDataForChart[monthKey] || { male: 0, female: 0 };
+        allMonthsMaleData.push(currentMonthData.male || 0);
+        allMonthsFemaleData.push(currentMonthData.female || 0);
+    }
+
+    this.chartData = {
+        lakiLaki: allMonthsMaleData,
+        perempuan: allMonthsFemaleData
+    };
+
+    this.$nextTick(() => {
         this.renderChart();
-      });
-    },
-    getMonthData(monthData, gender) {
-      if (!monthData) {
-        return { s: 0, ts: 0, persen: "0%" };
-      }
-      
-      // Untuk data laki-laki, kita hanya perlu nilai male dari data bulanan
-      // Untuk data perempuan, kita hanya perlu nilai female dari data bulanan
-      // Nilai standard dan non_standard adalah total, jadi kita perlu memperkirakan berdasarkan proporsi
-      
-      const genderCount = monthData[gender] || 0;
-      const totalCount = monthData.total || 0;
-      
-      // Hitung perkiraan standard dan non-standard berdasarkan proporsi gender
-      let standardCount = 0;
-      let nonStandardCount = 0;
-      
-      if (totalCount > 0) {
-        const genderRatio = genderCount / totalCount;
-        standardCount = Math.round((monthData.standard || 0) * genderRatio);
-        nonStandardCount = Math.round((monthData.non_standard || 0) * genderRatio);
-      }
-      
-      return {
-        s: standardCount,
-        ts: nonStandardCount,
-        persen: monthData.percentage ? monthData.percentage + "%" : "0%"
-      };
-    },
+    });
+},
+    // getMonthData sepertinya tidak digunakan dan bisa dihapus jika tidak diperlukan di tempat lain
+    // getMonthData(monthData, gender) { ... }
+
     renderChart() {
       const ctx = document.getElementById("chart");
       if (!ctx) return;
-      
+
       const context = ctx.getContext("2d");
       if (this.chartInstance) {
-        this.chartInstance.destroy(); // Hapus chart sebelumnya jika ada
+        this.chartInstance.destroy();
       }
       this.chartInstance = new Chart(context, {
         type: "line",
@@ -436,26 +391,122 @@ export default {
           datasets: [
             {
               label: "Laki-laki",
-              data: this.chartData.lakiLaki,
-              borderColor: "#3b82f6",
-              fill: false,
+              data: this.chartData.lakiLaki || Array(12).fill(0), // Pastikan data adalah array
+              borderColor: "#3B82F6",
+              backgroundColor: "rgba(59, 130, 246, 0.1)",
+              borderWidth: 3,
+              fill: true,
+              tension: 0.4,
+              pointBackgroundColor: "#3B82F6",
+              pointBorderColor: "#ffffff",
+              pointBorderWidth: 2,
+              pointRadius: 6,
+              pointHoverRadius: 8,
             },
             {
               label: "Perempuan",
-              data: this.chartData.perempuan,
-              borderColor: "#f59e0b",
-              fill: false,
+              data: this.chartData.perempuan || Array(12).fill(0), // Pastikan data adalah array
+              borderColor: "#EC4899",
+              backgroundColor: "rgba(236, 72, 153, 0.1)",
+              borderWidth: 3,
+              fill: true,
+              tension: 0.4,
+              pointBackgroundColor: "#EC4899",
+              pointBorderColor: "#ffffff",
+              pointBorderWidth: 2,
+              pointRadius: 6,
+              pointHoverRadius: 8,
             },
           ],
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          interaction: {
+            intersect: false,
+            mode: 'index',
+          },
+          plugins: {
+            legend: {
+              display: false,
+            },
+            tooltip: {
+              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              titleColor: '#ffffff',
+              bodyColor: '#ffffff',
+              borderColor: 'rgba(255, 255, 255, 0.1)',
+              borderWidth: 1,
+              cornerRadius: 8,
+              displayColors: true,
+              usePointStyle: true,
+            }
+          },
+          scales: {
+            x: {
+              grid: {
+                display: false,
+              },
+              ticks: {
+                color: '#6B7280',
+                font: {
+                  size: 12,
+                  weight: '500'
+                }
+              }
+            },
+            y: {
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)',
+                drawBorder: false,
+              },
+              ticks: {
+                color: '#6B7280',
+                font: {
+                  size: 12,
+                  weight: '500'
+                },
+                beginAtZero: true // Pastikan sumbu Y dimulai dari 0
+              }
+            }
+          }
         },
       });
     },
     printReport() {
       window.print();
+    },
+    generateMonthlyTableData(monthlyData) {
+        const monthNames = [
+            'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+        ];
+
+        // Tangani kasus jika monthlyData null/undefined atau bukan objek
+        if (!monthlyData || typeof monthlyData !== 'object') { 
+            return monthNames.map(monthName => ({
+                name: monthName,
+                standard: 0,
+                nonStandard: 0,
+                percentage: 0,
+                male: 0,
+                female: 0
+            }));
+        }
+
+        return monthNames.map((monthName, index) => {
+            const monthKey = String(index + 1);
+            // Default ke objek kosong jika data bulan tertentu tidak ada
+            const currentMonthData = monthlyData[monthKey] || {}; 
+
+            return {
+                name: monthName,
+                standard: currentMonthData.standard || 0,
+                nonStandard: currentMonthData.non_standard || 0,
+                percentage: currentMonthData.percentage || 0,
+                male: currentMonthData.male || 0,
+                female: currentMonthData.female || 0
+            };
+        });
     }
   },
 };
@@ -463,45 +514,190 @@ export default {
 
 <style scoped>
 /* Root Styles */
+:root {
+  --primary-50: #ecfdf5;
+  --primary-100: #d1fae5;
+  --primary-200: #a7f3d0;
+  --primary-300: #6ee7b7;
+  --primary-400: #34d399;
+  --primary-500: #10b981;
+  --primary-600: #059669;
+  --primary-700: #047857;
+  --primary-800: #065f46;
+  --primary-900: #064e3b;
+  
+  --success-50: #f0fdf4;
+  --success-100: #dcfce7;
+  --success-500: #22c55e;
+  --success-600: #16a34a;
+  --success-700: #15803d;
+  
+  --warning-50: #fffbeb;
+  --warning-100: #fef3c7;
+  --warning-500: #f59e0b;
+  --warning-600: #d97706;
+  --warning-700: #b45309;
+  
+  --error-50: #fef2f2;
+  --error-100: #fee2e2;
+  --error-200: #fecaca;
+  --error-500: #ef4444;
+  --error-600: #dc2626;
+  --error-700: #b91c1c;
+  
+  --accent-500: #8b5cf6;
+  --accent-600: #7c3aed;
+  
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+  
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+}
+.top-loading-bar {
+  position: fixed; /* Atau absolute jika tata letak Anda mengizinkan */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px; /* Tinggi bar loading */
+  background-color: var(--primary-100, #d1fae5); /* Latar belakang terang untuk track bar */
+  z-index: 9999; /* Pastikan berada di atas konten lain */
+  overflow: hidden; /* Sembunyikan bagian progress bar yang keluar */
+}
+
+.loading-bar-progress {
+  width: 100%;
+  height: 100%;
+  background: var(--primary-500, #10b981); /* Warna progress */
+  animation: indeterminate-progress 2s infinite linear;
+  transform-origin: left;
+}
+
+@keyframes indeterminate-progress {
+  0% {
+    transform: translateX(-100%) scaleX(0.5); /* Mulai di luar layar, lebih sempit */
+  }
+  50% {
+    transform: translateX(0%) scaleX(1);    /* Bergerak melintasi, lebar penuh */
+  }
+  100% {
+    transform: translateX(100%) scaleX(0.5); /* Pindah ke luar layar, lebih sempit */
+  }
+}
 .dashboard-content {
   opacity: 1;
   transition: opacity 0.5s ease;
+  max-width: 1400px;
+  margin: 0 auto;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header Section */
+.page-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.header-content {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-xl);
+  padding: 2rem;
+  color: white;
+}
+
+.page-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.title-icon {
+  font-size: 2rem;
+}
+
+.page-subtitle {
+  font-size: 1.125rem;
+  opacity: 0.9;
+  margin: 0;
+  font-weight: 400;
 }
 
 /* Error Message */
 .error-message {
-  background-color: #fee2e2;
-  border: 1px solid #ef4444;
-  color: #b91c1c;
-  padding: 16px;
-  border-radius: 10px;
-  margin-bottom: 20px;
+  background-color: var(--error-50, #fef2f2); /* Menggunakan variabel CSS jika tersedia */
+  border: 1px solid var(--error-200, #fecaca);
+  color: var(--error-700, #b91c1c);
+  padding: 1rem; /* Sedikit padding */
+  border-radius: var(--radius-lg, 0.75rem);
+  margin: 1rem auto; /* Tengah dan dengan margin */
+  max-width: 800px; /* Batasi lebar agar tidak terlalu memanjang */
   display: flex;
   align-items: center;
+  justify-content: space-between; /* Mendorong tombol coba lagi ke kanan */
   gap: 10px;
+  box-shadow: var(--shadow-md); /* Tambahkan sedikit bayangan */
+}
+.error-message .fa-exclamation-circle { /* Untuk ikon FontAwesome */
+  margin-right: 8px;
 }
 .retry-button {
-  margin-left: auto;
-  background-color: #b91c1c;
+  /* Penyesuaian untuk visibilitas dan konsistensi yang lebih baik */
+  background-color: var(--error-500, #ef4444);
   color: white;
   border: none;
-  border-radius: 5px;
-  padding: 8px 12px;
+  border-radius: var(--radius-md, 0.5rem);
+  padding: 0.5rem 1rem;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 0.875rem; /* 14px */
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 0.5rem;
+  transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
 .retry-button:hover {
-  background-color: #991b1b;
+  background-color: var(--error-600, #dc2626);
+  transform: translateY(-1px); /* Efek angkat kecil saat hover */
 }
+
 body {
-  background-color: #f7f8f9;
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-700) 100%);
   min-height: 100vh;
   box-sizing: border-box;
   padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .loading-overlay {
@@ -519,8 +715,8 @@ body {
 }
 
 .loading-spinner {
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #10b981;
+  border: 4px solid var(--gray-200);
+  border-top: 4px solid var(--primary-500);
   border-radius: 50%;
   width: 40px;
   height: 40px;
@@ -533,362 +729,664 @@ body {
   100% { transform: rotate(360deg); }
 }
 
-/* Error Message */
-.error-message {
-  background-color: #fee2e2;
-  border: 1px solid #ef4444;
-  color: #b91c1c;
-  padding: 16px;
-  border-radius: 10px;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
+/* Toolbar */
+ .toolbar-card {
+    background: white;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    margin-bottom: 2rem;
+    overflow: hidden;
+  }
+  
+  .toolbar-content {
+    padding: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  
+  .controls-section {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+  
+  .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .control-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .label-icon {
+    font-size: 1rem;
+  }
+  
+  .select-wrapper {
+    position: relative;
+    min-width: 200px;
+  }
+  
+  .modern-select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    background: white;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--gray-700);
+    appearance: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .modern-select:focus {
+    outline: none;
+    border-color: var(--primary-500);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  .select-arrow {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gray-400);
+    pointer-events: none;
+  }
+  
+  .print-button {
+    background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+    color: white;
+    border: none;
+    border-radius: var(--radius-lg);
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s;
+  }
+  
+  .print-button:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .button-icon {
+    font-size: 1rem;
+  }
+  
+  .button-shine {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+  }
+  
+  .print-button:hover .button-shine {
+    left: 100%;
+  }
 
-.retry-button {
-  margin-left: auto;
-  background-color: #b91c1c;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  padding: 8px 12px;
-  cursor: pointer;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
+    /* Error Card */
+    .error-card {
+    background: var(--error-50);
+    border: 1px solid var(--error-200);
+    border-radius: var(--radius-xl);
+    margin-bottom: 2rem;
+    overflow: hidden;
+  }
+  
+  .error-content {
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .error-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+  }
+  
+  .error-text {
+    flex-grow: 1;
+  }
+  
+  .error-text h3 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--error-600);
+  }
+  
+  .error-text p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--error-500);
+  }
+  
+  .retry-button {
+    background: var(--error-500);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+  }
+  
+  .retry-button:hover {
+    background: var(--error-600);
+  }
+  
+  .retry-icon {
+    animation: spin 1s linear infinite;
+  }
 
-.retry-button:hover {
-  background-color: #991b1b;
-}
-/* Toolbar - Adjusted as per sketch */
-.toolbar {
-  display: flex;
-  margin-bottom: 20px;
-}
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  
+  /* Metrics Section */
+  .metrics-section {
+    margin-bottom: 2rem;
+  }
+  
+  .section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: black;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .title-accent {
+    width: 4px;
+    height: 1.5rem;
+    background: linear-gradient(135deg, var(--primary-500));
+    border-radius: 2px;
+  }
+  
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1.5rem;
+  }
+  
+  .metric-card {
+    background: white;
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-lg);
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+  }
+  
+  .metric-card.success::before {
+    background: linear-gradient(135deg, var(--success-500), var(--success-600));
+  }
+  
+  .metric-card.warning::before {
+    background: linear-gradient(135deg, var(--warning-500), var(--warning-600));
+  }
+  
+  .metric-card.info::before {
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
+  }
+  
+  .metric-card.accent::before {
+    background: linear-gradient(135deg, var(--accent-5000), var(--accent-6000));
+  }
+  
+  .metric-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-xl);
+  }
+  
+  .metric-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  
+  .metric-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-50);
+    color: var(--primary-500);
+  }
+  
+  .metric-card.success .metric-icon {
+    background: var(--success-50);
+    color: var(--success-500);
+  }
+  
+  .metric-card.warning .metric-icon {
+    background: var(--warning-50);
+    color: var(--warning-500);
+  }
+  
+  .metric-card.info .metric-icon {
+    background: #f0f9ff;
+    color: #0891b2;
+  }
+  
+  .metric-card.accent .metric-icon {
+    background: #f5f3ff;
+    color: var(--accent-5000);
+  }
+  
+  .metric-trend {
+    font-size: 1.25rem;
+  }
+  
+  .metric-content {
+    text-align: left;
+  }
+  
+  .metric-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--gray-600);
+    margin: 0 0 0.5rem 0;
+  }
+  
+  .metric-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin: 0 0 0.25rem 0;
+  }
+  
+  .metric-subtitle {
+    font-size: 0.75rem;
+    color: var(--gray-500);
+    margin: 0;
+    font-weight: 500;
+  }
+  .charts-section {
+    margin-bottom: 2rem;
+  }
+  
+  .chart-card {
+    background: white;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+  }
+  
+  .chart-header {
+    padding: 1.5rem 1.5rem 1rem 1.5rem;
+    border-bottom: 1px solid var(--gray-100);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  
+  .chart-title-section {
+    flex-grow: 1;
+  }
+  
+  .chart-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin: 0 0 0.25rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .chart-subtitle {
+    font-size: 0.875rem;
+    color: var(--gray-500);
+    margin: 0;
+  }
+  
+  .chart-legends {
+    display: flex;
+    gap: 1.5rem;
+  }
+  
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  
+  .legend-item.male {
+    color: var(--primary-600);
+  }
+  
+  .legend-item.female {
+    color: #ec4899;
+  }
+  
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+  
+  .legend-item.male .legend-dot {
+    background: var(--primary-500);
+  }
+  
+  .legend-item.female .legend-dot {
+    background: #ec4899;
+  }
+  
+  .chart-container {
+    padding: 1rem 1.5rem 1.5rem 1.5rem;
+    height: 400px;
+  }
 
-/* Left Section - Modified to match sketch */
-.left-section {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-/* Dropdown Tahun */
-.dropdown-container-year,
-.dropdown-container-program {
-  position: relative;
-  width: 200px;
-}
-
-.dropdown-select {
-  width: 100%;
-  height: 42px;
-  padding: 8px;
-  border: 1px solid #eaeaea;
-  border-radius: 10px;
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  color: #000000;
-  background: #ffffff;
-  cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  outline: none;
-}
-
-/* Dropdown Icon (Chevron Down) */
-.dropdown-container-year::after,
-.dropdown-container-program::after {
-  content: "▼";
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 12px;
-  color: #9aa0a8;
-  pointer-events: none;
-}
-
-/* Print Report Button */
-.print-report-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: var(--primary-500, #10b981);
-  color: #ffffff;
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.print-report-button:hover {
-  background: var(--primary-700, #047857);
-}
-
-/* Section Title */
-.section-title {
-  font-family: "Inter", sans-serif;
-  font-size: 18px;
-  font-weight: 600;
-  color: #333333;
-  margin-bottom: 16px;
-}
-
-/* Summary Cards - Modified to have 5 cards with grid */
-.summary-cards {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 20px;
-  margin-bottom: 30px;
-}
-
-.summary-card {
-  background: #ffffff;
-  border-radius: 10px;
-  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.05);
-  padding: 20px;
-  display: flex;
-  align-items: center;
-}
-
-.icon-container {
-  background-color: rgba(16, 185, 129, 0.1);
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-right: 16px;
-}
-
-.summary-icon {
-  color: #10b981;
-  font-size: 20px;
-}
-
-/* Custom colors for standar and non-standar icons */
-.summary-icon.standar {
-  color: #3b82f6; /* Blue for standard */
-}
-
-.icon-container .standar {
-  background-color: rgba(59, 130, 246, 0.1);
-}
-
-.summary-icon.non-standar {
-  color: #ef4444; /* Red for non-standard */
-}
-
-.icon-container .non-standar {
-  background-color: rgba(239, 68, 68, 0.1);
-}
-
-.card-content {
-  flex-grow: 1;
-}
-
-.card-title {
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  color: #4f5867;
-  margin: 0;
-  margin-bottom: 4px;
-}
-
-.card-value {
-  font-family: "Inter", sans-serif;
-  font-size: 24px;
-  font-weight: 600;
-  color: #333333;
-  margin: 0;
-  margin-bottom: 2px;
-}
-
-.card-subtitle {
-  font-family: "Inter", sans-serif;
-  font-size: 12px;
-  color: #9aa0a8;
-  margin: 0;
-}
-
-/* Statistics Card - Adjusted to full width as per sketch */
-.statistics-card {
-  background: #ffffff;
-  border-radius: 10px;
-  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.05);
-  padding: 20px;
-  margin-bottom: 30px;
-  width: 100%;
-}
-
-/* Chart Legends */
-.chart-legends {
-  display: flex;
-  margin-bottom: 15px;
-  gap: 20px;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  color: #4f5867;
-}
-
-.legend-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
-
-.legend-dot.male {
-  background-color: #3b82f6;
-}
-
-.legend-dot.female {
-  background-color: #f59e0b;
-}
-
-/* Chart Container */
-.chart-container {
-  display: flex;
-  height: 300px;
-  position: relative;
-  margin-bottom: 10px;
-}
-
-.y-axis-values {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding-right: 10px;
-  font-family: "Inter", sans-serif;
-  font-size: 12px;
-  color: #9aa0a8;
-  height: 100%;
-}
-
-.chart {
-  flex-grow: 1;
-  position: relative;
-  border-left: 1px solid #eaeaea;
-  border-bottom: 1px solid #eaeaea;
-}
-
-.x-axis-values {
-  display: flex;
-  justify-content: space-between;
-  padding-left: 20px;
-  font-family: "Inter", sans-serif;
-  font-size: 12px;
-  color: #9aa0a8;
-}
-
-/* Table Section - Already styled as a card */
+/* Table Section */
 .table-section {
-  margin-bottom: 30px;
-}
-
-.table-card {
-  background: #ffffff;
-  border-radius: 10px;
-  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.05);
-  padding: 20px;
-}
-
-.table-header {
-  margin-bottom: 16px;
-}
-
-/* Table Container */
-.table-container {
-  overflow-x: auto;
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-  border-radius: 10px;
-}
-
-/* Data Table */
-.data-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  color: #333333;
-  background: #ffffff;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-/* Header */
-.data-table thead th {
-  background: #f3f4f6;
-  color: #333333;
-  font-weight: 600;
-  text-align: center;
-  padding: 16px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.th-group {
-  border-left: 1px solid #e5e7eb;
-  border-right: 1px solid #e5e7eb;
-}
-
-/* Data Rows */
-.data-table tbody tr:hover {
-  background: #f9fafb;
-  transition: background-color 0.3s ease;
-}
-
-/* Data Cell */
-.data-table td {
-  text-align: center;
-  padding: 20px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.data-table tr {
-  height: 60px;
-}
+    margin-bottom: 2rem;
+  }
+  
+  .table-card {
+    background: white;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    padding: 20px;
+  }
+  
+  .table-header {
+    padding: 1.5rem 1.5rem 1rem 1.5rem;
+    border-bottom: 1px solid var(--gray-100);
+  }
+  
+  .table-title-section {
+    text-align: left;
+  }
+  
+  .table-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin: 0 0 0.25rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .table-subtitle {
+    font-size: 0.875rem;
+    color: var(--gray-500);
+    margin: 0;
+  }
+  
+  .table-container {
+    overflow-x: auto;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+  }
+  
+  .data-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-family: "Inter", sans-serif;
+    font-size: 14px;
+    color: #333333;
+    background: #ffffff;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  
+  .data-table thead th {
+    background: #f3f4f6;
+    color: #333333;
+    font-weight: 600;
+    text-align: center;
+    padding: 16px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .th-month {
+    background: #f3f4f6;
+    color: #333333;
+    font-weight: 600;
+    text-align: center;
+    padding: 16px;
+    border-bottom: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+    vertical-align: middle;
+  }
+  
+  .th-group {
+    border-left: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+  }
+  
+  .th-sub {
+    background: #f9fafb;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 12px;
+  }
+  
+  .table-row:hover {
+    background: #f9fafb;
+    transition: background-color 0.3s ease;
+  }
+  
+  .month-name {
+    font-weight: 600;
+    text-align: center;
+    padding: 20px;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .data-cell {
+    text-align: center;
+    padding: 20px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .percentage-value {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+  
+  .percentage-bar {
+    width: 60px;
+    height: 4px;
+    background: #e5e7eb;
+    border-radius: 2px;
+    overflow: hidden;
+    margin: 0 auto;
+  }
+  
+  .percentage-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-500), var(--primary-700));
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+  
+  .data-table tr {
+    height: 60px;
+  }
 
 /* Responsive Styles */
 @media (max-width: 1200px) {
-  .summary-cards {
-    grid-template-columns: repeat(3, 1fr);
+    .metrics-grid {
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
   }
-}
+  
+  @media (max-width: 768px) {
+    .dashboard-wrapper {
+      padding: 1rem;
+    }
+    
+    .page-title {
+      font-size: 2rem;
+    }
+    
+    .toolbar-content {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    
+    .controls-section {
+      justify-content: center;
+    }
+    
+    .control-group {
+      flex: 1;
+      min-width: 200px;
+    }
+    
+    .metrics-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .chart-header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    
+    .chart-legends {
+      justify-content: center;
+    }
+    
+    .chart-container {
+      height: 300px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .page-title {
+      font-size: 1.5rem;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    
+    .header-content {
+      padding: 1.5rem;
+    }
+    
+    .toolbar-content {
+      padding: 1rem;
+    }
+    
+    .metric-card {
+      padding: 1rem;
+    }
+    
+    .chart-container {
+      height: 250px;
+      padding: 0.5rem;
+    }
+  }
 
-@media (max-width: 992px) {
-  .toolbar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
+/* Print Styles */
+@media print {
+    .dashboard-wrapper {
+      background: white;
+      padding: 0;
+    }
+    
+    .page-header,
+    .toolbar-card {
+      display: none;
+    }
+    
+    .metric-card,
+    .chart-card,
+    .table-card {
+      box-shadow: none;
+      border: 1px solid var(--gray-300);
+      break-inside: avoid;
+      margin-bottom: 1rem;
+    }
+    
+    .chart-container {
+      height: 300px;
+    }
   }
-  .left-section {
-    width: 100%;
+  /* Enhanced Hover Effects */
+  .summary-card:hover .summary-icon {
+    transform: scale(1.1);
+    transition: transform 0.3s ease;
   }
-  .summary-cards {
-    grid-template-columns: repeat(2, 1fr);
+  
+  .print-report-button:hover {
+    box-shadow: 0px 4px 12px rgba(16, 185, 129, 0.3);
   }
-}
-
-@media (max-width: 576px) {
-  .summary-cards {
-    grid-template-columns: 1fr;
+  /* Accessibility Improvements */
+  .dropdown-select:focus,
+  .print-report-button:focus,
+  .retry-button:focus {
+    outline: 2px solid var(--primary-500);
+    outline-offset: 2px;
   }
-}
+  /* Enhanced Table Styling */
+  .data-table tbody tr:nth-child(even) {
+    background-color: rgba(249, 250, 251, 0.5);
+  }
+  
+  .data-table tbody tr:hover {
+    background-color: #f0f9ff;
+    transform: scale(1.01);
+    transition: all 0.2s ease;
+  }
+  /* Smooth Transitions */
+  * {
+    transition: all 0.2s ease;
+  }
 </style>

@@ -1,7 +1,7 @@
 <template>
   <div class="login-container">
     <div class="login-card">
-      <!-- Left Section - Logo & Brand Image -->
+      <!-- Left Section - Logo & Illustration -->
       <div class="left-section">
         <div class="app-info">
           <div class="logo-container">
@@ -12,15 +12,62 @@
             <p class="app-description">Aplikasi Kesehatan untuk Diabetes Mellitus dan Hipertensi Terlayani</p>
           </div>
         </div>
-        <div class="image-placeholder">
-          <img :src="brandImage" alt="Brand Image" class="brand-image" />
+        
+        <!-- Healthcare Illustration -->
+        <div class="illustration-container">
+          <svg width="280" height="280" viewBox="0 0 280 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Background Circle -->
+            <circle cx="140" cy="140" r="120" fill="#E5F4F1" opacity="0.5"/>
+            
+            <!-- Medical Cross -->
+            <g transform="translate(140, 140)">
+              <rect x="-40" y="-10" width="80" height="20" rx="4" fill="#10B981"/>
+              <rect x="-10" y="-40" width="20" height="80" rx="4" fill="#10B981"/>
+            </g>
+            
+            <!-- Heart Icon -->
+            <path d="M100 120C100 105 110 95 120 95C125 95 130 97 135 102C140 97 145 95 150 95C160 95 170 105 170 120C170 135 135 160 135 160S100 135 100 120Z" fill="#EF4444" opacity="0.8"/>
+            
+            <!-- Stethoscope -->
+            <path d="M180 140C180 140 175 145 175 150C175 160 185 165 195 165C205 165 215 160 215 150C215 145 210 140 210 140" stroke="#6B7280" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="195" cy="150" r="8" fill="#6B7280"/>
+            <path d="M175 150C175 150 175 170 175 180C175 195 160 210 140 210C120 210 105 195 105 180C105 170 105 150 105 150" stroke="#6B7280" stroke-width="3" stroke-linecap="round" fill="none"/>
+            
+            <!-- Pills/Medicine -->
+            <g transform="translate(60, 180)">
+              <rect x="0" y="0" width="30" height="12" rx="6" fill="#3B82F6" opacity="0.7"/>
+              <rect x="15" y="0" width="15" height="12" rx="0" fill="#93C5FD"/>
+            </g>
+            
+            <!-- Health Chart -->
+            <g transform="translate(200, 90)">
+              <rect x="0" y="20" width="8" height="20" rx="2" fill="#10B981" opacity="0.6"/>
+              <rect x="12" y="10" width="8" height="30" rx="2" fill="#10B981" opacity="0.7"/>
+              <rect x="24" y="5" width="8" height="35" rx="2" fill="#10B981" opacity="0.8"/>
+              <rect x="36" y="15" width="8" height="25" rx="2" fill="#10B981" opacity="0.9"/>
+            </g>
+            
+            <!-- Floating Elements -->
+            <circle cx="80" cy="80" r="5" fill="#10B981" opacity="0.3"/>
+            <circle cx="200" cy="60" r="4" fill="#3B82F6" opacity="0.3"/>
+            <circle cx="220" cy="180" r="6" fill="#EF4444" opacity="0.2"/>
+            <circle cx="60" cy="140" r="4" fill="#10B981" opacity="0.4"/>
+          </svg>
+        </div>
+
+        <!-- Decorative Elements -->
+        <div class="decorative-dots">
+          <span></span>
+          <span></span>
+          <span></span>
         </div>
       </div>
 
       <!-- Right Section - Login Form -->
       <div class="right-section">
         <div class="form-container">
-          <h2 class="login-title">Login</h2>
+          <h2 class="login-title">Selamat Datang</h2>
+          <p class="login-subtitle">Silakan masuk ke akun Anda</p>
 
           <!-- Username Input -->
           <div class="form-group">
@@ -84,7 +131,7 @@
             :disabled="isLoading"
             :class="{ 'button-loading': isLoading }"
           >
-            <span v-if="!isLoading">LOGIN</span>
+            <span v-if="!isLoading">MASUK</span>
             <font-awesome-icon v-else :icon="['fas', 'circle-notch']" spin class="fa-spin" />
           </button>
 
@@ -92,8 +139,8 @@
           <div v-if="errors.general || errors.details" class="general-error">
             <font-awesome-icon :icon="['fas', 'exclamation-circle']" class="error-icon" />
             <div class="general-error-content">
-              <span>{{ errors.general }}</span> <!-- Pesan umum -->
-              <p v-if="errors.details" class="error-details">{{ errors.details }}</p> <!-- Pesan detail -->
+              <span>{{ errors.general }}</span>
+              <p v-if="errors.details" class="error-details">{{ errors.details }}</p>
             </div>
           </div>
         </div>
@@ -107,20 +154,13 @@
 </template>
 
 <script>
-import brandImage from '../../assets/ptm.jpg';
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { authService } from '../../stores/auth.js'; // Import auth service
+import { authService } from '../../stores/auth.js';
 import Swal from 'sweetalert2';
-import { nextTick } from 'vue';
 
 export default {
   name: 'Login',
-  data() {
-    return {
-      brandImage,
-    };
-  },
   setup() {
     const router = useRouter();  
     const credentials = ref({
@@ -141,24 +181,18 @@ export default {
     const currentYear = new Date().getFullYear();
     const authCheckInProgress = ref(false);
 
-    // Cek jika user sudah login saat komponen ini dimuat
     onMounted(async () => {
-      // Guard untuk mencegah panggilan duplikat
       if (authCheckInProgress.value) return;
       authCheckInProgress.value = true;
 
       try {
-        // Cek jika user sudah login (berdasarkan localStorage)
         if (localStorage.getItem('isLoggedIn') === 'true') {
-          // Verifikasi session dengan server (hanya sekali)
           const isAuthenticated = await authStore.checkAuth();
           
           if (isAuthenticated) {
-            // Redirect ke dashboard sesuai peran
             const userRole = authStore.user?.role || localStorage.getItem('userRole');
             router.replace(userRole === 'admin' ? '/admin/dashboard' : '/user/dashboard');
           } else {
-            // Jika session tidak valid, hapus data auth
             localStorage.removeItem('isLoggedIn');
             localStorage.removeItem('userRole');
             localStorage.removeItem('user');
@@ -201,40 +235,25 @@ export default {
       resetErrors();
       
       try {
-        // Call the login method from auth service
         await authService.login(credentials.value.username, credentials.value.password);
 
-        // Show success notification
         Swal.fire({
           title: 'Berhasil!',
           text: 'Anda telah berhasil login.',
           icon: 'success',
           timer: 2000,
           showConfirmButton: false,
-          didClose: () => {
-            // Lakukan redirect setelah notifikasi hilang
-            if (isAdmin) {
-              console.log('Redirecting to /admin/dashboard');
-              router.replace('/admin/dashboard');
-            } else {
-              console.log('Redirecting to /user/dashboard');
-              router.replace('/user/dashboard');
-            }
-          }
         });
 
-        // Redirect based on user role
         const isAdmin = authService.isAdmin();
         if (isAdmin) {
-          router.push('/admin/dashboard'); // Admin dashboard
+          router.push('/admin/dashboard');
         } else {
-          router.push('/user/dashboard'); // User dashboard
+          router.push('/user/dashboard');
         }
 
       } catch (error) {
         console.error('Login error:', error);
-        
-        // Handle login errors
         resetErrors();
 
         try {
@@ -269,16 +288,6 @@ export default {
 </script>
 
 <style scoped>
-/* Gunakan style yang sama dengan LoginPageTemplate.vue */
-/* Root Variables (matching DiabetesMellitus style) */
-:root {
-  --primary-100: #e6f2f2;
-  --primary-300: #66b2b2;
-  --primary-500: #097678;
-  --primary-700: #054a47;
-  --secondary-100: #e6f7f7;
-  --secondary-300: #b3e6e6;
-}
 /* Root Styles */
 .login-container {
   display: flex;
@@ -286,256 +295,306 @@ export default {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #097678 0%, #054a47 100%);
+  background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%);
   padding: 20px;
   position: relative;
   overflow: hidden;
   font-family: "Inter", sans-serif;
 }
+
 .login-container::before {
   content: '';
   position: absolute;
-  top: -50px;
-  left: -50px;
-  right: -50px;
-  bottom: -50px;
-  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
-  animation: backgroundFade 20s infinite linear;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   z-index: 0;
 }
-@keyframes backgroundFade {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(100px); }
-}
+
 .login-card {
   background: white;
-  border-radius: 10px;
-  box-shadow: 0px 4px 16px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  box-shadow: var(--card-shadow);
   width: 100%;
   max-width: 900px;
   display: flex;
   position: relative;
   z-index: 1;
-  opacity: 1;
-  transform: translateY(20px);
-  transition: all 0.6s ease;
   overflow: hidden;
   margin-bottom: 30px;
+  animation: cardAppear 0.8s ease-out;
 }
-.login-card.visible {
-  opacity: 1;
-  transform: translateY(0);
+
+@keyframes cardAppear {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-.login-card.success {
-  transform: scale(1.05);
-  opacity: 0;
-  transition: all 0.5s ease;
-}
-.login-card.shake {
-  animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-}
-@keyframes shake {
-  10%, 90% { transform: translateX(-1px); }
-  20%, 80% { transform: translateX(2px); }
-  30%, 50%, 70% { transform: translateX(-4px); }
-  40%, 60% { transform: translateX(4px); }
-}
+
 /* Left Section */
 .left-section {
   flex: 1;
-  padding: 30px;
+  padding: 40px;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid #eaeaea;
+  background: var(--background-light);
   position: relative;
+  overflow: hidden;
 }
+
+.left-section::after {
+  content: '';
+  position: absolute;
+  bottom: -50px;
+  right: -50px;
+  width: 200px;
+  height: 200px;
+  background: var(--primary-100);
+  border-radius: 50%;
+  z-index: 0;
+  opacity: 0.6;
+}
+
 /* Right Section */
 .right-section {
   flex: 1;
-  padding: 30px;
+  padding: 40px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  background: white;
 }
+
 .form-container {
   width: 100%;
   max-width: 320px;
 }
+
 /* App Info Section */
 .app-info {
   display: flex;
   align-items: center;
   margin-bottom: 40px;
-  animation: fadeIn 1s ease;
+  position: relative;
+  z-index: 1;
 }
+
 .app-text {
   margin-left: 12px;
 }
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
+
 .logo-container {
-  width: 45px;
-  height: 45px;
-  border: 2px solid #cdcfd4;
-  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #f9f9f9;
+  background: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
   flex-shrink: 0;
 }
+
 .logo-circle {
-  width: 90%;
-  height: 90%;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: var(--primary-500);
 }
+
 .app-title {
   font-family: "Inter", sans-serif;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
-  color: #333333;
+  color: var(--text-dark);
   margin: 0 0 4px;
 }
+
 .app-description {
   font-family: "Inter", sans-serif;
-  font-size: 11px;
-  color: #4f5867;
+  font-size: 12px;
+  color: var(--text-medium);
   margin: 0;
   max-width: 280px;
 }
-/* Placeholder Image */
-.image-placeholder {
-  width: 250px;
-  height: 250px;
-  margin: 0px auto;
-  border-radius: 10px;
-  overflow: hidden; /* Pastikan gambar tetap dalam batas placeholder */
+
+/* Illustration Container */
+.illustration-container {
+  width: 280px;
+  height: 280px;
+  margin: 20px auto 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+  animation: float 6s ease-in-out infinite;
 }
 
-.brand-image {
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.illustration-container svg {
   width: 100%;
   height: 100%;
-  object-fit: cover; /* Gambar akan menyesuaikan ukuran tanpa distorsi */
 }
+
+/* Decorative Dots */
+.decorative-dots {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 1;
+}
+
+.decorative-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary-500);
+  opacity: 0.3;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.decorative-dots span:nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+.decorative-dots span:nth-child(3) {
+  animation-delay: 0.6s;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.2); }
+}
+
 /* Login Form Section */
 .login-title {
   font-family: "Inter", sans-serif;
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--primary-500);
-  margin-bottom: 25px;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 8px;
   text-align: center;
-  animation: slideUp 0.8s ease;
 }
-@keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+
+.login-subtitle {
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  color: var(--text-medium);
+  margin-bottom: 24px;
+  text-align: center;
 }
+
 .form-group {
   margin-bottom: 20px;
   position: relative;
-  animation: slideUp 0.8s ease;
-  animation-fill-mode: backwards;
 }
-.form-group:nth-child(2) {
-  animation-delay: 0.1s;
-}
-.form-group:nth-child(3) {
-  animation-delay: 0.2s;
-}
+
 .input-with-icon {
   position: relative;
   display: flex;
   align-items: center;
-  background-color: #f3f4f6;
-  border-radius: 10px;
+  background-color: var(--background-light);
+  border-radius: 12px;
   overflow: hidden;
   transition: all 0.3s ease;
-  border: 1px solid #cdcfd4;
+  border: 1px solid #E5E7EB;
 }
+
 .input-with-icon.input-active {
-  box-shadow: 0 0 0 2px rgba(9, 118, 120, 0.3);
-  background-color: #f8f9fa;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
   border-color: var(--primary-500);
 }
+
 .input-with-icon.input-error {
-  border: 1px solid #ff6b6b;
+  border: 1px solid var(--error-500);
 }
+
 .icon-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 46px;
+  height: 46px;
 }
+
 .input-icon {
   color: var(--primary-500);
-  font-size: 14px;
+  font-size: 16px;
 }
+
 .form-input {
   flex: 1;
-  padding: 12px 16px;
+  padding: 14px 16px 14px 0;
   border: none;
   font-family: "Inter", sans-serif;
   font-size: 14px;
   background-color: transparent;
   transition: all 0.3s;
   width: 100%;
-  color: #4f5867;
+  color: var(--text-dark);
 }
+
+.form-input::placeholder {
+  color: var(--text-light);
+}
+
 .form-input:focus {
   outline: none;
 }
+
 .toggle-password {
-  padding: 0 15px;
-  color: #9aa0a8;
+  padding: 0 16px;
+  color: var(--text-light);
   cursor: pointer;
   height: 100%;
   display: flex;
   align-items: center;
+  transition: color 0.2s;
 }
+
 .icon-hovered {
   color: var(--primary-500);
 }
+
 .error-text {
-  color: #ff6b6b;
+  color: var(--error-500);
   font-size: 12px;
-  margin-top: 5px;
+  margin-top: 6px;
   margin-bottom: 0;
-  animation: fadeIn 0.3s;
 }
-.error-details {
-  color: #ff6b6b;
-  font-size: 12px;
-  margin-top: 4px;
-}
+
 .login-button {
   background-color: var(--primary-500);
   color: white;
   border: none;
-  border-radius: 10px;
-  padding: 12px;
+  border-radius: 12px;
+  padding: 14px;
   font-family: "Inter", sans-serif;
-  font-size: 16px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.3s;
-  margin-top: 10px;
-  height: 48px;
+  margin-top: 16px;
+  height: 50px;
   display: flex;
   justify-content: center;
   align-items: center;
   position: relative;
   overflow: hidden;
-  animation: slideUp 0.8s ease;
-  animation-delay: 0.3s;
-  animation-fill-mode: backwards;
   width: 100%;
+  letter-spacing: 0.5px;
 }
+
 .login-button:before {
   content: '';
   position: absolute;
@@ -551,138 +610,163 @@ export default {
   );
   transition: 0.5s;
 }
+
 .login-button:hover:not(:disabled):before {
   left: 100%;
 }
+
 .login-button:hover:not(:disabled) {
   background-color: var(--primary-700);
   transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
 }
+
 .login-button:active:not(:disabled) {
   transform: translateY(0);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 5px rgba(16, 185, 129, 0.2);
 }
+
 .login-button:disabled {
-  background-color: #9aa0a8;
+  background-color: var(--text-light);
   cursor: not-allowed;
 }
+
 .button-loading {
   opacity: 0.8;
 }
+
 /* General Error Container */
 .general-error {
-  background: #fff5f5; /* Latar belakang merah muda pucat */
-  border: 1px solid #ffe3e3; /* Border merah muda */
-  border-radius: 8px; /* Sudut melengkung */
-  padding: 12px 16px; /* Padding untuk konten */
-  margin-top: 15px; /* Jarak dari elemen sebelumnya */
+  background: #FEF2F2;
+  border: 1px solid #FEE2E2;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-top: 20px;
   display: flex;
   align-items: flex-start;
-  gap: 10px; /* Jarak antara ikon dan teks */
-  animation: fadeIn 0.3s ease-in-out; /* Efek fade-in */
+  gap: 12px;
+  animation: fadeIn 0.3s ease-in-out;
 }
 
-/* Ikon Error */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .error-icon {
-  color: #e03131; /* Warna merah untuk ikon */
-  font-size: 20px; /* Ukuran ikon */
+  color: var(--error-500);
+  font-size: 18px;
   flex-shrink: 0;
 }
 
-/* Konten Error */
 .general-error-content {
   display: flex;
   flex-direction: column;
-  gap: 4px; /* Jarak antara teks umum dan detail */
+  gap: 4px;
 }
 
-/* Pesan Error Umum */
 .general-error span {
-  color: #e03131; /* Warna merah untuk teks */
-  font-size: 14px; /* Ukuran teks */
-  font-weight: 500; /* Sedikit tebal */
+  color: var(--error-500);
+  font-size: 14px;
+  font-weight: 500;
   margin: 0;
 }
 
-/* Pesan Error Detail */
 .error-details {
-  color: #ff6b6b; /* Warna merah muda untuk detail */
-  font-size: 12px; /* Ukuran teks lebih kecil */
+  color: #F87171;
+  font-size: 12px;
   margin: 0;
 }
-/* Copyright Footer - Outside container */
+
+/* Copyright Footer */
 .copyright-footer {
-  width: 100%; /* Lebar footer mengikuti konten */
-  max-width: 900px; /* Sama dengan max-width login-card */
-  text-align: right; /* Teks footer rata kanan */
-  padding: 5px 15px 10px;
+  width: 100%;
+  max-width: 900px;
+  text-align: center;
+  padding: 10px 15px;
   z-index: 1;
   position: relative;
-  animation: fadeIn 1s ease;
-  animation-delay: 0.5s;
-  animation-fill-mode: backwards;
-  margin-top: -15px; /* Sesuaikan jarak dari card */
 }
+
 .copyright-footer p {
   font-family: "Inter", sans-serif;
-  font-size: 11px;
-  color: #eaeaea;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
   margin: 0;
 }
+
 /* Responsive styles */
 @media (max-width: 768px) {
   .login-card {
     flex-direction: column;
     max-width: 450px;
   }
+  
   .left-section {
-    border-right: none;
-    border-bottom: 1px solid #eaeaea;
-    padding: 20px;
+    padding: 30px;
   }
+  
   .app-info {
-    margin-bottom: 0;
+    margin-bottom: 20px;
   }
-  .image-placeholder {
-    display: none;
+  
+  .illustration-container {
+    width: 200px;
+    height: 200px;
+    margin: 20px auto;
   }
+  
   .right-section {
-    padding: 30px 20px;
+    padding: 30px;
   }
+  
   .form-container {
     max-width: 100%;
   }
-  .copyright-footer {
-    max-width: 100%;
-    text-align: center;
-    padding: 10px;
-  }
 }
+
 @media (max-width: 576px) {
   .login-card {
-    padding: 0;
+    border-radius: 12px;
   }
+  
   .left-section, .right-section {
-    padding: 15px;
+    padding: 24px;
   }
+  
   .app-title {
-    font-size: 16px;
-  }
-  .app-description {
-    font-size: 10px;
-  }
-  .login-title {
     font-size: 18px;
-    margin-bottom: 20px;
   }
-  .form-input {
-    padding: 10px;
+  
+  .app-description {
+    font-size: 11px;
+  }
+  
+  .login-title {
+    font-size: 22px;
+  }
+  
+  .login-subtitle {
     font-size: 13px;
   }
+  
+  .form-input {
+    padding: 12px 14px 12px 0;
+    font-size: 14px;
+  }
+  
   .login-button {
     font-size: 14px;
-    height: 44px;
+    height: 46px;
+  }
+  
+  .illustration-container {
+    width: 160px;
+    height: 160px;
+  }
+  
+  .decorative-dots {
+    bottom: 20px;
   }
 }
 </style>

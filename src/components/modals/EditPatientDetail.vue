@@ -1,418 +1,755 @@
 <template>
-    <div v-if="visible" class="modal-overlay">
-      <div class="modal-container">
-        <div class="modal-header">
-          <h3>Edit Data Pasien</h3>
-          <button class="close-button" @click="close">
-            <font-awesome-icon :icon="['fas', 'times']" />
-          </button>
-        </div>
-        <div class="modal-body">
-          <form @submit.prevent="submitForm" class="form-container">
-            <div class="form-group">
-              <label for="name">Nama Lengkap</label>
-              <input 
-                type="text" 
-                id="name" 
-                v-model="form.name" 
-                class="form-input" 
-                required
-              />
-            </div>
-  
-            <div class="form-group">
-              <label for="gender">Jenis Kelamin</label>
-              <select id="gender" v-model="form.gender" class="form-input" required>
-                <option value="male">Laki-Laki</option>
-                <option value="female">Perempuan</option>
-              </select>
-            </div>
-  
-            <div class="form-group">
-              <label for="nik">NIK</label>
-              <input 
-                type="text" 
-                id="nik" 
-                v-model="form.nik" 
-                class="form-input"
-                placeholder="Nomor Induk Kependudukan"
-              />
-            </div>
-  
-            <div class="form-group">
-              <label for="bpjs_number">Nomor BPJS</label>
-              <input 
-                type="text" 
-                id="bpjs_number" 
-                v-model="form.bpjs_number" 
-                class="form-input"
-                placeholder="Nomor BPJS"
-              />
-            </div>
-  
-            <div class="form-group">
-              <label for="birth_date">Tanggal Lahir</label>
-              <input 
-                type="date" 
-                id="birth_date" 
-                v-model="form.birth_date" 
-                class="form-input" 
-                required
-                @change="calculateAge"
-              />
+  <div v-if="visible" class="modal-backdrop">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h2><font-awesome-icon :icon="['fas', 'user-edit']" class="icon-margin" /> Edit Data Pasien</h2>
+        <button class="close-button" @click="closeModal" aria-label="Close">
+          <font-awesome-icon :icon="['fas', 'times']" />
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="new-patient-form">
+          <form @submit.prevent="submitForm">
+            <div class="form-section">
+              <div class="section-header">
+                <font-awesome-icon :icon="['fas', 'id-card']" class="section-icon" />
+                <h3>Informasi Dasar</h3>
+              </div>
+              
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="name">Nama Pasien <span class="required">*</span></label>
+                  <div class="input-wrapper">
+                    <font-awesome-icon :icon="['fas', 'user']" class="input-icon" />
+                    <input
+                      type="text"
+                      id="name"
+                      v-model="form.name"
+                      @input="clearError('name')"
+                      class="form-input"
+                      :class="{ 'input-error': errors.name }"
+                      placeholder="Masukkan nama lengkap"
+                    />
+                  </div>
+                  <transition name="fade">
+                    <p v-if="errors.name" class="error-message">
+                      <font-awesome-icon :icon="['fas', 'exclamation-circle']" /> 
+                      Nama pasien wajib diisi
+                    </p>
+                  </transition>
+                </div>
+
+                <div class="form-group">
+                  <label for="nik">NIK</label>
+                  <div class="input-wrapper">
+                    <font-awesome-icon :icon="['fas', 'id-card']" class="input-icon" />
+                    <input
+                      type="text"
+                      id="nik"
+                      v-model="form.nik"
+                      class="form-input"
+                      placeholder="16 digit NIK"
+                      maxlength="16"
+                    />
+                  </div>
+                  <small class="helper-text">Kosongkan jika tidak ada atau tidak valid</small>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="bpjs_number">Nomor BPJS</label>
+                  <div class="input-wrapper">
+                    <font-awesome-icon :icon="['fas', 'hospital']" class="input-icon" />
+                    <input
+                      type="text"
+                      id="bpjs_number"
+                      v-model="form.bpjs_number"
+                      class="form-input"
+                      placeholder="Nomor BPJS (jika ada)"
+                    />
+                  </div>
+                  <small class="helper-text">Kosongkan jika tidak ada</small>
+                </div>
+
+                <div class="form-group">
+                  <label for="gender">Jenis Kelamin <span class="required">*</span></label>
+                  <div class="input-wrapper">
+                    <font-awesome-icon :icon="['fas', 'venus-mars']" class="input-icon" />
+                    <select
+                      id="gender"
+                      v-model="form.gender"
+                      @change="clearError('gender')"
+                      class="form-select"
+                      :class="{ 'input-error': errors.gender }"
+                    >
+                      <option value="" disabled>Pilih Jenis Kelamin</option>
+                      <option value="male">Laki-laki</option>
+                      <option value="female">Perempuan</option>
+                    </select>
+                  </div>
+                  <transition name="fade">
+                    <p v-if="errors.gender" class="error-message">
+                      <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
+                      Jenis kelamin wajib dipilih
+                    </p>
+                  </transition>
+                </div>
+              </div>
             </div>
 
-            <div class="form-group">
-              <label for="age">Umur</label>
-              <input 
-                type="number" 
-                id="age" 
-                v-model="form.age" 
-                class="form-input" 
-                placeholder="Umur (tahun)"
-              />
+            <div class="form-section">
+              <div class="section-header">
+                <font-awesome-icon :icon="['fas', 'calendar-alt']" class="section-icon" />
+                <h3>Informasi Usia</h3>
+              </div>
+              
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="birth_date">Tanggal Lahir</label>
+                  <div class="input-wrapper">
+                    <font-awesome-icon :icon="['fas', 'calendar']" class="input-icon" />
+                    <input
+                      type="date"
+                      id="birth_date"
+                      v-model="form.birth_date"
+                      @change="calculateAge" 
+                      class="form-input date-input"
+                      :max="maxDate"
+                    />
+                  </div>
+                  <small class="helper-text">Format: YYYY-MM-DD</small>
+                </div>
+
+                <div class="form-group">
+                  <label for="age">Umur <span class="required">*</span></label>
+                  <div class="input-wrapper">
+                    <font-awesome-icon :icon="['fas', 'birthday-cake']" class="input-icon" />
+                    <input
+                      type="number"
+                      id="age"
+                      v-model.number="form.age"
+                      @input="clearError('age')"
+                      class="form-input"
+                      :class="{ 'input-error': errors.age }"
+                      :disabled="isAgeDisabled"
+                      placeholder="Usia pasien"
+                      min="0"
+                      max="150"
+                    />
+                    <span v-if="isAgeDisabled && form.birth_date" class="badge-auto">Auto</span>
+                  </div>
+                  <transition name="fade">
+                    <p v-if="errors.age" class="error-message">
+                      <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
+                      Umur wajib diisi dan valid
+                    </p>
+                  </transition>
+                </div>
+              </div>
             </div>
-  
-            <div class="form-group">
-              <label for="address">Alamat</label>
-              <textarea 
-                id="address" 
-                v-model="form.address" 
-                class="form-input textarea" 
-                rows="3"
-                placeholder="Alamat lengkap"
-              ></textarea>
+
+            <div class="form-section">
+              <div class="section-header">
+                <font-awesome-icon :icon="['fas', 'map-marker-alt']" class="section-icon" />
+                <h3>Alamat</h3>
+              </div>
+              
+              <div class="form-group full-width">
+                <label for="address">Alamat Lengkap <span class="required">*</span></label>
+                <div class="input-wrapper textarea-wrapper">
+                  <font-awesome-icon :icon="['fas', 'home']" class="input-icon textarea-icon" />
+                  <textarea
+                    id="address"
+                    v-model="form.address"
+                    @input="clearError('address')"
+                    class="form-textarea"
+                    :class="{ 'input-error': errors.address }"
+                    placeholder="Masukkan alamat lengkap pasien"
+                    rows="3"
+                  ></textarea>
+                </div>
+                <transition name="fade">
+                  <p v-if="errors.address" class="error-message">
+                    <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
+                    Alamat wajib diisi
+                  </p>
+                </transition>
+              </div>
             </div>
-  
+
             <div class="form-actions">
-              <button type="button" class="cancel-button" @click="close">Batal</button>
-              <button type="submit" class="submit-button" :disabled="isSubmitting">
+              <button type="button" class="btn-cancel" @click="closeModal">
+                <font-awesome-icon :icon="['fas', 'times']" /> Batal
+              </button>
+              <button 
+                type="submit" 
+                class="btn-save"
+                :disabled="isSubmitting"
+              >
                 <span v-if="isSubmitting">
-                  <font-awesome-icon :icon="['fas', 'spinner']" spin />
-                  Menyimpan...
+                  <font-awesome-icon :icon="['fas', 'spinner']" spin /> Menyimpan...
                 </span>
-                <span v-else>Simpan Perubahan</span>
+                <span v-else>
+                  <font-awesome-icon :icon="['fas', 'save']" /> Simpan Perubahan
+                </span>
               </button>
             </div>
           </form>
         </div>
       </div>
     </div>
-  </template>
-  
-  <script>
-  import axios from 'axios';
-  import Swal from 'sweetalert2';
-  
-  export default {
-    name: 'EditPatientDetailDM',
-    props: {
-      visible: {
-        type: Boolean,
-        default: false
+  </div>
+</template>
+
+<script>
+import axios from 'axios';
+import Swal from 'sweetalert2';
+
+export default {
+  name: 'EditPatientDetail',
+  props: {
+    visible: {
+      type: Boolean,
+      default: false
+    },
+    patientData: {
+      type: Object,
+      required: true
+    }
+  },
+  data() {
+    return {
+      form: {
+        name: "",
+        nik: "",
+        bpjs_number: "",
+        gender: "",
+        birth_date: "",
+        age: null,
+        address: ""
       },
-      patientData: {
-        type: Object,
-        required: true
+      errors: {
+        name: false,
+        gender: false,
+        age: false,
+        address: false,
+      },
+      isAgeDisabled: false,
+      isSubmitting: false,
+      maxDate: new Date().toISOString().split('T')[0],
+    };
+  },
+  watch: {
+    visible(newVal) {
+      if (newVal && this.patientData && Object.keys(this.patientData).length > 0) {
+        this.form = {
+          name: this.patientData.name || '',
+          gender: this.patientData.gender === 'Perempuan' ? 'female' : (this.patientData.gender === 'Laki-Laki' ? 'male' : ''),
+          nik: (this.patientData.nik && this.patientData.nik !== '-') ? this.patientData.nik : '',
+          bpjs_number: (this.patientData.bpjs_number && this.patientData.bpjs_number !== '-') ? this.patientData.bpjs_number : '',
+          birth_date: (this.patientData.birth_date && this.patientData.birth_date !== '-') ? this.patientData.birth_date : '',
+          age: (this.patientData.age !== '-' && this.patientData.age !== null) ? parseInt(this.patientData.age) : null,
+          address: (this.patientData.address && this.patientData.address !== '-') ? this.patientData.address : ''
+        };
+        this.calculateAge(); 
+        Object.keys(this.errors).forEach(key => { this.errors[key] = false; });
+      } else if (!newVal) {
+         this.resetForm(); // Reset form when modal is hidden
       }
     },
-    data() {
-      return {
-        form: {
-          name: '',
-          gender: '',
-          nik: '',
-          bpjs_number: '',
-          birth_date: '',
-          address: '',
-          age: null
-        },
-        isSubmitting: false
-      };
+    'form.birth_date'() {
+        this.calculateAge();
+    }
+  },
+  methods: {
+    closeModal() {
+      this.$emit('close');
     },
-    watch: {
-      visible(newVal) {
-        if (newVal && this.patientData) {
-          // Initialize form with patient data
-          this.form = {
-            name: this.patientData.name || '',
-            gender: this.patientData.gender === 'Perempuan' ? 'female' : 'male',
-            nik: this.patientData.nik !== '-' ? this.patientData.nik : '',
-            bpjs_number: this.patientData.bpjs_number !== '-' ? this.patientData.bpjs_number : '',
-            birth_date: this.patientData.birth_date !== '-' ? this.patientData.birth_date : '',
-            age: this.patientData.address !== '-' ? this.patientData.age : null,
-            address: this.patientData.address !== '-' ? this.patientData.address : ''
-          };
-        }
-      }
-    },
-    methods: {
-        calculateAge() {
-            if (this.form.birth_date) {
-            const today = new Date();
-            const birthDate = new Date(this.form.birth_date);
-            let age = today.getFullYear() - birthDate.getFullYear();
-            const monthDifference = today.getMonth() - birthDate.getMonth();
-
-            // Jika bulan belum tercapai atau hari belum tercapai, kurangi umur
-            if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birthDate.getDate())) {
-                age--;
-            }
-
-            this.form.age = age;
-            } else {
-            this.form.age = null; // Reset umur jika tanggal lahir kosong
-            }
-        },
-      close() {
-        this.$emit('close');
-      },
-      async submitForm() {
-        try {
-            // Tampilkan konfirmasi
-            const confirmation = await Swal.fire({
-            title: 'Apakah Anda yakin?',
-            text: 'Anda akan menyimpan perubahan pada data pasien ini.',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Ya, simpan!',
-            cancelButtonText: 'Batal',
-            });
-
-            // Jika pengguna membatalkan, hentikan proses
-            if (!confirmation.isConfirmed) {
+    calculateAge() {
+      if (this.form.birth_date) {
+        const birthDateObj = new Date(this.form.birth_date);
+        if (isNaN(birthDateObj.getTime())) {
+            this.form.age = null;
+            this.isAgeDisabled = false;
             return;
-            }
-
-            this.isSubmitting = true;
-
-            const token = localStorage.getItem("token");
-            if (!token) {
-            throw new Error("Token tidak ditemukan");
-            }
-
-            const patientId = this.$route?.params?.id || this.patientData.id;
-
-            const response = await axios.put(
-            `http://localhost:8000/api/puskesmas/patients/${patientId}`,
-            this.form,
-            {
-                headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                },
-            }
-            );
-
-            // Emit success event with updated data
-            this.$emit('submit', response.data.patient);
-            this.$emit('close');
-
-            // Show success notification
-            Swal.fire({
-            icon: 'success',
-            title: 'Berhasil',
-            text: 'Data pasien berhasil diperbarui',
-            confirmButtonText: 'Tutup',
-            });
-        } catch (error) {
-            console.error("Error updating patient:", error);
-
-            // Show error notification
-            Swal.fire({
-            icon: 'error',
-            title: 'Gagal',
-            text: error.response?.data?.message || 'Terjadi kesalahan saat memperbarui data pasien',
-            confirmButtonText: 'Tutup',
-            });
-        } finally {
-            this.isSubmitting = false;
         }
+        const today = new Date();
+        let age = today.getFullYear() - birthDateObj.getFullYear();
+        const monthDifference = today.getMonth() - birthDateObj.getMonth();
+        if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birthDateObj.getDate())) {
+          age--;
         }
-    }
-  };
-  </script>
-  
-  <style scoped>
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-  }
-  
-  .modal-container {
-    width: 100%;
-    max-width: 600px;
-    background-color: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    overflow: hidden;
-    animation: modalFadeIn 0.3s ease;
-  }
-  
-  @keyframes modalFadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(-20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 24px;
-    border-bottom: 1px solid #eaeaea;
-  }
-  
-  .modal-header h3 {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #333;
-    margin: 0;
-  }
-  
-  .close-button {
-    background: transparent;
-    border: none;
-    font-size: 18px;
-    color: #666;
-    cursor: pointer;
-    transition: color 0.3s ease;
-  }
-  
-  .close-button:hover {
-    color: #e53935;
-  }
-  
-  .modal-body {
-    padding: 24px;
-    max-height: 70vh;
-    overflow-y: auto;
-  }
-  
-  .form-container {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-  }
-  
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  /* Make address field span both columns */
-  .form-group:nth-last-child(2) {
-    grid-column: span 2;
-  }
-  
-  /* Make buttons section span both columns */
-  .form-actions {
-    grid-column: span 2;
-    display: flex;
-    justify-content: flex-end;
-    gap: 16px;
-    margin-top: 16px;
-  }
-  
-  label {
-    font-weight: 500;
-    color: #333;
-    font-size: 14px;
-  }
-  
-  .form-input {
-    height: 42px;
-    padding: 8px 12px;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 14px;
-    transition: border-color 0.3s ease;
-  }
-  
-  .form-input:focus {
-    border-color: var(--primary-500);
-    outline: none;
-  }
-  
-  .textarea {
-    height: auto;
-    resize: vertical;
-    min-height: 80px;
-  }
-  
-  .cancel-button {
-    padding: 10px 20px;
-    background: white;
-    color: #666;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    font-weight: 500;
-    font-size: 14px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  
-  .cancel-button:hover {
-    background-color: #f5f5f5;
-  }
-  
-  .submit-button {
-    padding: 10px 20px;
-    background: var(--primary-500);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-weight: 500;
-    font-size: 14px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  
-  .submit-button:hover {
-    background: var(--primary-700);
-  }
-  
-  .submit-button:disabled {
-    background: #9aa0a8;
-    cursor: not-allowed;
-  }
-  
-  @media (max-width: 768px) {
-    .form-container {
-      grid-template-columns: 1fr;
-    }
-    
-    /* Reset full-width styles for smaller screens */
-    .form-group:nth-last-child(2) {
-      grid-column: 1;
-    }
-    
-    .form-actions {
-      grid-column: 1;
-    }
-    
-    .modal-container {
-      width: 90%;
-      max-height: 90vh;
+        this.form.age = age >= 0 ? age : null;
+        this.isAgeDisabled = true;
+        if (this.errors.age) this.clearError('age');
+      } else {
+        // If birth_date is cleared, keep manually entered age or clear it
+        // this.form.age = null; // uncomment to clear age if birth_date is removed
+        this.isAgeDisabled = false;
+      }
+    },
+    validateForm() {
+      let isValid = true;
+      Object.keys(this.errors).forEach(key => { this.errors[key] = false; });
+
+      if (!this.form.name.trim()) { this.errors.name = true; isValid = false; this.scrollToError('name'); }
+      if (!this.form.gender) { this.errors.gender = true; isValid = false; if (isValid) this.scrollToError('gender'); }
+      
+      const ageNum = this.form.age !== null && this.form.age !== '' ? parseInt(this.form.age) : null;
+      if (ageNum === null || isNaN(ageNum) || ageNum < 0) {
+        this.errors.age = true; isValid = false; if (isValid) this.scrollToError('age');
+      }
+      
+      if (!this.form.address.trim()) { this.errors.address = true; isValid = false; if (isValid) this.scrollToError('address'); }
+
+      if (this.form.nik && !/^\d{16}$/.test(this.form.nik)) {
+        Swal.fire('Perhatian', 'NIK harus terdiri dari 16 digit angka jika diisi.', 'warning');
+        isValid = false;
+        if (isValid) this.scrollToError('nik');
+      }
+      return isValid;
+    },
+    scrollToError(fieldId) {
+      this.$nextTick(() => {
+        const element = document.getElementById(fieldId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.focus({ preventScroll: true });
+        }
+      });
+    },
+    clearError(fieldName) {
+      if (this.errors[fieldName]) {
+        this.errors[fieldName] = false;
+      }
+    },
+    resetForm() {
+        this.form = { name: "", nik: "", bpjs_number: "", gender: "", birth_date: "", age: null, address: "" };
+        Object.keys(this.errors).forEach(key => { this.errors[key] = false; });
+        this.isAgeDisabled = false;
+        this.isSubmitting = false;
+    },
+    async submitForm() {
+      if (!this.validateForm()) {
+        return;
+      }
+
+      const result = await Swal.fire({
+        title: 'Konfirmasi',
+        text: 'Apakah Anda yakin akan menyimpan perubahan data pasien ini?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Simpan',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: 'var(--primary-500, #10B981)',
+        cancelButtonColor: 'var(--neutral-500, #6B7280)',
+      });
+
+      if (!result.isConfirmed) {
+        return;
+      }
+
+      this.isSubmitting = true;
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          Swal.fire('Error', 'Token tidak ditemukan. Silakan login kembali.', 'error');
+          // this.$router.push({ name: 'Login' }); // Assuming a login route
+          this.isSubmitting = false;
+          return;
+        }
+
+        const patientId = this.patientData.id || this.$route.params.id; 
+        if (!patientId) {
+             Swal.fire('Error', 'ID Pasien tidak ditemukan untuk pembaruan.', 'error');
+             this.isSubmitting = false;
+             return;
+        }
+        
+        const payload = {
+            ...this.form,
+            age: this.form.age !== null ? parseInt(this.form.age) : null,
+            // Ensure empty strings become null if API expects that for optional fields
+            nik: this.form.nik || null,
+            bpjs_number: this.form.bpjs_number || null,
+            birth_date: this.form.birth_date || null,
+        };
+
+        const response = await axios.put(
+          `http://localhost:8000/api/puskesmas/patients/${patientId}`,
+          payload,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        Swal.fire('Berhasil!', 'Data pasien berhasil diperbarui.', 'success');
+        this.$emit('submit', response.data.patient); 
+        this.closeModal();
+      } catch (error) {
+        console.error("Error updating patient:", error);
+        Swal.fire('Gagal Menyimpan', error.response?.data?.message || 'Terjadi kesalahan saat memperbarui data.', 'error');
+      } finally {
+        this.isSubmitting = false;
+      }
     }
   }
-  </style>
+};
+</script>
+
+<style scoped>
+/* Variables for consistent colors (ensure these are defined globally or here) */
+:root {
+  --primary-50: #ECFDF5;
+  --primary-100: #D1FAE5;
+  --primary-500: #10B981;
+  --primary-700: #047857;
+  --neutral-100: #F3F4F6;
+  --neutral-200: #E5E7EB;
+  --neutral-300: #D1D5DB;
+  --neutral-400: #9CA3AF;
+  --neutral-500: #6B7280;
+  --neutral-700: #374151;
+  --neutral-800: #1F2937;
+  --danger-500: #EF4444;
+}
+
+/* Modal Backdrop */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Modal Container */
+.modal-container {
+  width: 90%;
+  max-width: 900px;
+  max-height: 90vh;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.2s ease-out;
+}
+
+@keyframes slideIn {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Modal Header */
+.modal-header {
+  padding: 18px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--neutral-200, #E5E7EB);
+  background-color: var(--primary-50, #ECFDF5);
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--primary-700, #047857);
+  display: flex;
+  align-items: center;
+}
+
+.icon-margin {
+  margin-right: 10px;
+  color: var(--primary-500, #10B981);
+}
+
+.close-button {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  color: var(--neutral-500, #6B7280);
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  background-color: var(--neutral-200, #E5E7EB);
+  color: var(--neutral-800, #1F2937);
+}
+
+/* Modal Body */
+.modal-body {
+  padding: 24px;
+  flex-grow: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--neutral-400, #9CA3AF) var(--neutral-100, #F3F4F6);
+}
+
+.modal-body::-webkit-scrollbar {
+  width: 8px;
+}
+.modal-body::-webkit-scrollbar-track {
+  background: var(--neutral-100, #F3F4F6);
+  border-radius: 10px;
+}
+.modal-body::-webkit-scrollbar-thumb {
+  background-color: var(--neutral-400, #9CA3AF);
+  border-radius: 10px;
+}
+
+/* Form Sections */
+.form-section {
+  background-color: white;
+  border-radius: 10px;
+  border: 1px solid var(--neutral-200, #E5E7EB);
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.3s ease;
+}
+.form-section:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--neutral-200, #E5E7EB);
+}
+.section-icon {
+  font-size: 18px;
+  color: var(--primary-500, #10B981);
+  margin-right: 12px;
+}
+.section-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--neutral-700, #374151);
+}
+
+.new-patient-form {
+  width: 100%;
+}
+
+.form-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.form-group.full-width {
+  width: 100%;
+  flex-basis: 100%; /* Ensures it takes full width in flex context */
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: var(--neutral-700, #374151);
+  display: flex;
+  align-items: center;
+}
+.required {
+  color: var(--danger-500, #EF4444);
+  margin-left: 4px;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.input-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--neutral-500, #6B7280);
+  font-size: 16px;
+  pointer-events: none;
+  transition: color 0.3s ease;
+}
+.textarea-wrapper { align-items: flex-start; }
+.textarea-icon { top: 12px; }
+
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  padding: 12px 12px 12px 40px;
+  border: 1px solid var(--neutral-300, #D1D5DB);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--neutral-800, #1F2937);
+  background-color: white;
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-sizing: border-box; /* Ensures padding doesn't increase width */
+}
+
+.form-input:hover, .form-select:hover, .form-textarea:hover {
+  border-color: var(--primary-300, #6EE7B7);
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--primary-500, #10B981);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+  outline: none;
+}
+.form-input:focus ~ .input-icon, /* Sibling selector for icon focus color */
+.form-select:focus ~ .input-icon,
+.form-textarea:focus ~ .input-icon {
+  color: var(--primary-500, #10B981);
+}
+/* For cases where icon is child of wrapper, not sibling of input */
+.input-wrapper:focus-within .input-icon {
+    color: var(--primary-500, #10B981);
+}
+
+
+.date-input { padding-right: 12px; }
+.input-error {
+  border-color: var(--danger-500, #EF4444) !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+.form-textarea {
+  min-height: 100px;
+  resize: vertical;
+  line-height: 1.5;
+  padding-top: 12px; /* Adjust padding for textarea */
+}
+
+.badge-auto {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: var(--primary-100, #D1FAE5);
+  color: var(--primary-700, #047857);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.helper-text {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--neutral-500, #6B7280);
+}
+.error-message {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--danger-500, #EF4444);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s, transform 0.3s;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+  transform: translateY(-5px);
+}
+
+.form-actions {
+  margin-top: 32px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid var(--neutral-200, #E5E7EB);
+}
+.btn-cancel {
+  padding: 12px 20px;
+  background-color: white;
+  border: 1px solid var(--neutral-300, #D1D5DB);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--neutral-700, #374151);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-cancel:hover {
+  background-color: var(--neutral-100, #F3F4F6);
+  border-color: var(--neutral-400, #9CA3AF);
+}
+.btn-save {
+  padding: 12px 20px;
+  background-color: var(--primary-500, #10B981);
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 120px;
+  justify-content: center;
+}
+.btn-save:hover {
+  background-color: var(--primary-600, #059669);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+.btn-save:active {
+  background-color: var(--primary-700, #047857);
+  transform: translateY(1px);
+}
+.btn-save:disabled {
+  background-color: var(--neutral-400, #9CA3AF);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+@media (max-width: 768px) {
+  .modal-container { width: 95%; max-height: 95vh; }
+  .form-row { flex-direction: column; gap: 0; /* Remove gap if items have their own margin-bottom */}
+  .form-group { margin-bottom: 16px; } /* Add margin-bottom to form-group on mobile */
+  .modal-header h2 { font-size: 18px; }
+  .section-header h3 { font-size: 16px; }
+  .form-actions { flex-direction: column-reverse; }
+  .btn-cancel, .btn-save { width: 100%; justify-content: center; }
+}
+</style>

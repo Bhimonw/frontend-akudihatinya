@@ -112,11 +112,27 @@ class AuthService {
       if (!refreshTokenStored) {
         throw new Error('Refresh token tidak ditemukan');
       }
-
+  
+      // Tambahkan validasi token sebelum melakukan refresh
+      // Cek apakah token saat ini masih valid
+      const currentToken = localStorage.getItem('token');
+      if (currentToken) {
+        try {
+          // Coba validasi token saat ini
+          const isValid = await this.validateTokenWithoutRefresh();
+          if (isValid) {
+            console.log("Token masih valid, tidak perlu refresh");
+            return currentToken; // Return token yang masih valid
+          }
+        } catch (validationError) {
+          // Lanjutkan dengan refresh jika validasi gagal
+          console.log("Token tidak valid, melakukan refresh...");
+        }
+      }
+  
       console.log("Attempting to refresh token...");
       
       // Gunakan fetch API yang lebih ringan daripada axios untuk refresh token
-      // Ini dapat mengurangi overhead dan membuat proses lebih cepat
       const response = await fetch('http://localhost:8000/api/refresh', {
         method: 'POST',
         headers: {
@@ -124,13 +140,13 @@ class AuthService {
         },
         body: JSON.stringify({ refresh_token: refreshTokenStored }),
       });
-
+  
       if (!response.ok) {
         const errorData = await response.json();
         console.error("Refresh token API error:", errorData);
         throw new Error('Gagal memperbarui token: ' + (errorData.message || response.statusText));
       }
-
+  
       const result = await response.json();
       console.log("Refresh token successful, new token received");
       
@@ -146,84 +162,41 @@ class AuthService {
     }
   }
   
+  // Tambahkan metode baru untuk validasi token tanpa refresh
+  async validateTokenWithoutRefresh() {
+    try {
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        return false;
+      }
+      
+      // Request ke endpoint user untuk memvalidasi token
+      const response = await fetch('http://localhost:8000/api/users/me', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      return response.status === 200;
+    } catch (error) {
+      console.error("Validasi token error:", error);
+      return false;
+    }
+  }
+  
   // Setup Axios interceptors
   setupInterceptors() {
-    this.removeInterceptors();
-
-    const axiosInstance = axios.create({
-      baseURL: "http://localhost:8000/api"
-    });
-
-    // Request interceptor
-    this.requestInterceptorId = axiosInstance.interceptors.request.use(
-      async (config) => {
-        // Skip untuk request login atau refresh
-        if (
-          config.url.includes('/login') ||
-          config.url.includes('/refresh')
-        ) {
-          return config;
-        }
-
-        const token = localStorage.getItem('token');
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-      },
-      (error) => Promise.reject(error)
-    );
-
-    // Response interceptor - Handle 401 errors
-    this.responseInterceptorId = axiosInstance.interceptors.response.use(
-      (response) => response,
-      async (error) => {
-        const originalRequest = error.config;
-        
-        if (error.response?.status === 401 && !originalRequest._retry) {
-          originalRequest._retry = true;
-          
-          if (!this.isRefreshing) {
-            this.isRefreshing = true;
-            
-            try {
-              const newToken = await this.refreshToken();
-              
-              // Update the Authorization for the original request
-              originalRequest.headers.Authorization = `Bearer ${newToken}`;
-              
-              // Process other queued requests
-              this.refreshSubscribers.forEach(callback => callback(newToken));
-              this.refreshSubscribers = [];
-              
-              this.isRefreshing = false;
-              
-              // Retry the original request with the new token
-              return axiosInstance(originalRequest);
-            } catch (refreshError) {
-              this.isRefreshing = false;
-              this.refreshSubscribers = [];
-              this.logout();
-              return Promise.reject(refreshError);
-            }
-          } else {
-            // If refresh is already in progress, add the request to the queue
-            return new Promise((resolve, reject) => {
-              this.refreshSubscribers.push(newToken => {
-                originalRequest.headers.Authorization = `Bearer ${newToken}`;
-                resolve(axiosInstance(originalRequest));
-              });
-            });
-          }
-        }
-        
-        return Promise.reject(error);
-      }
-    );
+    // Karena interceptor sudah diimplementasikan di api.js,
+    // kita tidak perlu menambahkan interceptor baru di sini
+    console.log('Using global API interceptors from api.js');
     
-    // Replace global axios instance
-    axios.defaults.baseURL = axiosInstance.defaults.baseURL;
-    Object.assign(axios, axiosInstance);
+    // Hapus interceptor lama jika ada
+    this.removeInterceptors();
+    
+    // Reset state
+    this.isRefreshing = false;
+    this.refreshSubscribers = [];
   }
 
   // Remove interceptors
@@ -257,32 +230,10 @@ class AuthService {
   // Validasi token dengan API call
   async validateToken() {
     try {
-      // Panggil endpoint yang membutuhkan autentikasi
-      const token = localStorage.getItem('token');
-      
-      if (!token) {
-        return false;
-      }
-      
-      // Request ke endpoint user untuk memvalidasi token
-      // Sesuaikan dengan endpoint API Anda
-      const response = await axios.get('http://localhost:8000/api/users/me', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      
-      return response.status === 200;
+      return await this.validateTokenWithoutRefresh();
     } catch (error) {
-      if (error.response?.status === 401) {
-        console.log("Token tidak valid, perlu refresh");
-        // Token tidak valid, tapi tidak perlu refresh di sini
-        // karena akan ditangani oleh interceptor
-        return false;
-      }
-      
       console.error("Validasi token error:", error);
-      return false; // Error lain
+      return false;
     }
   }
 }
@@ -317,7 +268,7 @@ export async function initAuth() {
 
     // Jika ada token, validasi dengan API
     if (token) {
-      const isTokenValid = await authService.validateToken();
+      const isTokenValid = await authService.validateTokenWithoutRefresh();
       
       if (!isTokenValid && refreshToken) {
         // Token tidak valid, coba refresh

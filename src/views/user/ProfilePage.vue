@@ -1,4 +1,8 @@
 <template>
+  <div v-if="apiStatus === 'loading'" class="top-loading-bar">
+    <div class="loading-bar-progress"></div>
+  </div>
+
   <div class="profile-container">
     <!-- Header dengan tombol kembali dan judul -->
     <div class="profile-nav-header">
@@ -36,7 +40,7 @@
         <!-- Profile Details Section -->
         <div class="profile-details">
           <div class="detail-section">
-            <h2>Nama Puskesmas</h2>
+            <h2>Profil Pengguna</h2>
             <div class="detail-grid">
               <div class="detail-item">
                 <label>Nama Puskesmas</label>
@@ -212,6 +216,11 @@
   
   export default {
     name: 'ProfilePage',
+    data() {
+      return {
+        apiStatus: 'idle',
+      }
+    },
     setup() {
       const userData = ref({
         username: '',
@@ -553,6 +562,35 @@
   </script>
   
   <style scoped>
+  .top-loading-bar {
+  position: fixed; /* Atau absolute jika tata letak Anda mengizinkan */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px; /* Tinggi bar loading */
+  background-color: var(--primary-100, #d1fae5); /* Latar belakang terang untuk track bar */
+  z-index: 9999; /* Pastikan berada di atas konten lain */
+  overflow: hidden; /* Sembunyikan bagian progress bar yang keluar */
+}
+
+.loading-bar-progress {
+  width: 100%;
+  height: 100%;
+  background: var(--primary-500, #10b981); /* Warna progress */
+  animation: indeterminate-progress 2s infinite linear;
+  transform-origin: left;
+}
+@keyframes indeterminate-progress {
+  0% {
+    transform: translateX(-100%) scaleX(0.5); /* Mulai di luar layar, lebih sempit */
+  }
+  50% {
+    transform: translateX(0%) scaleX(1);    /* Bergerak melintasi, lebar penuh */
+  }
+  100% {
+    transform: translateX(100%) scaleX(0.5); /* Pindah ke luar layar, lebih sempit */
+  }
+}
   .profile-container {
     background-color: #f7f8f9;
     min-height: 100vh;
