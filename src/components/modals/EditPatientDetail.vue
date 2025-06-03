@@ -119,7 +119,7 @@
                       :max="maxDate"
                     />
                   </div>
-                  <small class="helper-text">Format: YYYY-MM-DD</small>
+                  <small class="helper-text">Format: TTTT-BB-HH</small>
                 </div>
 
                 <div class="form-group">
@@ -242,29 +242,85 @@ export default {
     };
   },
   watch: {
-    visible(newVal) {
-      if (newVal && this.patientData && Object.keys(this.patientData).length > 0) {
-        this.form = {
-          name: this.patientData.name || '',
-          gender: this.patientData.gender === 'Perempuan' ? 'female' : (this.patientData.gender === 'Laki-Laki' ? 'male' : ''),
-          nik: (this.patientData.nik && this.patientData.nik !== '-') ? this.patientData.nik : '',
-          bpjs_number: (this.patientData.bpjs_number && this.patientData.bpjs_number !== '-') ? this.patientData.bpjs_number : '',
-          birth_date: (this.patientData.birth_date && this.patientData.birth_date !== '-') ? this.patientData.birth_date : '',
-          age: (this.patientData.age !== '-' && this.patientData.age !== null) ? parseInt(this.patientData.age) : null,
-          address: (this.patientData.address && this.patientData.address !== '-') ? this.patientData.address : ''
-        };
-        this.calculateAge(); 
-        Object.keys(this.errors).forEach(key => { this.errors[key] = false; });
-      } else if (!newVal) {
-         this.resetForm(); // Reset form when modal is hidden
+    visible(newVal, oldVal) {
+      const timestamp = new Date().toISOString();
+      console.log(`[${timestamp}] [CHILD] Watcher "visible" triggered. Modal visible: ${oldVal} -> ${newVal}. Current this.form.name: ${this.form.name}`);
+      if (newVal) {
+        this.initializeFormFromProps();
+      } else {
+        console.log(`[${timestamp}] [CHILD] Modal closing (visible became false). Calling resetForm(). Current this.form.name BEFORE reset: ${this.form.name}`);
+        this.resetForm();
       }
+    },
+    patientData: {
+      handler(newData, oldData) {
+        const timestamp = new Date().toISOString();
+        if (this.visible) { 
+            if (newData !== oldData || !oldData) { 
+                console.log(`[${timestamp}] [CHILD] Watcher "patientData" triggered while visible. newData.name: ${newData ? newData.name : 'N/A'}`);
+            }
+            if (newData) { 
+              this.initializeFormFromProps();
+            } else if (!newData && this.visible) { 
+                console.warn(`[${timestamp}] [CHILD] Watcher "patientData": newData became empty/null while modal is visible. Form might be reset.`);
+                this.initializeFormFromProps(); 
+            }
+        }
+      },
+      deep: true
     },
     'form.birth_date'() {
         this.calculateAge();
     }
   },
   methods: {
+    initializeFormFromProps() {
+      const timestamp = new Date().toISOString();
+      console.log(`[${timestamp}] [CHILD] initializeFormFromProps START. Received patientData:`, this.patientData ? JSON.parse(JSON.stringify(this.patientData)) : this.patientData);
+      
+      if(this.patientData) {
+          console.log(`[${timestamp}] [CHILD] initializeFormFromProps: patientData.name IS:`, this.patientData.name);
+      } else {
+          console.log(`[${timestamp}] [CHILD] initializeFormFromProps: patientData IS null or undefined.`);
+      }
+
+      if (this.patientData && Object.keys(this.patientData).length > 0) {
+        const tempForm = {
+          name: this.patientData.name || '',
+          gender: this.patientData.gender === 'Perempuan' ? 'female' : (this.patientData.gender === 'Laki-Laki' ? 'male' : ''),
+          nik: (this.patientData.nik && this.patientData.nik !== '-') ? this.patientData.nik : '',
+          bpjs_number: (this.patientData.bpjs_number && this.patientData.bpjs_number !== '-') ? this.patientData.bpjs_number : '',
+          birth_date: (this.patientData.birth_date && this.patientData.birth_date !== '-') ? this.patientData.birth_date : '',
+          age: this.parseAge(this.patientData.age),
+          address: (this.patientData.address && this.patientData.address !== '-') ? this.patientData.address : ''
+        };
+        console.log(`[${timestamp}] [CHILD] initializeFormFromProps: tempForm mapped:`, JSON.parse(JSON.stringify(tempForm)));
+        
+        this.form = tempForm;
+        console.log(`[${timestamp}] [CHILD] initializeFormFromProps: this.form AFTER assignment:`, JSON.parse(JSON.stringify(this.form)));
+
+        this.calculateAge();
+        Object.keys(this.errors).forEach(key => { this.errors[key] = false; });
+      } else {
+        console.warn(`[${timestamp}] [CHILD] initializeFormFromProps: patientData is empty or invalid. Calling resetForm().`);
+        this.resetForm();
+      }
+    },
+    parseAge(ageValue) {
+      if (ageValue === null || ageValue === undefined || ageValue === '-') {
+        return null;
+      }
+      if (typeof ageValue === 'string') {
+        const parsed = parseInt(ageValue);
+        return isNaN(parsed) ? null : parsed;
+      }
+      if (typeof ageValue === 'number') {
+        return ageValue;
+      }
+      return null;
+    },
     closeModal() {
+      console.log(`[${new Date().toISOString()}] [CHILD] closeModal called. Emitting @close.`);
       this.$emit('close');
     },
     calculateAge() {
@@ -285,8 +341,6 @@ export default {
         this.isAgeDisabled = true;
         if (this.errors.age) this.clearError('age');
       } else {
-        // If birth_date is cleared, keep manually entered age or clear it
-        // this.form.age = null; // uncomment to clear age if birth_date is removed
         this.isAgeDisabled = false;
       }
     },
@@ -294,20 +348,20 @@ export default {
       let isValid = true;
       Object.keys(this.errors).forEach(key => { this.errors[key] = false; });
 
-      if (!this.form.name.trim()) { this.errors.name = true; isValid = false; this.scrollToError('name'); }
-      if (!this.form.gender) { this.errors.gender = true; isValid = false; if (isValid) this.scrollToError('gender'); }
+      if (!this.form.name || !this.form.name.trim()) { this.errors.name = true; isValid = false; this.scrollToError('name'); }
+      if (!this.form.gender) { this.errors.gender = true; isValid = false; if (isValid && !this.errors.name) this.scrollToError('gender'); }
       
       const ageNum = this.form.age !== null && this.form.age !== '' ? parseInt(this.form.age) : null;
-      if (ageNum === null || isNaN(ageNum) || ageNum < 0) {
-        this.errors.age = true; isValid = false; if (isValid) this.scrollToError('age');
+      if (ageNum === null || isNaN(ageNum) || ageNum < 0 || ageNum > 150) {
+        this.errors.age = true; isValid = false; if (isValid && !this.errors.name && !this.errors.gender) this.scrollToError('age');
       }
       
-      if (!this.form.address.trim()) { this.errors.address = true; isValid = false; if (isValid) this.scrollToError('address'); }
+      if (!this.form.address || !this.form.address.trim()) { this.errors.address = true; isValid = false; if (isValid && !this.errors.name && !this.errors.gender && !this.errors.age) this.scrollToError('address'); }
 
       if (this.form.nik && !/^\d{16}$/.test(this.form.nik)) {
         Swal.fire('Perhatian', 'NIK harus terdiri dari 16 digit angka jika diisi.', 'warning');
         isValid = false;
-        if (isValid) this.scrollToError('nik');
+        if (!this.errors.name && !this.errors.gender && !this.errors.age && !this.errors.address) this.scrollToError('nik'); 
       }
       return isValid;
     },
@@ -326,16 +380,28 @@ export default {
       }
     },
     resetForm() {
-        this.form = { name: "", nik: "", bpjs_number: "", gender: "", birth_date: "", age: null, address: "" };
-        Object.keys(this.errors).forEach(key => { this.errors[key] = false; });
-        this.isAgeDisabled = false;
-        this.isSubmitting = false;
+      const timestamp = new Date().toISOString();
+      console.log(`[${timestamp}] [CHILD] resetForm called. Form will be cleared.`);
+      this.form = { name: "", nik: "", bpjs_number: "", gender: "", birth_date: "", age: null, address: "" };
+      Object.keys(this.errors).forEach(key => { this.errors[key] = false; });
+      this.isAgeDisabled = false;
+      this.isSubmitting = false;
     },
     async submitForm() {
+      const timestampFormStart = new Date().toISOString();
+      console.log(`[${timestampFormStart}] [CHILD] submitForm START`);
+
       if (!this.validateForm()) {
+        console.error(`[${new Date().toISOString()}] [CHILD] submitForm: Validation FAILED.`);
         return;
       }
 
+      const formDataForPayload = JSON.parse(JSON.stringify(this.form));
+      console.log(`[${new Date().toISOString()}] [CHILD] submitForm: Form data COPIED before Swal:`, JSON.parse(JSON.stringify(formDataForPayload)));
+
+      console.log(`[${new Date().toISOString()}] [CHILD] submitForm: Form is valid. Current this.form (before Swal):`, JSON.parse(JSON.stringify(this.form)));
+      console.log(`[${new Date().toISOString()}] [CHILD] submitForm: About to show Swal confirmation.`);
+      
       const result = await Swal.fire({
         title: 'Konfirmasi',
         text: 'Apakah Anda yakin akan menyimpan perubahan data pasien ini?',
@@ -345,37 +411,44 @@ export default {
         cancelButtonText: 'Batal',
         confirmButtonColor: 'var(--primary-500, #10B981)',
         cancelButtonColor: 'var(--neutral-500, #6B7280)',
+        // Pertimbangkan untuk menambahkan ini jika klik di luar atau Escape key menutup modal secara tidak sengaja:
+        // allowOutsideClick: false, 
+        // allowEscapeKey: false,    
       });
 
+      console.log(`[${new Date().toISOString()}] [CHILD] submitForm: Swal confirmation result: ${result.isConfirmed}. Current this.form state AFTER Swal:`, JSON.parse(JSON.stringify(this.form)));
+
       if (!result.isConfirmed) {
-        return;
+        console.log(`[${new Date().toISOString()}] [CHILD] submitForm: Submission cancelled by user via Swal. Modal remains open.`);
+        return; 
       }
 
       this.isSubmitting = true;
+      console.log(`[${new Date().toISOString()}] [CHILD] submitForm: isSubmitting=true. Creating payload from COPIED form data:`, JSON.parse(JSON.stringify(formDataForPayload)));
+      
       try {
         const token = localStorage.getItem("token");
         if (!token) {
-          Swal.fire('Error', 'Token tidak ditemukan. Silakan login kembali.', 'error');
-          // this.$router.push({ name: 'Login' }); // Assuming a login route
+          await Swal.fire('Error', 'Token tidak ditemukan. Silakan login kembali.', 'error');
           this.isSubmitting = false;
           return;
         }
 
         const patientId = this.patientData.id || this.$route.params.id; 
         if (!patientId) {
-             Swal.fire('Error', 'ID Pasien tidak ditemukan untuk pembaruan.', 'error');
-             this.isSubmitting = false;
-             return;
+          await Swal.fire('Error', 'ID Pasien tidak ditemukan untuk pembaruan.', 'error');
+          this.isSubmitting = false;
+          return;
         }
         
         const payload = {
-            ...this.form,
-            age: this.form.age !== null ? parseInt(this.form.age) : null,
-            // Ensure empty strings become null if API expects that for optional fields
-            nik: this.form.nik || null,
-            bpjs_number: this.form.bpjs_number || null,
-            birth_date: this.form.birth_date || null,
+          ...formDataForPayload, 
+          age: formDataForPayload.age !== null ? parseInt(formDataForPayload.age) : null,
+          nik: formDataForPayload.nik || null,
+          bpjs_number: formDataForPayload.bpjs_number || null,
+          birth_date: formDataForPayload.birth_date || null,
         };
+        console.log(`[${new Date().toISOString()}] [CHILD] submitForm: Payload to be sent:`, JSON.parse(JSON.stringify(payload)));
 
         const response = await axios.put(
           `http://localhost:8000/api/puskesmas/patients/${patientId}`,
@@ -388,14 +461,29 @@ export default {
           }
         );
 
-        Swal.fire('Berhasil!', 'Data pasien berhasil diperbarui.', 'success');
+        await Swal.fire('Berhasil!', 'Data pasien berhasil diperbarui.', 'success');
+        console.log(`[${new Date().toISOString()}] [CHILD] submitForm: API success. Emitting submit event with data:`, JSON.parse(JSON.stringify(response.data.patient)));
         this.$emit('submit', response.data.patient); 
-        this.closeModal();
+
       } catch (error) {
-        console.error("Error updating patient:", error);
-        Swal.fire('Gagal Menyimpan', error.response?.data?.message || 'Terjadi kesalahan saat memperbarui data.', 'error');
+        const errorTimestamp = new Date().toISOString();
+        console.error(`[${errorTimestamp}] [CHILD] submitForm: Error during submission:`, error.response ? JSON.parse(JSON.stringify(error.response.data)) : error.message, error);
+        let errorMessage = 'Terjadi kesalahan saat memperbarui data.';
+        if (error.response && error.response.data) {
+            if (error.response.data.message) {
+                errorMessage = error.response.data.message;
+            }
+            if (error.response.data.errors) {
+                const fieldErrors = Object.values(error.response.data.errors);
+                if (fieldErrors.length > 0 && fieldErrors[0].length > 0) {
+                    errorMessage += `: ${fieldErrors[0][0]}`;
+                }
+            }
+        }
+        await Swal.fire('Gagal Menyimpan', errorMessage, 'error');
       } finally {
         this.isSubmitting = false;
+        console.log(`[${new Date().toISOString()}] [CHILD] submitForm: FINALLY block. isSubmitting=false.`);
       }
     }
   }
@@ -403,6 +491,7 @@ export default {
 </script>
 
 <style scoped>
+/* CSS Anda yang sudah ada di sini */
 /* Variables for consistent colors (ensure these are defined globally or here) */
 :root {
   --primary-50: #ECFDF5;
@@ -431,7 +520,7 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 1000; /* Pastikan modal ini di atas konten lain */
   animation: fadeIn 0.2s ease-out;
 }
 
@@ -730,11 +819,11 @@ export default {
   justify-content: center;
 }
 .btn-save:hover {
-  background-color: var(--primary-600, #059669);
+  background-color: var(--primary-600, #059669); /* var(--primary-600, #059669); */
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 .btn-save:active {
-  background-color: var(--primary-700, #047857);
+  background-color: var(--primary-700, #047857); /* var(--primary-700, #047857); */
   transform: translateY(1px);
 }
 .btn-save:disabled {
@@ -745,8 +834,8 @@ export default {
 
 @media (max-width: 768px) {
   .modal-container { width: 95%; max-height: 95vh; }
-  .form-row { flex-direction: column; gap: 0; /* Remove gap if items have their own margin-bottom */}
-  .form-group { margin-bottom: 16px; } /* Add margin-bottom to form-group on mobile */
+  .form-row { flex-direction: column; gap: 0; }
+  .form-group { margin-bottom: 16px; }
   .modal-header h2 { font-size: 18px; }
   .section-header h3 { font-size: 16px; }
   .form-actions { flex-direction: column-reverse; }

@@ -1,65 +1,68 @@
 <template>
   <div class="patient-details">
-    <!-- Main Content -->
     <div class="main-content">
-      <!-- Tombol Kembali -->
       <button class="action-button back" @click="$router.go(-1)">
         <font-awesome-icon :icon="['fas', 'arrow-left']" />
         Kembali
       </button>
-      <!-- Breadcrumb -->
       <div class="breadcrumb">
-        <span><router-link to="/user/list-pasien">Daftar Pasien</router-link></span>
+        <span><router-link :to="breadcrumbLink">{{ breadcrumbText }}</router-link></span>
         <span> / </span>
-        <span>Detail Pasien</span>
+        <span>Data Pasien</span>
       </div>
-      <!-- Profile Section - Enhanced Styling -->
       <div class="profile-section">
         <div class="profile-header">
           <h2>Detail Pasien</h2>
         </div>
 
         <div v-if="isLoading" class="loading-container">
-        <div class="spinner"></div>
-        <p>Memuat data...</p>
+          <div class="spinner"></div>
+          <p>Memuat data...</p>
         </div>
 
         <div v-else class="profile-info-container">
-            <div class="profile-info">
-            <!-- Kolom Utama (3 Kolom/Grid) -->
+          <div class="profile-info">
             <div class="info-item">
-              <span class="label">Nama Lengkap :</span>
+              <span class="label"><font-awesome-icon :icon="['fas', 'user']" class="info-icon" /> Nama Lengkap :</span>
               <span class="value">{{ patient.name }}</span>
             </div>
             <div class="info-item">
-              <span class="label">Jenis Kelamin :</span>
+              <span class="label"><font-awesome-icon :icon="['fas', 'venus-mars']" class="info-icon" /> Jenis Kelamin :</span>
               <span class="value">{{ patient.gender || '-' }}</span>
             </div>
             <div class="info-item">
-              <span class="label">NIK :</span>
-              <span class="value">{{ patient.nik || '-' }}</span>
+              <span class="label"><font-awesome-icon :icon="['fas', 'id-card']" class="info-icon" /> NIK :</span>
+              <span class="value">
+                <span>{{ patient.nik || '-' }}</span>
+                <button v-if="patient.nik && patient.nik !== '-'" @click="copyToClipboard(patient.nik)" class="copy-button" title="Salin NIK">
+                  <font-awesome-icon :icon="['far', 'copy']" />
+                </button>
+              </span>
             </div>
             <div class="info-item">
-              <span class="label">Nomor BPJS :</span>
-              <span class="value">{{ patient.bpjs_number || '-' }}</span>
+              <span class="label"><font-awesome-icon :icon="['fas', 'shield-alt']" class="info-icon" /> Nomor BPJS :</span>
+              <span class="value">
+                <span>{{ patient.bpjs_number || '-' }}</span>
+                <button v-if="patient.bpjs_number && patient.bpjs_number !== '-'" @click="copyToClipboard(patient.bpjs_number)" class="copy-button" title="Salin No. BPJS">
+                  <font-awesome-icon :icon="['far', 'copy']" />
+                </button>
+              </span>
             </div>
             <div class="info-item">
-              <span class="label">Tanggal Lahir :</span>
+              <span class="label"><font-awesome-icon :icon="['fas', 'calendar-alt']" class="info-icon" /> Tanggal Lahir :</span>
               <span class="value">{{ patient.birth_date || '-' }}</span>
             </div>
             <div class="info-item">
-              <span class="label">Umur :</span>
-              <span class="value">{{ patient.age || '-' }}</span>
+              <span class="label"><font-awesome-icon :icon="['fas', 'birthday-cake']" class="info-icon" /> Umur :</span>
+              <span class="value">{{ patient.age ? patient.age + ' Tahun' : '-' }}</span>
             </div>
           </div>
 
-          <!-- Alamat (Full Width) -->
           <div class="address-info">
-            <span class="label">Alamat :</span>
+            <span class="label"><font-awesome-icon :icon="['fas', 'map-marker-alt']" class="info-icon" /> Alamat :</span>
             <span class="value">{{ patient.address || '-' }}</span>
           </div>
         </div>
-        <!-- Tombol Ubah dan Hapus -->
         <div class="profile-actions">
           <button class="action-button delete-patient" @click="deletePatient">
             <font-awesome-icon :icon="['fas', 'trash']" />
@@ -71,10 +74,16 @@
           </button>
         </div>
       </div>
-      <!-- NEW: Monthly Attendance Container -->
+
       <div class="attendance-container">
-        <h3>Rekap Kunjungan Pasien {{ selectedYear }}</h3>
-        <div class="attendance-table-container">
+        <div class="profile-header">
+          <h2>Rekap Kunjungan Pasien {{ selectedDiseaseType === 'DM' ? 'Diabetes Mellitus' : (selectedDiseaseType === 'HT' ? 'Hipertensi' : '') }} {{ selectedYear }}</h2>
+        </div>
+        <div v-if="isLoadingExams" class="loading-container">
+          <div class="spinner"></div>
+          <p>Memuat data...</p>
+        </div>
+        <div v-else class="attendance-table-container">
           <table class="attendance-table">
             <thead>
               <tr>
@@ -98,35 +107,49 @@
           </table>
         </div>
       </div>
-      <!-- Data Pemeriksaan Pasien Container -->
+
       <div class="page-container">
-        <!-- Title moved inside the container with the same styling as profile-header -->
         <div class="profile-header">
-          <h2>Data Pemeriksaan Pasien</h2>
+          <h2>Data Pemeriksaan Pasien {{ selectedDiseaseType === 'DM' ? 'Diabetes Mellitus' : (selectedDiseaseType === 'HT' ? 'Hipertensi' : '') }}</h2>
         </div>
-        <!-- Toolbar -->
         <div class="toolbar">
-          <!-- Bagian Kiri -->
           <div class="left-section">
-            <!-- Search Bar -->
+            <div class="dropdown-container-filter" style="margin-right: 16px;">
+              <label for="diseaseTypeFilter" class="filter-label">Jenis Penyakit:</label>
+              <select id="diseaseTypeFilter" v-model="selectedDiseaseType" @change="onDiseaseTypeChange" class="dropdown-select filter-select">
+                <option v-for="disease in availableDiseaseTypes" :key="disease.value" :value="disease.value">
+                  {{ disease.text }}
+                </option>
+                <option v-if="availableDiseaseTypes.length === 0" value="">Tidak ada data penyakit</option>
+              </select>
+            </div>
+
+            <div class="dropdown-container-filter" style="margin-right: 16px;">
+              <label for="yearFilter" class="filter-label">Tahun:</label>
+              <select id="yearFilter" v-model="selectedYear" @change="onYearChange" class="dropdown-select filter-select" :disabled="!selectedDiseaseType || diseaseYears.length === 0">
+                <option v-for="year in diseaseYears" :key="year" :value="year">
+                  {{ year }}
+                </option>
+                 <option v-if="selectedDiseaseType && diseaseYears.length === 0" value="">Tidak ada data tahun</option>
+                 <option v-if="!selectedDiseaseType" value="">Pilih Jenis Penyakit Dahulu</option>
+              </select>
+            </div>
+            
             <div class="search-container">
               <font-awesome-icon :icon="['fas', 'search']" class="search-icon" />
-              <input type="text" placeholder="Search..." class="search-input" v-model="searchQuery" />
+              <input type="text" placeholder="Search by date (YYYY-MM-DD)..." class="search-input" v-model="searchQuery" />
             </div>
           </div>
-          <!-- Bagian Kanan -->
           <div class="right-section">
-            <!-- Tombol Tambah Data Peserta -->
-            <button class="add-data-button" @click="isModalOpen = true">
+            <button class="add-data-button" @click="isModalOpen = true" :disabled="!selectedDiseaseType || !selectedYear">
               <font-awesome-icon :icon="['fas', 'plus']" />
               Tambah Data Pemeriksaan
             </button>
           </div>
         </div>
-        <!-- Tabel Data Pemeriksaan -->
         <div class="table-container">
           <table class="data-table">
-            <thead>
+            <thead v-if="selectedDiseaseType === 'DM'">
               <tr>
                 <th rowspan="2">No</th>
                 <th rowspan="2">Tanggal Pemeriksaan</th>
@@ -140,67 +163,168 @@
                 <th>HbA1c (%)</th>
               </tr>
             </thead>
-            <tbody>
-              <!-- Indikator Loading -->
+            <thead v-if="selectedDiseaseType === 'HT'">
+              <tr>
+                <th rowspan="2">No</th>
+                <th rowspan="2">Tanggal Pemeriksaan</th>
+                <th colspan="2">Hasil Pemeriksaan Hipertensi</th>
+                <th rowspan="2">Aksi</th>
+              </tr>
+              <tr>
+                <th>Systolic (mmHg)</th>
+                <th>Diastolic (mmHg)</th>
+              </tr>
+            </thead>
+            <tbody v-if="selectedDiseaseType">
               <tr v-if="isLoadingExams">
-                <td colspan="7" class="loading-row">
+                <td :colspan="selectedDiseaseType === 'DM' ? 7 : 5" class="loading-row">
                   <div class="loading-container">
                     <div class="spinner"></div>
                     <p>Memuat data...</p>
                   </div>
                 </td>
               </tr>
-
-              <!-- Pesan "Tidak Ada Data" -->
-              <tr v-else-if="filteredExams.length === 0">
-                <td colspan="7" class="no-data">
-                  <p>Tidak ada data pemeriksaan.</p>
+              <tr v-else-if="paginatedExams.length === 0">
+                <td :colspan="selectedDiseaseType === 'DM' ? 7 : 5" class="no-data">
+                  <p>Tidak ada data pemeriksaan untuk {{ selectedDiseaseType === 'DM' ? 'Diabetes Mellitus' : 'Hipertensi' }} pada tahun {{selectedYear}}.</p>
                 </td>
               </tr>
-
-              <!-- Data Pemeriksaan -->
               <tr v-else v-for="(exam, index) in paginatedExams" :key="exam.id">
-                <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
+                <td>{{ firstItemIndex + index + 1 }}</td>
                 <td>{{ exam.examination_date }}</td>
-                <td>{{ exam.examination_results.gdsp || '-' }}</td>
-                <td>{{ exam.examination_results.gdp || '-' }}</td>
-                <td>{{ exam.examination_results.gd2jpp || '-' }}</td>
-                <td>{{ exam.examination_results.hba1c || '-' }}</td>
+                <template v-if="selectedDiseaseType === 'DM'">
+                  <td>{{ exam.examination_results.gdsp || '-' }}</td>
+                  <td>{{ exam.examination_results.gdp || '-' }}</td>
+                  <td>{{ exam.examination_results.gd2jpp || '-' }}</td>
+                  <td>{{ exam.examination_results.hba1c || '-' }}</td>
+                </template>
+                <template v-if="selectedDiseaseType === 'HT'">
+                  <td>{{ exam.systolic || '-' }}</td>
+                  <td>{{ exam.diastolic || '-' }}</td>
+                </template>
                 <td>
-                <button class="action-button edit" @click="openEditExamModal(exam)">
-                  <font-awesome-icon :icon="['fas', 'edit']" />
-                </button>
-                <button class="action-button delete" @click="deleteExam(exam.id)">
-                  <font-awesome-icon :icon="['fas', 'trash']" />
-                </button>
-              </td>
+                  <button class="action-button edit" @click="openEditExamModal(exam)">
+                    <font-awesome-icon :icon="['fas', 'edit']" />
+                  </button>
+                  <button class="action-button delete" @click="deleteExam(exam.id)">
+                    <font-awesome-icon :icon="['fas', 'trash']" />
+                  </button>
+                </td>
               </tr>
+            </tbody>
+             <tbody v-else>
+                <tr>
+                    <td colspan="7" class="no-data">
+                        <p>Silakan pilih jenis penyakit dan tahun untuk menampilkan data.</p>
+                    </td>
+                </tr>
             </tbody>
           </table>
         </div>
+        <div class="pagination-container">
+          <div class="flex items-center justify-between bg-white px-4 py-3 sm:px-6">
+            <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+              <div>
+                <p class="text-sm text-gray-700 flex items-center gap-2">
+                  Baris per halaman:
+                  <div class="dropdown-container">
+                    <select id="rowsPerPage" v-model="pageSize" @change="resetPagination" class="dropdown-select">
+                      <option value="10">10</option>
+                      <option value="25">25</option>
+                      <option value="100">100</option>
+                    </select>
+                  </div>
+                  <span v-if="totalExamsFromAPI > 0">
+                    {{ firstItemIndex + 1 }}-{{ lastItemIndex }} dari {{ totalExamsFromAPI }} item
+                  </span>
+                  <span v-else>
+                    0 item
+                  </span>
+                </p>
+              </div>
+              <nav class="isolate inline-flex -space-x-px rounded-md shadow-xs" aria-label="Pagination" v-if="totalPagesFromAPI > 0">
+                <button
+                  class="pagination-button prev"
+                  @click="prevPage"
+                  :disabled="currentPage === 1"
+                >
+                  <font-awesome-icon :icon="['fas', 'chevron-left']" />
+                </button>
+                
+                <template v-for="(item, index) in paginationItems">
+                  <button
+                    v-if="item !== 'ellipsis'"
+                    :key="'page-' + index"
+                    :class="[
+                      currentPage === item ? 'active' : '',
+                      'pagination-button',
+                    ]"
+                    @click="goToPage(item)"
+                  >
+                    {{ item }}
+                  </button>
+                  <div
+                    v-else
+                    :key="'ellipsis-' + index"
+                    class="pagination-ellipsis"
+                  >
+                    ...
+                  </div>
+                </template>
+                
+                <button
+                  class="pagination-button next"
+                  @click="nextPage"
+                  :disabled="currentPage === totalPagesFromAPI"
+                >
+                  <font-awesome-icon :icon="['fas', 'chevron-right']" />
+                </button>
+              </nav>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-    <!-- Modal Tambah Data -->
-    <ModalTambahData
-      :visible="isModalOpen"
-      :patient-id="patientId"
-      @close="closeModal"
-      @submit="handleModalSubmit"
+
+    <AddExaminationDataDM
+        v-if="selectedDiseaseType === 'DM'"
+        :visible="isModalOpen"
+        :patient-id="patientId"
+        :selected-year="selectedYear" 
+        @close="closeModal"
+        @submit="handleAddExamSubmit"    
+    />
+    <AddExaminationDataHT
+        v-if="selectedDiseaseType === 'HT'"
+        :visible="isModalOpen"
+        :patient-id="patientId"
+        :selected-year="selectedYear"
+        @close="closeModal"
+        @submit="handleAddExamSubmit"
     />
 
     <EditPatientDetail
       :visible="isEditModalOpen"
-      :patientData="patient"
+      :patientData="patient" 
       @close="closeEditModal"
-      @submit="handleEditModalSubmit"
+      @submit="handleEditPatientSubmit" 
     />
 
     <EditExaminationModal
-      :visible="isEditExamModalOpen"
-      :patient-id="patientId"
-      :exam-data="selectedExam"
-      @close="closeEditExamModal"
-      @submit="handleEditExamSubmit"
+        v-if="selectedDiseaseType === 'DM'"
+        :visible="isEditExamModalOpen"
+        :patient-id="patientId"
+        :exam-data="selectedExam"
+        @close="closeEditExamModal"
+        @submit="handleEditExamSubmit"
+    />
+     <EditExaminationDataHT
+        v-if="selectedDiseaseType === 'HT'"
+        :visible="isEditExamModalOpen"
+        :patient-id="patientId"
+        :exam-data="selectedExam"
+        @close="closeEditExamModal"
+        @submit="handleEditExamSubmit"
     />
   </div>
 </template>
@@ -208,26 +332,40 @@
 <script>
 import Swal from 'sweetalert2';
 import axios from 'axios';
-import ModalTambahData from "../../components/modals/AddExaminationDataDM.vue";
+import AddExaminationDataDM from "../../components/modals/AddExaminationDataDM.vue";
+import AddExaminationDataHT from "../../components/modals/AddExaminationDataHT.vue";
 import EditPatientDetail from '../../components/modals/EditPatientDetail.vue';
-import EditExaminationModal from '../../components/modals/EditExaminationModal.vue';
+import EditExaminationModal from '../../components/modals/EditExaminationModal.vue'; // DM Edit Modal
+import EditExaminationDataHT from '../../components/modals/EditExaminationDataHT.vue'; // HT Edit Modal
 
 export default {
-  name: "DetailPasienLP",
+  name: "DetailPasienDM", // Or a more generic name if you prefer e.g., DetailPasienPenyakit
   components: {
-    ModalTambahData,
+    AddExaminationDataDM,
+    AddExaminationDataHT,
     EditPatientDetail,
-    EditExaminationModal
+    EditExaminationModal,
+    EditExaminationDataHT,
   },
   data() {
     return {
       patientId: this.$route.params.id,
-      patient: {},
-      exams: [],
-      selectedYear: this.$route.query.year || new Date().getFullYear(), // Ambil tahun dari query atau default ke tahun sekarang
+      patient: {
+        dm_years: [], // Initialize to store DM years
+        ht_years: [], // Initialize to store HT years
+      },
+      exams: [], 
+      totalExamsFromAPI: 0, 
+      totalPagesFromAPI: 0, 
+      
+      selectedDiseaseType: null, // e.g., 'DM' or 'HT'
+      availableDiseaseTypes: [],
+      selectedYear: null, // Will be set based on query or default
+      // availableYears will be derived from patient.dm_years or patient.ht_years by computed property
+
       searchQuery: "",
       currentPage: 1,
-      pageSize: 10,
+      pageSize: 10, 
       months: [
         "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
         "Jul", "Agu", "Sep", "Okt", "Nov", "Des"
@@ -241,128 +379,288 @@ export default {
     };
   },
   computed: {
-    filteredExams() {
-      return this.exams.filter((exam) => {
-        const matchesSearch = exam.examination_date.toLowerCase().includes(this.searchQuery.toLowerCase());
-        const matchesYear = !this.selectedYear || exam.year === parseInt(this.selectedYear);
-        return matchesSearch && matchesYear;
-      });
+    breadcrumbLink() {
+      if (this.selectedDiseaseType === 'DM') return '/user/diabetes-mellitus';
+      if (this.selectedDiseaseType === 'HT') return '/user/hipertensi';
+      return '/user/list-pasien'; // Fallback
     },
-    totalExams() {
-      return this.filteredExams.length;
+    breadcrumbText() {
+      if (this.selectedDiseaseType === 'DM') return 'Diabetes Mellitus';
+      if (this.selectedDiseaseType === 'HT') return 'Hipertensi';
+      return 'Daftar Pasien'; // Fallback
     },
-    totalPages() {
-      return Math.ceil(this.totalExams / this.pageSize);
+    diseaseYears() {
+      if (this.selectedDiseaseType === 'DM' && this.patient && this.patient.dm_years) {
+        return [...new Set(this.patient.dm_years)].sort((a, b) => b - a); // Sort descending
+      }
+      if (this.selectedDiseaseType === 'HT' && this.patient && this.patient.ht_years) {
+        return [...new Set(this.patient.ht_years)].sort((a, b) => b - a); // Sort descending
+      }
+      return [];
     },
     firstItemIndex() {
-      return (this.currentPage - 1) * this.pageSize;
+      return (this.currentPage - 1) * parseInt(this.pageSize);
     },
     lastItemIndex() {
-      return Math.min(this.currentPage * this.pageSize, this.totalExams);
+      const itemsOnCurrentPage = this.exams.length;
+      return this.firstItemIndex + itemsOnCurrentPage;
     },
     paginatedExams() {
-      return this.filteredExams.slice(this.firstItemIndex, this.lastItemIndex);
+      // API handles pagination, search is client-side for now on the fetched page
+      if (this.searchQuery) {
+        return this.exams.filter(exam => 
+          exam.examination_date.toLowerCase().includes(this.searchQuery.toLowerCase())
+        );
+      }
+      return this.exams;
+    },
+    paginationItems() {
+      const result = [];
+      const totalPages = this.totalPagesFromAPI;
+      const currentPage = this.currentPage;
+      
+      if (totalPages <= 0) return [];
+
+      if (totalPages <= 7) {
+        for (let i = 1; i <= totalPages; i++) {
+          result.push(i);
+        }
+        return result;
+      }
+      
+      result.push(1);
+      
+      if (currentPage <= 4) {
+        for (let i = 2; i <= 5; i++) {
+          if (i < totalPages) result.push(i);
+        }
+        if (totalPages > 5 && currentPage < totalPages - 2)  result.push('ellipsis');
+      } else if (currentPage >= totalPages - 3) {
+        result.push('ellipsis');
+        for (let i = totalPages - 4; i < totalPages; i++) {
+          if (i > 1) result.push(i);
+        }
+      } else {
+        result.push('ellipsis');
+        result.push(currentPage - 1);
+        result.push(currentPage);
+        result.push(currentPage + 1);
+        result.push('ellipsis');
+      }
+      
+      if (!result.includes(totalPages)) {
+        result.push(totalPages);
+      }
+      const uniqueResult = [];
+      let lastPushed = -1;
+      for (const item of result) {
+          if (item === 'ellipsis') {
+              if (lastPushed !== 'ellipsis') { 
+                  uniqueResult.push(item);
+                  lastPushed = item;
+              }
+          } else if (item !== lastPushed) {
+              uniqueResult.push(item);
+              lastPushed = item;
+          }
+      }
+      return uniqueResult;
     },
   },
   methods: {
     async fetchPatientDetails() {
       this.isLoading = true;
+      this.availableDiseaseTypes = [];
       try {
         const token = localStorage.getItem("token");
         if (!token) {
-          console.error("Token tidak ditemukan");
+          Swal.fire('Error', 'Token tidak ditemukan. Silakan login kembali.', 'error');
+          this.$router.push({ name: 'Login' }); 
           return;
         }
+        // Fetch general patient data first (assuming this gives dm_years, ht_years, has_dm, has_ht)
+        // Using the provided API structure, we'd expect this info from patient detail, not list
+        // For now, I'll assume the GET `/api/puskesmas/patients/${this.patientId}` returns this info
         const response = await axios.get(`http://localhost:8000/api/puskesmas/patients/${this.patientId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
-        console.log("API Response:", response.data);
-        const apiPatient = response.data.patient; // Ambil data dari respons API
+        
+        // The API example provided is a LIST. We need DETAIL for a specific patient.
+        // Let's assume `response.data.patient` or `response.data` (if it's a single patient object)
+        // contains the necessary fields: name, nik, ..., has_dm, dm_years, has_ht, ht_years
 
-        // Mapping properti agar sesuai dengan template
+        const apiPatient = response.data.patient; // Adjust if API structure is different for single patient
+
+        if (!apiPatient) {
+            Swal.fire('Error', 'Data pasien tidak ditemukan.', 'error');
+            this.isLoading = false;
+            return;
+        }
+
         this.patient = {
+          ...this.patient, // Keep existing mapped fields if any
           name: apiPatient.name,
           nik: apiPatient.nik || '-',
-          bpjs_number: apiPatient.bpjs_number || '-', // Sesuaikan dengan nama properti di API dan template
-          birth_date: apiPatient.birth_date || '-',   // Sesuaikan dengan nama properti di API dan template
+          bpjs_number: apiPatient.bpjs_number || '-',
+          birth_date: apiPatient.birth_date || '-',
           age: apiPatient.age || '-',
-          gender: apiPatient.gender === 'female' ? 'Perempuan' : 'Laki-Laki',
+          gender: apiPatient.gender === 'female' ? 'Perempuan' : (apiPatient.gender === 'male' ? 'Laki-Laki' : '-'),
           address: apiPatient.address || '-',
+          has_dm: apiPatient.has_dm,
+          dm_years: apiPatient.dm_years || [],
+          has_ht: apiPatient.has_ht,
+          ht_years: apiPatient.ht_years || [],
         };
+
+        if (this.patient.has_dm) {
+          this.availableDiseaseTypes.push({ value: 'DM', text: 'Diabetes Mellitus' });
+        }
+        if (this.patient.has_ht) {
+          this.availableDiseaseTypes.push({ value: 'HT', text: 'Hipertensi' });
+        }
+
+        // Set initial selectedDiseaseType and selectedYear based on query params or defaults
+        const queryDisease = this.$route.query.disease; // e.g., 'dm' or 'ht'
+        const queryYear = this.$route.query.year;
+
+        if (queryDisease && this.availableDiseaseTypes.find(d => d.value.toLowerCase() === queryDisease.toLowerCase())) {
+            this.selectedDiseaseType = this.availableDiseaseTypes.find(d => d.value.toLowerCase() === queryDisease.toLowerCase()).value;
+        } else if (this.availableDiseaseTypes.length > 0) {
+            this.selectedDiseaseType = this.availableDiseaseTypes[0].value; // Default to first available
+        }
+
+
+        if (this.selectedDiseaseType) {
+            const yearsForSelectedDisease = this.diseaseYears; // Uses the computed prop
+            if (queryYear && yearsForSelectedDisease.includes(parseInt(queryYear))) {
+                this.selectedYear = parseInt(queryYear);
+            } else if (yearsForSelectedDisease.length > 0) {
+                this.selectedYear = yearsForSelectedDisease[0]; // Default to the latest year
+            } else {
+                this.selectedYear = null;
+            }
+        } else {
+            this.selectedYear = null;
+        }
+        
+        this.updateRouterQuery();
+        if(this.selectedDiseaseType && this.selectedYear) {
+            this.fetchExaminations();
+        }
+
+
       } catch (error) {
         console.error("Error fetching patient details:", error);
-        alert("Terjadi kesalahan saat memuat detail pasien.");
+        Swal.fire('Error', 'Terjadi kesalahan saat memuat detail pasien.', 'error');
       } finally {
         this.isLoading = false;
       }
     },
+    onDiseaseTypeChange() {
+        this.currentPage = 1;
+        const yearsForNewDisease = this.diseaseYears;
+        if (yearsForNewDisease.length > 0) {
+            this.selectedYear = yearsForNewDisease[0]; // Default to latest year for new disease
+        } else {
+            this.selectedYear = null;
+        }
+        this.updateRouterQuery();
+        if (this.selectedDiseaseType && this.selectedYear) {
+            this.fetchExaminations();
+        } else {
+            this.exams = [];
+            this.totalExamsFromAPI = 0;
+            this.totalPagesFromAPI = 0;
+        }
+    },
+    onYearChange() {
+        this.currentPage = 1;
+        this.updateRouterQuery();
+        if (this.selectedDiseaseType && this.selectedYear) {
+            this.fetchExaminations();
+        }
+    },
+    updateRouterQuery() {
+        const query = { ...this.$route.query };
+        if (this.selectedDiseaseType) {
+            query.disease = this.selectedDiseaseType.toLowerCase();
+        } else {
+            delete query.disease;
+        }
+        if (this.selectedYear) {
+            query.year = this.selectedYear.toString();
+        } else {
+            delete query.year;
+        }
+        this.$router.replace({ query }).catch(err => {
+            if (err.name !== 'NavigationDuplicated') console.error(err);
+        });
+    },
     async deletePatient() {
-      try {
-        // Tampilkan konfirmasi menggunakan SweetAlert
         const confirmation = await Swal.fire({
-          title: 'Apakah Anda yakin?',
-          text: 'Anda akan menghapus data pasien ini! Semua data pemeriksaan pasien juga akan terhapus.',
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonColor: '#d33',
-          cancelButtonColor: '#3085d6',
-          confirmButtonText: 'Ya, hapus!',
-          cancelButtonText: 'Batal',
+            title: 'Apakah Anda yakin?',
+            text: 'Anda akan menghapus data pasien ini! Semua data pemeriksaan pasien juga akan terhapus.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Ya, hapus!',
+            cancelButtonText: 'Batal',
         });
 
-        // Jika pengguna membatalkan, hentikan proses
         if (!confirmation.isConfirmed) {
-          return;
+            return;
         }
 
-        // Panggil API untuk menghapus data pasien
-        const token = localStorage.getItem("token");
-        if (!token) {
-          throw new Error("Token tidak ditemukan");
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) throw new Error("Token tidak ditemukan");
+
+            await axios.delete(`http://localhost:8000/api/puskesmas/patients/${this.patientId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            Swal.fire('Berhasil', 'Data pasien berhasil dihapus.', 'success');
+            this.$router.push('/user/list-pasien'); // Go to a general list page
+        } catch (error) {
+            console.error("Error deleting patient:", error);
+            Swal.fire('Gagal', error.response?.data?.message || 'Terjadi kesalahan saat menghapus data pasien.', 'error');
         }
-
-        const response = await axios.delete(`http://localhost:8000/api/puskesmas/patients/${this.patientId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        // Tampilkan notifikasi sukses menggunakan SweetAlert
-        Swal.fire({
-          icon: 'success',
-          title: 'Berhasil',
-          text: 'Data pasien berhasil dihapus.',
-          confirmButtonText: 'Tutup',
-        });
-
-        // Redirect ke halaman utama (misalnya, halaman daftar pasien)
-        this.$router.push('/user/list-pasien');
-      } catch (error) {
-        console.error("Error deleting patient:", error);
-
-        // Tampilkan notifikasi gagal menggunakan SweetAlert
-        Swal.fire({
-          icon: 'error',
-          title: 'Gagal',
-          text: error.response?.data?.message || 'Terjadi kesalahan saat menghapus data pasien.',
-          confirmButtonText: 'Tutup',
-        });
-      }
     },
     async fetchExaminations() {
+      if (!this.selectedDiseaseType || !this.selectedYear) {
+        this.exams = [];
+        this.totalExamsFromAPI = 0;
+        this.totalPagesFromAPI = 0;
+        this.isLoadingExams = false;
+        return;
+      }
       this.isLoadingExams = true;
       try {
         const token = localStorage.getItem("token");
         if (!token) {
-          console.error("Token tidak ditemukan");
+          Swal.fire('Error', 'Token tidak ditemukan. Silakan login kembali.', 'error');
+          this.$router.push({ name: 'Login' }); 
           return;
         }
-        const response = await axios.get("http://localhost:8000/api/puskesmas/dm-examinations", {
+
+        let apiUrl = "";
+        if (this.selectedDiseaseType === 'DM') {
+          apiUrl = "http://localhost:8000/api/puskesmas/dm-examinations";
+        } else if (this.selectedDiseaseType === 'HT') {
+          apiUrl = "http://localhost:8000/api/puskesmas/ht-examinations";
+        } else {
+          this.isLoadingExams = false;
+          return; // No valid disease type selected
+        }
+
+        const response = await axios.get(apiUrl, {
           params: {
             patient_id: this.patientId,
             year: this.selectedYear,
+            // search: this.searchQuery, // API should handle search ideally for pagination
             per_page: this.pageSize,
             page: this.currentPage,
           },
@@ -371,104 +669,94 @@ export default {
           },
         });
 
-        console.log("API Response:", response.data);
-
-        //Proses respons
-        const { data, meta } = response.data;
-
-        //Pastikan data adalah array
-        this.exams = Array.isArray(data) ? data : [];
-
-        //  Update metadata pagination
-        this.totalExams = meta.total;
-        this.currentPage = meta.current_page;
-        this.totalPages = meta.last_page;
-
-        console.log("Processed exams data:", this.exams);
+        if (response.data && response.data.data && response.data.meta) {
+          const { data, meta } = response.data;
+          this.exams = Array.isArray(data) ? data : (typeof data === 'object' && data !== null ? Object.values(data) : []);
+          this.totalExamsFromAPI = parseInt(meta.total) || 0;
+          this.currentPage = parseInt(meta.current_page) || 1;
+          this.totalPagesFromAPI = parseInt(meta.last_page) || 0;
+          this.pageSize = parseInt(meta.per_page) || 10; 
+        } else {
+          console.error("Struktur respons API tidak sesuai untuk examinations:", response.data);
+          this.exams = [];
+          this.totalExamsFromAPI = 0;
+          this.totalPagesFromAPI = 0;
+          Swal.fire('Error', 'Gagal memuat data pemeriksaan: format data tidak sesuai.', 'error');
+        }
       } catch (error) {
         console.error("Error fetching examinations:", error);
-        alert("Terjadi kesalahan saat memuat data pemeriksaan.");
+        if (error.response && error.response.status === 401) {
+            Swal.fire('Sesi Berakhir', 'Silakan login kembali.', 'warning')
+                .then(() => this.$router.push({ name: 'Login' })); 
+        } else {
+            Swal.fire('Error', `Terjadi kesalahan saat memuat data pemeriksaan ${this.selectedDiseaseType}.`, 'error');
+        }
+        this.exams = [];
+        this.totalExamsFromAPI = 0;
+        this.totalPagesFromAPI = 0;
       } finally {
         this.isLoadingExams = false;
       }
     },
     async deleteExam(id) {
-      try {
-        // Tampilkan konfirmasi menggunakan SweetAlert
         const confirmation = await Swal.fire({
-          title: 'Apakah Anda yakin?',
-          text: 'Anda akan menghapus data pemeriksaan ini.',
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonColor: '#d33',
-          cancelButtonColor: '#3085d6',
-          confirmButtonText: 'Ya, hapus!',
-          cancelButtonText: 'Batal',
+            title: 'Apakah Anda yakin?',
+            text: 'Anda akan menghapus data pemeriksaan ini.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Ya, hapus!',
+            cancelButtonText: 'Batal',
         });
 
-        // Jika pengguna membatalkan, hentikan proses
         if (!confirmation.isConfirmed) {
-          return;
+            return;
         }
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) throw new Error("Token tidak ditemukan");
 
-        const token = localStorage.getItem("token");
-        if (!token) {
-          throw new Error("Token tidak ditemukan");
+            let deleteUrl = "";
+            if (this.selectedDiseaseType === 'DM') {
+                deleteUrl = `http://localhost:8000/api/puskesmas/dm-examinations/${id}`;
+            } else if (this.selectedDiseaseType === 'HT') {
+                deleteUrl = `http://localhost:8000/api/puskesmas/ht-examinations/${id}`;
+            } else {
+                Swal.fire('Error', 'Jenis penyakit tidak valid untuk penghapusan.', 'error');
+                return;
+            }
+
+            await axios.delete(deleteUrl, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            Swal.fire('Berhasil', 'Data pemeriksaan berhasil dihapus.', 'success');
+            this.fetchExaminations(); 
+        } catch (error) {
+            console.error("Error deleting examination:", error);
+            Swal.fire('Gagal', error.response?.data?.message || 'Terjadi kesalahan.', 'error');
         }
-
-        // Panggil API untuk menghapus data pemeriksaan
-        await axios.delete(`http://localhost:8000/api/puskesmas/dm-examinations/${id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        // Tampilkan notifikasi sukses
-        Swal.fire({
-          icon: 'success',
-          title: 'Berhasil',
-          text: 'Data pemeriksaan berhasil dihapus.',
-          confirmButtonText: 'Tutup',
-        });
-
-        // Muat ulang data pemeriksaan setelah penghapusan
-        this.fetchExaminations();
-      } catch (error) {
-        console.error("Error deleting examination:", error);
-
-        // Tampilkan notifikasi gagal
-        Swal.fire({
-          icon: 'error',
-          title: 'Gagal',
-          text:
-            error.response?.data?.message ||
-            error.message ||
-            'Terjadi kesalahan saat menghapus data pemeriksaan.',
-          confirmButtonText: 'Tutup',
-        });
-      }
-    },
-    openEditModal(exam) {
-      // Kirim data pemeriksaan ke modal edit
-      this.selectedExam = exam;
-      this.isEditModalOpen = true; // Buka modal edit
-    },
-
-    closeEditModal() {
-      this.isEditModalOpen = false; // Tutup modal edit
     },
     openEditExamModal(exam) {
-      this.selectedExam = exam; // Simpan data pemeriksaan yang dipilih
-      this.isEditExamModalOpen = true; // Buka modal edit
+      this.selectedExam = { ...exam }; 
+      this.isEditExamModalOpen = true;
     },
     closeEditExamModal() {
-      this.isEditExamModalOpen = false; // Tutup modal edit
+      this.isEditExamModalOpen = false;
+      this.selectedExam = null;
     },
     handleEditExamSubmit() {
-      this.fetchExaminations(); // Muat ulang data setelah pembaruan
+      this.fetchExaminations(); 
+      this.closeEditExamModal();
     },
-    async handleEditModalSubmit() {
-      this.fetchExaminations();
+    handleAddExamSubmit() {
+        this.fetchExaminations();
+        this.closeModal();
+    },
+    handleEditPatientSubmit(updatedPatient) {
+        // Re-fetch patient details to get latest dm_years, ht_years etc.
+        this.fetchPatientDetails(); 
+        this.closeEditModal();
     },
     prevPage() {
       if (this.currentPage > 1) {
@@ -477,14 +765,16 @@ export default {
       }
     },
     nextPage() {
-      if (this.currentPage < this.totalPages) {
+      if (this.currentPage < this.totalPagesFromAPI) {
         this.currentPage++;
         this.fetchExaminations();
       }
     },
     goToPage(page) {
-      this.currentPage = page;
-      this.fetchExaminations();
+      if (page >= 1 && page <= this.totalPagesFromAPI && page !== this.currentPage) {
+        this.currentPage = page;
+        this.fetchExaminations();
+      }
     },
     resetPagination() {
       this.currentPage = 1;
@@ -493,105 +783,142 @@ export default {
     editPatient() {
       this.isEditModalOpen = true;
     },
-    editExam(id) {
-      console.log("Edit exam with ID:", id);
-    },
     closeModal() {
       this.isModalOpen = false;
     },
-    closeEditModal() {
+    closeEditModal() { // For EditPatientDetail
       this.isEditModalOpen = false;
     },
-    handleModalSubmit(data) {
-      console.log("New examination data:", data);
-      this.isModalOpen = false;
-      // Simpan data ke state exams atau lakukan aksi lainnya
-    },
-    handleEditModalSubmit(updatedPatient) {
-    // Update the patient data in your component
-      this.patient = {
-        name: updatedPatient.name,
-        nik: updatedPatient.nik || '-',
-        bpjs_number: updatedPatient.bpjs_number || '-',
-        birth_date: updatedPatient.birth_date || '-',
-        age: updatedPatient.age || '-',
-        gender: updatedPatient.gender === 'female' ? 'Perempuan' : 'Laki-Laki',
-        address: updatedPatient.address || '-',
-      };
-      
-      // Optionally, show a success message
-      console.log("Patient data updated successfully");
-    },
     hasVisitInMonth(month) {
-      const monthIndex = this.months.indexOf(month); // Mendapatkan indeks bulan (0-11)
+      const monthIndex = this.months.indexOf(month);
       if (monthIndex === -1) return false;
 
-      // Periksa apakah ada data pemeriksaan di bulan dan tahun yang sesuai
       return this.exams.some((exam) => {
         const examDate = new Date(exam.examination_date);
         return examDate.getMonth() === monthIndex && examDate.getFullYear() === parseInt(this.selectedYear);
       });
     },
+    async copyToClipboard(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: 'Tersalin!',
+          showConfirmButton: false,
+          timer: 1500,
+          timerProgressBar: true,
+        });
+      } catch (err) {
+        console.error('Failed to copy: ', err);
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'error',
+          title: 'Gagal menyalin',
+          showConfirmButton: false,
+          timer: 1500,
+          timerProgressBar: true,
+        });
+      }
+    },
   },
   watch: {
-    selectedYear() {
-      this.currentPage = 1; // Reset halaman saat tahun berubah
-      this.fetchExaminations();
-    },
-    $route() {
-      this.patientId = this.$route.params.id;
-      this.selectedYear = this.$route.query.year || new Date().getFullYear();
-      this.fetchPatientDetails();
-      this.fetchExaminations();
-    },
+    // selectedDiseaseType and selectedYear changes are handled by their @change methods now
+    // to ensure router updates before fetching data.
+
     searchQuery() {
-      this.currentPage = 1; // Reset halaman saat pencarian berubah
-      this.fetchExaminations();
+        // Client-side search for now, no need to call API unless API supports search with pagination
+        // If API supports search, then call this.fetchExaminations() after resetting current page.
+        // For simplicity here, pagination might behave unexpectedly with client-side search
+        // on paginated data.
+        // this.currentPage = 1;
+        // this.fetchExaminations(); // Re-enable if API handles search
     },
     pageSize() {
-      this.currentPage = 1; // Reset halaman saat jumlah baris per halaman berubah
+      this.currentPage = 1;
       this.fetchExaminations();
     },
-    "$route.query.year": function(newYear) {
-      if (newYear) {
-        this.selectedYear = newYear; // Update tahun terpilih
-        this.fetchExaminations(); // Muat ulang data pemeriksaan
-      }
+    '$route.params.id'(newId, oldId) {
+        if (newId !== oldId) {
+            this.patientId = newId;
+            this.currentPage = 1;
+            this.fetchPatientDetails(); // This will also trigger fetchExaminations if needed
+        }
+    },
+    '$route.query': {
+        handler(newQuery, oldQuery) {
+            const diseaseChanged = newQuery.disease !== (oldQuery ? oldQuery.disease : undefined);
+            const yearChanged = newQuery.year !== (oldQuery ? oldQuery.year : undefined);
+
+            if (diseaseChanged) {
+                const newDiseaseType = this.availableDiseaseTypes.find(d => d.value.toLowerCase() === (newQuery.disease || "").toLowerCase());
+                if (newDiseaseType && newDiseaseType.value !== this.selectedDiseaseType) {
+                    this.selectedDiseaseType = newDiseaseType.value;
+                     // onDiseaseTypeChange will handle year and fetching
+                } else if (!newQuery.disease && this.selectedDiseaseType) {
+                    this.selectedDiseaseType = null;
+                }
+            }
+            
+            if (yearChanged) {
+                const newYear = newQuery.year ? parseInt(newQuery.year) : null;
+                if (newYear !== this.selectedYear) {
+                    this.selectedYear = newYear;
+                }
+            }
+            
+            // If only one changed and it's not covered by onDiseaseTypeChange's logic
+            if ((diseaseChanged && !yearChanged && this.selectedDiseaseType && this.selectedYear) || 
+                (!diseaseChanged && yearChanged && this.selectedDiseaseType && this.selectedYear) ||
+                (diseaseChanged && yearChanged && this.selectedDiseaseType && this.selectedYear)) {
+                 if (!this.isLoading) this.fetchExaminations(); // Avoid fetching if patient details are still loading
+            }
+        },
+        // deep: true // Not needed if just watching query object itself
     }
   },
   mounted() {
-    this.fetchPatientDetails();
-    this.fetchExaminations();
+    this.fetchPatientDetails(); // This method now handles initial setup of dropdowns and fetching exams
   },
 };
 </script>
 
-
 <style scoped>
+/* Gaya CSS Original Anda */
 .patient-details {
   display: flex;
   background-color: #f7f8f9;
   min-height: 100vh;
+  font-family: var(--font-family-primary);
+  color: var(--text-secondary);
 }
 
 .main-content {
   flex: 1;
   overflow-x: auto;
   padding: 0 16px;
+  padding: var(--spacing-lg);
 }
 
 .breadcrumb {
-  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
   font-size: 14px;
-  padding: 12px 0;
+  color: var(--text-tertiary);
 }
 
 .breadcrumb a {
   color: var(--primary-500);
   text-decoration: none;
+  transition: color 0.3s ease;
 }
 
 .breadcrumb a:hover {
+  color: var(--primary-700);
   text-decoration: underline;
 }
 
@@ -599,98 +926,168 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
+  padding: 8px 16px;
   border: 1px solid var(--primary-300);
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
   background: var(--secondary-100);
   color: var(--primary-500);
-  transition: background-color 0.3s ease, transform 0.3s ease;
+  transition: all 0.3s ease;
   margin-bottom: 16px;
 }
 
 .action-button.back:hover {
   background: var(--secondary-300);
+  transform: translateX(-2px);
 }
 
-/* Enhanced Profile Section */
+/* Enhanced Profile Section - MODIFIED AND NEW STYLES */
 .profile-section {
   background: #ffffff;
-  border-radius: 10px;
+  border-radius: 12px; /* Sedikit lebih besar radiusnya */
   padding: 24px;
-  box-shadow: 0px 4px 16px rgba(0, 0, 0, 0.1);
+  box-shadow: 0px 6px 20px rgba(0, 0, 0, 0.08); /* Shadow lebih lembut */
   position: relative;
   margin-bottom: 24px;
 }
 
 .profile-header {
-  margin-bottom: 20px;
-  border-bottom: 1px solid #f0f0f0;
-  padding-bottom: 12px;
+  margin-bottom: 16px; /* Tambah margin */
+  border-bottom: 1px solid #e2e8f0; /* Warna border lebih lembut */
+  padding-bottom: 8px; /* Tambah padding */
+  display: flex; /* Untuk ikon di header */
+  align-items: center; /* Untuk ikon di header */
 }
 
 .profile-header h2 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #333;
+  font-size: 1.65rem; /* Sedikit lebih besar */
+  font-weight: 600; /* Lebih tebal */
+  color: var(--primary-600, #334155); /* Warna yang lebih gelap dan profesional, sesuaikan dengan tema */
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
 }
 
-/* Profile Info dengan Grid 3 Kolom */
+.header-icon {
+  color: var(--primary-500); /* Warna ikon sesuai tema */
+  font-size: 1.5rem; /* Sesuaikan ukuran ikon header */
+}
+
+.profile-info-container {
+  background: var(--bg-white);
+  border-radius: 12px;
+  padding: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+}
+
 .profile-info {
   display: grid;
   grid-template-columns: repeat(3, 1fr); /* Tetap 3 kolom */
-  gap: 20px; /* Jarak antar item */
-  margin-bottom: 24px;
+  gap: 24px; /* Perbesar sedikit jarak vertikal dan horizontal */
+  margin-bottom: 28px; /* Perbesar margin bawah */
 }
 
 .info-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px; /* Sedikit perbesar jarak label dan value */
+  position: relative; /* Untuk tombol copy */
 }
 
 .label {
-  font-weight: 500;
-  color: #666;
-  font-size: 0.9rem;
+  font-weight: 600; /* Lebih tebal agar menonjol */
+  color: #4A5568; /* Warna abu-abu yang lebih gelap dan modern (Tailwind's gray-700) */
+  font-size: 0.9rem; /* Sedikit lebih kecil dari value untuk hierarki */
+  display: flex; /* Untuk ikon di label */
+  align-items: center; /* Untuk ikon di label */
+}
+
+.info-icon {
+  margin-right: 8px;
+  color: var(--primary-500); /* Warna ikon sesuai tema */
+  font-size: 0.9rem; /* Sesuaikan dengan ukuran teks label */
+  width: 16px; /* Pastikan ikon punya lebar tetap agar rapi */
+  text-align: center;
 }
 
 .value {
-  font-weight: 600;
-  color: #333;
-  font-size: 1rem;
+  font-weight: 500; /* Standar untuk nilai */
+  color: #1A202C; /* Warna hitam yang lebih lembut (Tailwind's gray-900) */
+  font-size: 1rem; /* Ukuran standar */
   padding: 4px 0;
+  line-height: 1.5;
+  display: flex; /* Untuk tombol copy */
+  align-items: center; /* Untuk tombol copy */
+  justify-content: space-between; /* Untuk tombol copy */
+}
+
+.value > span:first-child { /* Target teks utama jika ada tombol copy */
+  flex-grow: 1;
+  word-break: break-word;
+}
+
+.copy-button {
+  background: none;
+  border: none;
+  color: var(--primary-400, #60a5fa);
+  cursor: pointer;
+  padding: 4px;
+  margin-left: 8px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.copy-button:hover {
+  color: var(--primary-600, #2563eb);
+  background-color: var(--secondary-100, #eff6ff);
+}
+
+.copy-button .svg-inline--fa { /* Target Font Awesome icon */
+  font-size: 0.85rem;
 }
 
 /* Address Info (Full Width) */
 .address-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-bottom: 24px;
+  gap: 6px; /* Sesuaikan dengan info-item */
+  margin-bottom: 24px; /* Sesuaikan dengan profile-info */
+  background-color: #f8fafc; /* Latar belakang sedikit berbeda untuk alamat */
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0; /* Border lembut */
 }
 
 .address-info .label {
-  font-weight: 500;
-  color: #666;
-  font-size: 0.9rem;
+  font-weight: 600; /* Sama seperti info-item label */
+  color: #4A5568; /* Sama seperti info-item label */
+  font-size: 14px; /* Sama seperti info-item label */
+  display: flex; /* Untuk ikon */
+  align-items: center; /* Untuk ikon */
 }
 
 .address-info .value {
-  font-weight: 600;
-  color: #333;
-  font-size: 1rem;
-  word-wrap: break-word; /* Memastikan teks panjang tidak keluar dari card */
+  font-weight: 500; /* Sama seperti info-item value */
+  color: #1A202C; /* Sama seperti info-item value */
+  font-size: 1rem; /* Sama seperti info-item value */
+  word-wrap: break-word; 
+  line-height: 1.6; /* Perbaiki line-height untuk teks panjang */
 }
+
 /* Profile Action Buttons */
 .profile-actions {
   display: flex;
   justify-content: flex-end;
   gap: 16px;
-  margin-top: 16px;
+  margin-top: 24px; /* Tambah margin atas */
+  padding-top: 20px; /* Tambah padding atas */
+  border-top: 1px solid #e2e8f0; /* Garis pemisah */
 }
 
 .action-button.edit-patient {
@@ -701,16 +1098,16 @@ export default {
   background: var(--primary-500);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 10px;
   cursor: pointer;
   font-size: 14px;
-  font-weight: 500;
-  transition: background-color 0.3s ease;
+  font-weight: 600; /* Sedikit lebih tegas */
+  transition: background-color 0.3s ease, transform 0.3s ease;
 }
 
 .action-button.edit-patient:hover {
   background: var(--primary-700);
-  transform: scale(1.05);
+  transform: scale(1.02); /* Sedikit lebih halus transformnya */
 }
 
 .action-button.delete-patient {
@@ -721,33 +1118,34 @@ export default {
   background: white;
   color: #e53935;
   border: 1px solid #e53935;
-  border-radius: 6px;
+  border-radius: 10px;
   cursor: pointer;
   font-size: 14px;
-  font-weight: 500;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  font-weight: 600; /* Sedikit lebih tegas */
+  transition: background-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
 }
 
 .action-button.delete-patient:hover {
   background: #ffebee;
   color: #c62828;
-  transform: scale(1.05);
+  transform: scale(1.02); /* Sedikit lebih halus transformnya */
 }
 
 /* NEW: Monthly Attendance Container */
 .attendance-container {
   background: #ffffff;
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 24px;
-  box-shadow: 0px 4px 16px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   margin-bottom: 24px;
 }
 
 .attendance-container h3 {
-  font-size: 1.25rem;
+  font-family: var(--font-family-heading);
   font-weight: 600;
-  margin-bottom: 16px;
-  color: #333;
+  font-size: 1.25rem;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-md);
 }
 
 .attendance-table-container {
@@ -760,6 +1158,8 @@ export default {
   border-spacing: 0;
   font-size: 14px;
   color: #333;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .attendance-table th,
@@ -799,76 +1199,97 @@ export default {
 /* Page Container */
 .page-container {
   width: 100%;
-  max-width: 1400px; /* Lebar maksimal saat layar besar */
+  max-width: 1400px; 
   background: #ffffff;
   border-radius: 10px;
   padding: 26px;
   box-shadow: 0px 4px 16px rgba(0, 0, 0, 0.1);
-  overflow-x: auto; /* Aktifkan scroll horizontal jika konten melebihi lebar */
+  overflow-x: auto; 
   margin-bottom: 24px;
 }
+
+/* Page Container's Profile Header (untuk Data Pemeriksaan Pasien) akan menggunakan styling dari .profile-header di atas */
 
 /* Toolbar */
 .toolbar {
   display: flex;
-  justify-content: space-between; /* Pisahkan bagian kiri dan kanan */
-  align-items: center; /* Sentralkan elemen secara vertikal */
+  justify-content: space-between; 
+  align-items: center; 
   margin-bottom: 20px;
   flex-wrap: wrap;
 }
 
-/* Bagian Kiri */
 .left-section {
   display: flex;
-  align-items: center; /* Sentralkan elemen secara vertikal */
+  align-items: center; 
   flex-wrap: wrap;
+  gap: 16px; /* Added gap for filter elements */
 }
 
-/* Bagian Kanan */
 .right-section {
   display: flex;
-  align-items: center; /* Sentralkan elemen secara vertikal */
+  align-items: center; 
   flex-wrap: wrap;
 }
 
-/* Dropdown Tahun */
-.dropdown-container-year {
-  position: relative;
-  width: 147px; /* Lebar dropdown tahun */
+
+/* Styles for new filter dropdowns */
+.dropdown-container-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.dropdown-select {
-  width: 100%;
-  height: 42px;
-  padding: 8px;
-  border: 1px solid #eaeaea;
-  border-radius: 10px;
+.filter-label {
+  font-size: 14px;
+  color: #4A5568;
+  font-weight: 500;
+}
+
+.filter-select {
+  min-width: 180px; /* Adjust as needed */
+  height: 42px; /* Match search input */
+  padding: 8px 12px; /* Adjust padding */
+}
+
+
+.dropdown-select { /* This class is used for year, rowsPerPage, and new filters */
+  width: 100%; /* Or a fixed width if preferred for filters */
+  height: 38px; 
+  padding: 0 8px;
+  border: 1px solid #e5e7eb; 
+  border-radius: 6px; 
   font-family: "Inter", sans-serif;
   font-size: 14px;
-  color: #000000;
+  color: #374151; 
   background: #ffffff;
   cursor: pointer;
-  appearance: none; /* Hilangkan tampilan default dropdown */
-  -webkit-appearance: none; /* Untuk browser Webkit */
-  -moz-appearance: none; /* Untuk browser Mozilla */
-  outline: none; /* Hilangkan outline saat fokus */
+  appearance: none; 
+  -webkit-appearance: none; 
+  -moz-appearance: none; 
+  outline: none; 
+  transition: border-color 0.3s ease; 
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%239CA3AF'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1.25em 1.25em;
+  padding-right: 2rem; 
 }
 
-/* Dropdown Icon (Chevron Down) */
-.dropdown-container-year::after {
-  content: "▼"; /* Simbol panah bawah */
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 12px;
-  color: #9aa0a8;
-  pointer-events: none; /* Pastikan tidak bisa diklik */
+.dropdown-select:disabled {
+    background-color: #f3f4f6;
+    cursor: not-allowed;
+    color: #9ca3af;
 }
 
-/* Tombol Tambah Data Peserta */
+
+.dropdown-select:hover:not(:disabled) {
+  border-color: var(--primary-300); 
+}
+
+
 .add-data-button {
-  margin-left: 16px;
+  /* margin-left: 16px; Remove fixed margin if filters are present */
   display: flex;
   align-items: center;
   gap: 8px;
@@ -877,39 +1298,25 @@ export default {
   color: #ffffff;
   font-family: "Inter", sans-serif;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
+  transition: background-color 0.3s ease, transform 0.3s ease;
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+}
+.add-data-button:disabled {
+    background-color: #d1d5db; /* Tailwind gray-300 */
+    cursor: not-allowed;
+    transform: none;
 }
 
-.add-data-button:hover {
+
+.add-data-button:hover:not(:disabled) {
   background: var(--primary-700);
+  transform: scale(1.02);
 }
 
-/* Tombol Print Laporan */
-.print-report-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: var(--primary-500);
-  color: #ffffff;
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
 
-.print-report-button:hover {
-  background: var(--primary-700);
-}
-
-/* Kolom Pencarian */
 .search-container {
   display: flex;
   align-items: center;
@@ -921,13 +1328,13 @@ export default {
   left: 10px;
   color: #9aa0a8;
   font-size: 16px;
-  pointer-events: none; /* Pastikan ikon tidak bisa diklik */
+  pointer-events: none; 
 }
 
 .search-input {
   width: 251px;
   height: 42px;
-  padding: 10px 40px 10px 40px; /* Padding untuk memberi ruang ikon search */
+  padding: 10px 40px 10px 40px; 
   border: 1px solid #cdcfD4;
   border-radius: 10px;
   font-family: "Inter", sans-serif;
@@ -937,12 +1344,13 @@ export default {
 }
 
 .search-input:hover {
-  border-color: var(--primary-500); /* Warna border saat hover */
+  border-color: var(--primary-500); 
 }
 
 @media (max-width: 992px) {
   .profile-info {
     grid-template-columns: repeat(2, 1fr);
+    gap: 24px 20px; /* Sesuaikan gap untuk 2 kolom */
   }
   
   .toolbar {
@@ -956,6 +1364,10 @@ export default {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
+    width: 100%; 
+  }
+    .add-data-button {
+    margin-left: 0; 
   }
 
   .search-container {
@@ -963,8 +1375,15 @@ export default {
   }
 
   .search-input {
+    width: 100%; 
+  }
+  .filter-select {
     width: 100%;
   }
+  .dropdown-container-filter {
+    width: 100%;
+  }
+
 
   .add-data-button,
   .print-report-button {
@@ -974,46 +1393,33 @@ export default {
   }
 }
 
-/* Media Query untuk Layar Kecil */
 @media (max-width: 768px) {
+  .profile-header h2 {
+    font-size: 1.4rem; /* Kecilkan font header di mobile */
+  }
+  .header-icon {
+    font-size: 1.3rem;
+  }
   .profile-info {
     grid-template-columns: 1fr;
+    gap: 20px; /* Sesuaikan gap untuk 1 kolom */
+  }
+  .value {
+    font-size: 0.95rem; /* Sedikit kecilkan value di mobile agar tidak terlalu penuh */
+  }
+  .label {
+    font-size: 0.85rem;
+  }
+  .address-info {
+    padding: 12px;
   }
   
   .profile-actions {
     flex-direction: column;
   }
   
-  .toolbar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-  }
-
-  .left-section,
-  .right-section {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-  }
-
-  .search-container {
-    width: 100%;
-  }
-
-  .search-input {
-    width: 100%;
-  }
-
-  .add-data-button,
-  .print-report-button {
-    width: 100%;
-    text-align: center;
-    justify-content: center;
-  }
 }
 
-/* Table Container */
 .table-container {
   overflow-x: auto;
   margin-bottom: 20px;
@@ -1021,7 +1427,6 @@ export default {
   border-radius: 10px;
 }
 
-/* Data Table */
 .data-table {
   width: 100%;
   border-collapse: separate;
@@ -1034,7 +1439,6 @@ export default {
   overflow: hidden;
 }
 
-/* Header */
 .data-table thead th {
   background: #f3f4f6;
   color: #333333;
@@ -1044,57 +1448,32 @@ export default {
   border-bottom: 1px solid #e5e7eb;
 }
 
-/* Data Rows */
 .data-table tbody tr:hover {
   background: #f9fafb;
   transition: background-color 0.3s ease;
 }
 
-/* Header */
-.data-table th {
-  text-align: center; /* Rata tengah untuk judul kolom */
-  font-weight: 600;
-  color: #5f5f5f;
-  background: #f3f3f3; /* Latar belakang abu-abu muda */
-}
 
-/* Data Cell */
 .data-table td {
-  text-align: center; /* Rata tengah untuk data */
-  padding: 20px; /* Tinggi baris menjadi 60px */
+  text-align: center; 
+  padding: 20px; 
+  border-bottom: 1px solid #e5e7eb; 
+}
+.data-table tbody tr:last-child td {
+  border-bottom: none; 
 }
 
-.data-table tr {
-  height: 60px; /* Tinggi baris tetap 60px */
-}
 
-/* Action Buttons */
-.action-buttons {
-  display: flex;
-  gap: 8px;
-}
 
-.action-button.detail {
-  padding: 8px 16px; /* Padding lebih besar untuk tombol tunggal */
-  border: 1px solid var(--primary-300);
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  background: var(--secondary-100); /* Warna biru untuk tombol detail */
-  color: var(--primary-500);
-  transition: background-color 0.3s ease, transform 0.3s ease;
-}
-.action-button.detail:hover {
-  background: var(--secondary-300); /* Warna lebih gelap saat hover */
-}
 
-.action-button.edit,
-.action-button.delete {
+.action-button.edit, /* For table actions */
+.action-button.delete { /* For table actions */
   padding: 8px;
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.3s ease;
+  border: none;
+  background: transparent;
 }
 
 .action-button.edit {
@@ -1113,7 +1492,6 @@ export default {
   background-color: rgba(229, 57, 53, 0.1);
 }
 
-/* Scrollbar Styling */
 .table-container::-webkit-scrollbar {
   height: 8px;
 }
@@ -1127,49 +1505,43 @@ export default {
   background: #f3f4f6;
 }
 
-/* Column Width Adjustments */
-.data-table th:nth-child(1),
-.data-table td:nth-child(1) {
-  width: 5%;
-}
+/* DM Table (7 columns) */
+.data-table th:nth-child(1), 
+.data-table td:nth-child(1) { width: 5%; min-width: 50px; }
+.data-table th:nth-child(2), 
+.data-table td:nth-child(2) { width: 15%; min-width: 150px; } /* Tanggal */
+.data-table th:nth-child(3), 
+.data-table td:nth-child(3) { width: 15%; min-width: 120px; } /* Sewaktu */
+.data-table th:nth-child(4), 
+.data-table td:nth-child(4) { width: 15%; min-width: 120px; } /* Puasa */
+.data-table th:nth-child(5), 
+.data-table td:nth-child(5) { width: 20%; min-width: 180px; } /* 2 Jam PP */
+.data-table th:nth-child(6), 
+.data-table td:nth-child(6) { width: 15%; min-width: 100px; } /* HbA1c */
+.data-table th:nth-child(7), 
+.data-table td:nth-child(7) { width: 15%; min-width: 120px; } /* Aksi */
 
-.data-table th:nth-child(2),
-.data-table td:nth-child(2) {
-  width: 15%;
-}
-
-.data-table th:nth-child(3),
-.data-table td:nth-child(3) {
-  width: 15%;
-}
-
-.data-table th:nth-child(4),
-.data-table td:nth-child(4) {
-  width: 15%;
-}
-
-.data-table th:nth-child(5),
-.data-table td:nth-child(5) {
-  width: 15%;
-}
-
-
-.data-table th:nth-child(6),
-.data-table td:nth-child(6) {
-  width: 15%;
-}
-
-.data-table th:nth-child(7),
-.data-table td:nth-child(7) {
-  width: 10%;
-}
+/* HT Table (5 columns) - These will apply if selectedDiseaseType is HT and the table structure changes in the template */
+/* For simplicity, I'm not adding specific classes to target, but you could if needed, or adjust the generic ones above if DM table is default*/
+/* Example if you had specific classes like .dm-col or .ht-col */
+/* .data-table .ht-col-no { width: 5%; } */
 
 
 /* Pagination */
-/* Pagination Container */
 .pagination-container {
   background-color: #ffffff;
   border-radius: 8px;
+}
+
+.pagination-ellipsis {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  color: #9aa0a8;
 }
 
 /* Pagination Buttons */
@@ -1177,137 +1549,57 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px; /* Lebar tetap untuk angka halaman */
-  height: 40px; /* Tinggi tetap untuk angka halaman */
+  width: 40px;
+  height: 40px;
   padding: 0;
   font-family: "Inter", sans-serif;
   font-size: 14px;
   font-weight: 500;
-  color: #9aa0a8; /* Warna teks default abu-abu */
+  color: #9aa0a8;
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: color 0.3s ease; /* Animasi warna teks */
+  transition: color 0.3s ease;
 }
 
 .pagination-button:hover {
-  color: var(--primary-500); /* Warna biru saat hover */
+  color: var(--primary-500);
 }
 
 /* Halaman Aktif */
 .pagination-button.active {
-  color: var(--primary-500); /* Teks biru untuk halaman aktif */
-  font-weight: 600; /* Teks lebih tebal */
+  color: var(--primary-500);
+  font-weight: 600;
 }
 
 /* Tombol Previous dan Next */
 .pagination-button.prev,
 .pagination-button.next {
-  background-color: var(--primary-500); /* Background biru */
-  color: #ffffff; /* Teks putih */
-  width: auto; /* Lebar otomatis */
-  padding: 10px 16px; /* Padding tambahan untuk ikon */
-  font-size: 16px; /* Ukuran ikon lebih besar */
+  background-color: var(--primary-500);
+  color: #ffffff;
+  width: auto;
+  padding: 10px 16px;
+  font-size: 16px;
 }
 
 .pagination-button.prev:hover,
 .pagination-button.next:hover {
-  background-color: var(--primary-700); /* Background lebih gelap saat hover */
+  background-color: var(--primary-700);
 }
 
 /* Tombol Disabled */
 .pagination-button:disabled {
-  background-color: #9aa0a8; /* Background abu-abu */
-  color: #ffffff; /* Teks putih */
-  cursor: not-allowed; /* Ubah kursor menjadi tidak aktif */
+  background-color: #9aa0a8;
+  color: #ffffff;
+  cursor: not-allowed;
 }
 
-/* Dropdown Baris Per Halaman */
-.rows-per-page {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.rows-per-page label {
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  color: #5f5f5f;
-}
-
-.rows-per-page select {
-  width: 80px;
-  height: 42px;
-  padding: 8px;
-  border: 1px solid #eaeaea;
-  border-radius: 10px;
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  color: #000000;
-  background: #ffffff;
-  cursor: pointer;
-}
-
-/* Container untuk Dropdown */
-.dropdown-container {
+.dropdown-container { 
   position: relative;
-  width: 80px; /* Lebar dropdown */
-}
-
-/* Dropdown Select */
-.dropdown-select {
-  width: 100%;
-  height: 42px;
-  padding: 8px;
-  border: 1px solid #eaeaea; /* Border tipis */
-  border-radius: 8px; /* Sudut melengkung */
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  color: #000000;
-  background: #ffffff;
-  cursor: pointer;
-  appearance: none; /* Hilangkan tampilan default dropdown */
-  -webkit-appearance: none; /* Untuk browser Webkit */
-  -moz-appearance: none; /* Untuk browser Mozilla */
-  outline: none; /* Hilangkan outline saat fokus */
-  transition: border-color 0.3s ease; /* Animasi saat hover */
-}
-
-/* Hover Effect untuk Dropdown */
-.dropdown-select:hover {
-  border-color: var(--primary-500); /* Warna border saat hover */
-}
-
-/* Arrow Icon untuk Dropdown */
-.dropdown-container::after {
-  content: "▼"; /* Simbol panah bawah */
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 12px;
-  color: #9aa0a8;
-  pointer-events: none; /* Pastikan tidak bisa diklik */
-}
-
-/* Container tombol aksi */
-.action-buttons {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-/* Action Buttons */
-.action-button {
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font-size: 16px;
-  margin: 0 4px;
-  transition: color 0.3s ease;
+  width: 80px; 
 }
 
 
-/* Styling untuk Indikator Loading */
 .loading-row {
   text-align: center;
 }
@@ -1317,7 +1609,8 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100px; /* Sesuaikan tinggi */
+  min-height: 150px; 
+  padding: 20px;
 }
 
 .spinner {
@@ -1338,12 +1631,44 @@ export default {
     transform: rotate(360deg);
   }
 }
+.loading-container p {
+    color: #5f5f5f;
+    font-weight: 500;
+}
 
-/* Styling untuk Pesan "Tidak Ada Data" */
 .no-data {
   text-align: center;
   color: #9aa0a8;
   font-size: 16px;
   font-weight: 500;
+  padding: 40px 0; 
+}
+
+.flex { display: flex; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-2 { gap: 0.5rem; } 
+.bg-white { background-color: #ffffff; }
+.px-4 { padding-left: 1rem; padding-right: 1rem; } 
+.py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; } 
+.sm\:px-6 { }
+@media (min-width: 640px) {
+  .sm\:px-6 { padding-left: 1.5rem; padding-right: 1.5rem; } 
+  .hidden.sm\:flex { display: flex; }
+  .sm\:flex-1 { flex: 1 1 0%; }
+  .sm\:items-center { align-items: center; }
+  .sm\:justify-between { justify-content: space-between; }
+}
+.text-sm { font-size: 0.875rem; } 
+.text-gray-700 { color: #374151; }
+.isolate { isolation: isolate; }
+.-space-x-px > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 0;
+  margin-right: calc(-1px * var(--tw-space-x-reverse));
+  margin-left: calc(-1px * calc(1 - var(--tw-space-x-reverse)));
+}
+.rounded-md { border-radius: 0.375rem; } 
+.shadow-xs { 
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 </style>

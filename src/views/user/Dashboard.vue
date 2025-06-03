@@ -261,7 +261,7 @@ export default {
 
       try {
         const type = this.selectedProgram === "Hipertensi" ? "ht" : "dm";
-        const response = await apiClient.get("/statistics", {
+        const response = await apiClient.get("/statistics/dashboard-statistics", {
           params: {
             year: this.selectedYear,
             type: type

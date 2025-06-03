@@ -169,6 +169,7 @@
       @close="closeAddPatientModal"
       @submit="handlePatientSubmit"
       :selected-year="selectedYear"
+      examination-type="dm"
     />
   </div>
 </template>
@@ -399,8 +400,8 @@ export default {
     closeAddPatientModal() {
       this.showAddPatientModal = false;
     },
-    handlePatientSubmit(formData) {
-      console.log("Data yang disimpan:", formData);
+    handlePatientSubmit(patientData) {
+      console.log("Data yang disimpan:", patientData);
       this.closeAddPatientModal();
       this.fetchPatients(); // Muat ulang data setelah menambahkan pasien
     },

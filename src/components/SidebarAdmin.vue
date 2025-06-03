@@ -1,24 +1,21 @@
 <template>
   <div class="sidebar" :class="{ collapsed: !isSidebarOpen }">
-    <!-- Top Bar (Profile Placeholder) -->
     <div class="top-bar">
       <div class="profile-placeholder">
-  <div class="circle">
-    <img
-      v-if="profileImage"
-      :src="profileImage"
-      alt="Profile Picture"
-      class="profile-image"
-    />
-    <div v-else class="placeholder"></div>
-  </div>
-</div>
+        <div class="circle">
+          <img
+            v-if="profileImage"
+            :src="profileImage"
+            alt="Profile Picture"
+            class="profile-image"
+          />
+          <div v-else class="placeholder"></div>
+        </div>
+      </div>
       <h3 v-if="isSidebarOpen" class="app-name">Akudihatinya</h3>
     </div>
 
-    <!-- Menu Items -->
     <ul class="menu-list">
-      <!-- Dashboard Menu Item -->
       <li
         class="menu-item"
         :class="{ active: activeMenu === 'dashboard' }"
@@ -28,7 +25,6 @@
         <span v-if="isSidebarOpen" class="menu-text">Dashboard</span>
       </li>
       
-      <!-- Manajemen User Menu Item -->
       <li
         class="menu-item"
         :class="{ active: activeMenu === 'manajemen-user' }"
@@ -36,6 +32,15 @@
       >
         <font-awesome-icon :icon="['fas', 'users']" class="menu-icon" />
         <span v-if="isSidebarOpen" class="menu-text">Manajemen User</span>
+      </li>
+
+      <li
+        class="menu-item"
+        :class="{ active: activeMenu === 'manajemen-target-puskesmas' }"
+        @click="navigate(menuItems[2])"
+      >
+        <font-awesome-icon :icon="['fas', 'bullseye']" class="menu-icon" />
+        <span v-if="isSidebarOpen" class="menu-text">Target Tahunan</span>
       </li>
     </ul>
   </div>
@@ -48,13 +53,18 @@ export default {
       type: Boolean,
       required: true,
     },
+    profileImage: { // Ditambahkan properti untuk gambar profil jika diperlukan
+        type: String,
+        default: null, // atau path ke gambar default placeholder jika ada
+    }
   },
   data() {
     return {
-      activeMenu: 'dashboard',
+      activeMenu: 'dashboard', // Atau bisa diatur berdasarkan route saat ini
       menuItems: [
         { key: 'dashboard', label: 'Dashboard', icon: 'chart-line' },
         { key: 'manajemen-user', label: 'Manajemen User', icon: 'users' },
+        { key: 'manajemen-target-puskesmas', label: 'Target Tahunan', icon: 'bullseye' }, // Menu baru ditambahkan di sini
       ],
     };
   },
@@ -64,6 +74,32 @@ export default {
       this.$router.push(`/admin/${item.key}`);
     },
   },
+  // Untuk inisialisasi activeMenu berdasarkan route saat komponen dibuat (opsional tapi baik)
+  created() {
+    const currentPath = this.$route.path;
+    const adminPathSegment = '/admin/';
+    if (currentPath.startsWith(adminPathSegment)) {
+      const currentKey = currentPath.substring(adminPathSegment.length);
+      const foundItem = this.menuItems.find(item => item.key === currentKey);
+      if (foundItem) {
+        this.activeMenu = foundItem.key;
+      }
+    }
+  },
+  watch: {
+    // Untuk update activeMenu jika route berubah karena navigasi lain (misalnya, tombol back/forward browser)
+    '$route'(to, from) {
+      const currentPath = to.path;
+      const adminPathSegment = '/admin/';
+      if (currentPath.startsWith(adminPathSegment)) {
+        const currentKey = currentPath.substring(adminPathSegment.length);
+        const foundItem = this.menuItems.find(item => item.key === currentKey);
+        if (foundItem) {
+          this.activeMenu = foundItem.key;
+        }
+      }
+    }
+  }
 };
 </script>
 

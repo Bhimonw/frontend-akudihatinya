@@ -182,6 +182,13 @@ export default {
       type: String,
       required: true,
     },
+    examinationType: {
+      type: String,
+      required: true,
+      validator: function (value) {
+        return ["dm", "htn"].includes(value);
+      }
+    }
   },
   data() {
     return {
@@ -390,7 +397,7 @@ export default {
         // Buat payload untuk API
         const payload = {
           year: yearAsNumber, // Ensure year is a number
-          examination_type: "dm",
+          examination_type: this.examinationType,
         };
 
         console.log("Payload being sent:", payload); // Debugging: Log the payload
@@ -470,7 +477,7 @@ export default {
     },
   },
   watch: {
-    searchPatientQuery(newVal) {
+    searchPatientQuery() {
       this.resetPagination();
     },
     show: {
@@ -478,6 +485,7 @@ export default {
       handler(newVal) {
         if (newVal) {
           this.fetchPatients(this.currentPage);
+          this.showNewPatientForm = false;
         }
       }
     }

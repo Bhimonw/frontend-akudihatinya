@@ -391,6 +391,7 @@ export default {
         });
         const apiPatient = response.data.patient;
         this.patient = {
+          id: apiPatient.id,
           name: apiPatient.name,
           nik: apiPatient.nik || '-',
           bpjs_number: apiPatient.bpjs_number || '-',
@@ -1348,62 +1349,10 @@ export default {
   min-width: 120px;
 }
 
+/* Pagination */
 .pagination-container {
   background-color: #ffffff;
   border-radius: 8px;
-  margin-top: 20px; 
-  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.05); 
-}
-.pagination-container .flex.items-center.justify-between {
-    padding: 12px 16px; 
-}
-
-.pagination-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  color: #9aa0a8;
-  border: none;
-  border-radius: 8px; /* Increased radius for modern look */
-  cursor: pointer;
-  transition: color 0.3s ease, background-color 0.3s ease; /* Added background-color transition */
-}
-
-.pagination-button:hover:not(:disabled) { /* Added :not(:disabled) */
-  color: var(--primary-500);
-  background-color: #f3f4f6; /* Light background on hover */
-}
-
-.pagination-button.active {
-  color: var(--primary-500); /* Kept color */
-  font-weight: 600;
-}
-
-.pagination-button.prev,
-.pagination-button.next {
-  background-color: transparent; /* Made transparent to match page numbers */
-  color: var(--primary-500); /* Use primary color for chevrons */
-  width: 40px; /* Ensure same width as number buttons for alignment */
-  padding: 0; /* Remove padding if fixed width/height */
-  font-size: 16px; /* Keep chevron size */
-}
-
-.pagination-button.prev:hover:not(:disabled),
-.pagination-button.next:hover:not(:disabled) {
-  background-color: var(--primary-100, #e0e7ff); /* Consistent hover */
-  color: var(--primary-600, #4338ca);
-}
-
-.pagination-button:disabled {
-  background-color: transparent; /* No background for disabled */
-  color: #d1d5db; /* Lighter color for disabled */
-  cursor: not-allowed;
 }
 
 .pagination-ellipsis {
@@ -1417,37 +1366,60 @@ export default {
   color: #9aa0a8;
 }
 
-.rows-per-page { /* Original class was not in HTML, using .dropdown-container directly */
-  /* display: flex;
+/* Pagination Buttons */
+.pagination-button {
+  display: flex;
   align-items: center;
-  gap: 8px; */
-}
-
-.rows-per-page label {
-  /* font-family: "Inter", sans-serif;
-  font-size: 14px;
-  color: #5f5f5f; */
-}
-
-/* .rows-per-page select {
-  width: 80px;
-  height: 42px;
-  padding: 8px;
-  border: 1px solid #eaeaea;
-  border-radius: 10px;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
   font-family: "Inter", sans-serif;
   font-size: 14px;
-  color: #000000;
-  background: #ffffff;
+  font-weight: 500;
+  color: #9aa0a8;
+  border: none;
+  border-radius: 8px;
   cursor: pointer;
-} */
+  transition: color 0.3s ease;
+}
 
-.dropdown-container { /* Container for pageSize dropdown */
+.pagination-button:hover {
+  color: var(--primary-500);
+}
+
+/* Halaman Aktif */
+.pagination-button.active {
+  color: var(--primary-500);
+  font-weight: 600;
+}
+
+/* Tombol Previous dan Next */
+.pagination-button.prev,
+.pagination-button.next {
+  background-color: var(--primary-500);
+  color: #ffffff;
+  width: auto;
+  padding: 10px 16px;
+  font-size: 16px;
+}
+
+.pagination-button.prev:hover,
+.pagination-button.next:hover {
+  background-color: var(--primary-700);
+}
+
+/* Tombol Disabled */
+.pagination-button:disabled {
+  background-color: #9aa0a8;
+  color: #ffffff;
+  cursor: not-allowed;
+}
+
+.dropdown-container { 
   position: relative;
   width: 80px; 
 }
-
-/* .dropdown-select is already defined above and styled for general use */
 
 
 .loading-row {

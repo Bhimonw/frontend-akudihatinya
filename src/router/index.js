@@ -10,6 +10,7 @@ import Profile from '../views/user/ProfilePage.vue';
 // Admin Views
 import AdminDashboard from '../views/admin/Dashboard.vue';
 import ManajemenUser from '../views/admin/ManajemenUser.vue';
+import ManagePuskesmasTarget from '../views/admin/ManagePuskesmasTarget.vue';
 
 // User Views
 import UserDashboard from '../views/user/Dashboard.vue';
@@ -60,6 +61,11 @@ const routes = [
       {
         path: 'manajemen-user',
         component: ManajemenUser,
+        meta: { requiresAuth: true, isAdmin: true, title: 'Manajemen User' },
+      },
+      {
+        path: 'manajemen-target-puskesmas',
+        component: ManagePuskesmasTarget,
         meta: { requiresAuth: true, isAdmin: true, title: 'Manajemen User' },
       },
     ],

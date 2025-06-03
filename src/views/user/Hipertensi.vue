@@ -169,6 +169,7 @@
       @close="closeAddPatientModal"
       @submit="handlePatientSubmit"
       :selected-year="selectedYear"
+      examination-type="ht"
     />
   </div>
 </template>
@@ -339,7 +340,7 @@ export default {
       // Construct the payload
       const payload = {
         year: this.selectedYear,
-        examination_type: "dm",
+        examination_type: "ht",
       };
       console.log("Payload being sent:", payload); // Debugging: Log the payload
       const token = localStorage.getItem("token");
@@ -399,8 +400,8 @@ export default {
     closeAddPatientModal() {
       this.showAddPatientModal = false;
     },
-    handlePatientSubmit(formData) {
-      console.log("Data yang disimpan:", formData);
+    handlePatientSubmit(patientData) {
+      console.log("Data yang disimpan:", patientData);
       alert("Data berhasil disimpan!");
       this.closeAddPatientModal();
       this.fetchPatients(); // Muat ulang data setelah menambahkan pasien

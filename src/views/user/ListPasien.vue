@@ -1,20 +1,14 @@
 <template>
   <div class="diabetes-mellitus">
-    <!-- Page Container -->
     <div class="page-container">
-      <!-- Toolbar -->
       <div class="toolbar">
-        <!-- Bagian Kiri -->
         <div class="left-section">
-          <!-- Tombol Tambah Data Peserta -->
           <button class="add-data-button" @click="openAddPatientModal">
             <font-awesome-icon :icon="['fas', 'plus']" />
             Tambah Pasien Baru
           </button>
         </div>
-        <!-- Bagian Kanan -->
         <div class="right-section">
-          <!-- Search Bar -->
           <div class="search-container">
             <font-awesome-icon :icon="['fas', 'search']" class="search-icon" />
             <input
@@ -27,7 +21,6 @@
         </div>
       </div>
 
-      <!-- Tabel Data Pasien -->
       <div class="table-container">
         <table class="data-table">
           <thead>
@@ -72,17 +65,15 @@
                 </button>
               </td>
             </tr>
-            <tr v-if="!isLoading && paginatedPatients.length === 0">
+            <tr v-if="!isLoading && patients.length === 0">
               <td colspan="9" class="no-data">Tidak ada data pasien.</td>
             </tr>
           </tbody>
         </table>
       </div>
-      <!-- Pagination -->
       <div class="pagination-container">
         <div class="flex items-center justify-between bg-white px-4 py-3 sm:px-6">
           <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-            <!-- Showing Text -->
             <div>
               <p class="text-sm text-gray-700 flex items-center gap-2">
                 Baris per halaman:
@@ -98,13 +89,11 @@
                     <option value="100">100</option>
                   </select>
                 </div>
-                {{ firstItemIndex + 1 }}-{{ lastItemIndex }} dari
+                {{ totalPatients > 0 ? firstItemIndex + 1 : 0 }}-{{ lastItemIndex }} dari
                 {{ totalPatients }} item
               </p>
             </div>
-            <!-- Pagination Buttons -->
             <nav class="isolate inline-flex -space-x-px rounded-md shadow-xs" aria-label="Pagination">
-              <!-- Tombol Previous -->
               <button
                 class="pagination-button prev"
                 @click="prevPage"
@@ -112,7 +101,6 @@
               >
                 <font-awesome-icon :icon="['fas', 'chevron-left']" />
               </button>
-              <!-- Page numbers and ellipsis -->
               <template v-for="(item, index) in paginationItems">
                 <button
                   v-if="item !== 'ellipsis'"
@@ -133,11 +121,10 @@
                   ...
                 </div>
               </template>
-              <!-- Tombol Next -->
               <button
                 class="pagination-button next"
                 @click="nextPage"
-                :disabled="currentPage === totalPages"
+                :disabled="currentPage === totalPages || totalPages === 0"
               >
                 <font-awesome-icon :icon="['fas', 'chevron-right']" />
               </button>
@@ -146,28 +133,29 @@
         </div>
       </div>
     </div>
-    <!-- Import the modal from separate file but don't define its content here -->
     <AddPatientModal
       v-if="showAddPatientModal"
       @close="closeAddPatientModal"
-      @submit="handlePatientSubmit"
+      @patient-created="handlePatientCreated" 
     />
   </div>
 </template>
 
 <script>
-import apiClient from "../../api.js"; // Sesuaikan path dengan lokasi file konfigurasi Axios
+import apiClient from "../../api.js"; 
 import Swal from "sweetalert2";
 import AddPatientModal from "../../components/modals/AddNewPatient.vue";
+// No need to import axios here if apiClient is used for all calls, or if AddNewPatient handles its own.
 
 export default {
-  name: "DiabetesMellitus",
+  name: "ListPasien",
   components: {
     AddPatientModal,
   },
   data() {
+    // ... (data remains the same as previous version) ...
     return {
-      patients: [], // Array kosong untuk menyimpan data pasien dari backend
+      patients: [], 
       currentPage: 1,
       pageSize: 10,
       searchQuery: "",
@@ -179,24 +167,20 @@ export default {
     };
   },
   computed: {
+    // ... (computed properties remain the same as previous version) ...
     firstItemIndex() {
       return (this.currentPage - 1) * this.pageSize;
     },
     lastItemIndex() {
-      return Math.min(this.firstItemIndex * this.patients.length, this.totalPatients);
-    },
-    paginatedPatients() {
-      return this.filteredPatients;
-    },
-    filteredPatients() {
-      return this.patients;
+      const currentLast = this.currentPage * this.pageSize;
+      return Math.min(currentLast, this.totalPatients);
     },
     paginationItems() {
       const result = [];
       const totalPages = this.totalPages;
       const currentPage = this.currentPage;
       
-      // For 7 or fewer pages, show all
+      if (totalPages === 0) return [];
       if (totalPages <= 7) {
         for (let i = 1; i <= totalPages; i++) {
           result.push(i);
@@ -204,46 +188,48 @@ export default {
         return result;
       }
       
-      // Always show first page
       result.push(1);
-      
-      // Case 1: Current page is near the beginning
+      let lastPushed = 1;
+
       if (currentPage <= 4) {
-        for (let i = 2; i <= 5; i++) {
+        for (let i = 2; i <= Math.min(5, totalPages -1) ; i++) {
           result.push(i);
+          lastPushed = i;
         }
-        result.push('ellipsis');
-        result.push(totalPages);
-        return result;
-      }
-      
-      // Case 2: Current page is near the end
-      if (currentPage >= totalPages - 3) {
-        result.push('ellipsis');
-        for (let i = totalPages - 4; i < totalPages; i++) {
-          result.push(i);
+        if (totalPages > lastPushed + 1 && lastPushed < totalPages -1 ) result.push('ellipsis');
+      } else if (currentPage >= totalPages - 3) {
+        if (1 < totalPages - 5) result.push('ellipsis');
+        for (let i = Math.max(2, totalPages - 4); i < totalPages; i++) {
+          if(i > lastPushed) {
+             result.push(i);
+             lastPushed = i;
+          }
         }
-        return result;
+      } else {
+        if (1 < currentPage - 2) result.push('ellipsis');
+        result.push(currentPage - 1);
+        result.push(currentPage);
+        result.push(currentPage + 1);
+        lastPushed = currentPage + 1;
+        if (totalPages > lastPushed + 1 && lastPushed < totalPages -1) result.push('ellipsis');
       }
+      if(lastPushed < totalPages) result.push(totalPages);
       
-      // Case 3: Current page is in the middle
-      result.push('ellipsis');
-      result.push(currentPage - 1);
-      result.push(currentPage);
-      result.push(currentPage + 1);
-      result.push('ellipsis');
-      result.push(totalPages);
-      
-      return result;
+      return result.filter((item, index, self) => { 
+            if (item === 'ellipsis' && self[index -1] === 'ellipsis') return false;
+            return true;
+      });
     },
   },
   methods: {
     async fetchPatients() {
+      // ... (fetchPatients logic remains the same as previous version) ...
       this.isLoading = true;
       try {
-        const token = localStorage.getItem("token"); // Ambil token dari localStorage
+        const token = localStorage.getItem("token"); 
         if (!token) {
-          console.error("Token tidak ditemukan");
+          Swal.fire("Error", "Sesi tidak valid. Silakan login kembali.", "error");
+          this.isLoading = false;
           return;
         }
         const response = await apiClient.get("/puskesmas/patients", {
@@ -255,39 +241,30 @@ export default {
         });
 
         if (!response.data || !response.data.meta) {
-          console.error("Invalid API response structure:", response.data);
-          alert("Terjadi kesalahan: Struktur respons API tidak sesuai.");
+          Swal.fire("Error", "Terjadi kesalahan: Struktur respons API tidak sesuai.", "error");
+          this.isLoading = false;
           return;
         }
         
         const { data, meta } = response.data;
+        this.patients = Array.isArray(data) ? data : Object.values(data || {});
+        this.totalPatients = parseInt(meta.total) || 0;
+        this.pageSize = parseInt(meta.per_page) || 10;
+        this.currentPage = parseInt(meta.current_page) || 1;
+        this.totalPages = parseInt(meta.last_page) || 0;
+        this.links = meta.links || {};
 
-        // IMPORTANT: Ensure data is properly converted from object to array
-        this.patients = typeof data === 'object' && !Array.isArray(data) 
-          ? Object.values(data) 
-          : data;
-          
-        // Fix the meta data processing as well
-        this.totalPatients = Array.isArray(meta.total) ? meta.total[0] : meta.total;
-        this.pageSize = Array.isArray(meta.per_page) ? meta.per_page[0] : meta.per_page;
-        this.currentPage = Array.isArray(meta.current_page) ? meta.current_page[0] : meta.current_page;
-        this.totalPages = Array.isArray(meta.last_page) ? meta.last_page[0] : meta.last_page;
-        this.links = meta.links;
       } catch (error) {
         if (error.response?.status === 401) {
           Swal.fire({
-          title: "Session Expired!",
-          text: "Your Session has Expired",
-          icon: "warning",
-        }).then(() => {
-          this.logout();
-        });
+            title: "Session Expired!",
+            text: "Your Session has Expired. Please login again.",
+            icon: "warning",
+          }).then(() => {
+            this.$router.push('/login'); 
+          });
         } else {
-          Swal.fire({
-          title: "Error!",
-          text: "Gagal memuat data pasien. Silakan coba lagi.",
-          icon: "error",
-        });
+          Swal.fire("Error!", "Gagal memuat data pasien. Silakan coba lagi.", "error");
         }
       } finally {
         this.isLoading = false;
@@ -299,99 +276,56 @@ export default {
     closeAddPatientModal() {
       this.showAddPatientModal = false;
     },
-    async handlePatientSubmit(formData) {
-  try {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      Swal.fire({
-        title: "Error!",
-        text: "Token tidak ditemukan. Silakan login kembali.",
-        icon: "error",
-      });
-      return;
-    }
-    
-    // Set loading state
-    this.isSubmitting = true;
-    
-    // Send data to the server
-    const response = await axios.post(
-      "http://localhost:8000/api/puskesmas/patients",
-      formData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    
-
-    
-    // Close modal and refresh patient list
-    this.closeAddPatientModal();
-    this.fetchPatients();
-  } catch (error) {
-    // Handle error response
-    let errorMessage = "Terjadi kesalahan. Silakan coba lagi.";
-    
-    if (error.response && error.response.data && error.response.data.message) {
-      errorMessage = error.response.data.message;
-    }
-    
-    
-  } finally {
-    this.isSubmitting = false;
-  }
-},
-
-    closeAddPatientModal() {
-      this.showAddPatientModal = false;
+    handlePatientCreated(newPatientData) {
+      // This method is called when AddNewPatientModal successfully creates a patient
+      // newPatientData contains the response from the API (the created patient object)
+      console.log("Patient created:", newPatientData);
+      // The modal closes itself on success.
+      // Parent ensures its state for modal visibility is also updated if needed,
+      // though AddNewPatientModal emitting 'close' already handles this.
+      this.fetchPatients(); // Refresh the patient list
     },
+    // The old handlePatientSubmit method is removed as its logic is now in AddNewPatientModal.vue
     prevPage() {
-      if (this.currentPage > 1) {
-        this.currentPage--;
-        this.fetchPatients();
-      }
+      if (this.currentPage > 1) this.currentPage--;
     },
     nextPage() {
-      if (this.currentPage < this.totalPages) {
-        this.currentPage++;
-        this.fetchPatients();
-      }
+      if (this.currentPage < this.totalPages) this.currentPage++;
     },
     goToPage(page) {
-      this.currentPage = page;
-      this.fetchPatients();
+      if (page !== 'ellipsis' && page !== this.currentPage) this.currentPage = page;
     },
     resetPagination() {
-      this.currentPage = 1;
-      this.fetchPatients();
+      if (this.currentPage !== 1) {
+        this.currentPage = 1;
+      } else {
+        this.fetchPatients(); 
+      }
     },
     viewPatientDetails(id) {
       this.$router.push({ name: "DetailPasienLP", params: { id } });
     },
   },
   watch: {
-    currentPage() {
-      this.fetchPatients(); // Fetch data saat halaman berubah
-    },
+    // ... (watchers remain the same as previous version) ...
+    currentPage() { this.fetchPatients(); },
     pageSize() {
-      this.currentPage = 1; // Reset ke halaman pertama jika jumlah data per halaman berubah
-      this.fetchPatients();
+      if (this.currentPage !== 1) this.currentPage = 1; 
+      else this.fetchPatients();
     },
     searchQuery() {
-      this.currentPage = 1; // Reset ke halaman pertama jika query pencarian berubah
-      this.fetchPatients();
+      if (this.currentPage !== 1) this.currentPage = 1;
+      else this.fetchPatients(); 
     },
   },
   created() {
-    this.fetchPatients(); // Fetch data saat komponen dimuat
+    this.fetchPatients(); 
   },
 };
 </script>
 
 <style scoped>
+/* ... (Your existing styles for ListPasien.vue remain unchanged) ... */
 /* Root Styles */
 .diabetes-mellitus {
   display: flex;
@@ -724,13 +658,13 @@ export default {
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  background: var(--secondary-100);
+  background: var(--secondary-100); /* Make sure --secondary-100 is defined in your global styles or :root */
   color: var(--primary-500);
   transition: background-color 0.3s ease, transform 0.3s ease;
 }
 
 .action-button.detail:hover {
-  background: var(--secondary-300);
+  background: var(--secondary-300); /* Make sure --secondary-300 is defined */
 }
 
 /* Scrollbar Styling */
