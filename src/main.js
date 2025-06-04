@@ -1,12 +1,13 @@
 // src/main.js
 import { createApp } from 'vue';
-import './style.css';
 import App from './App.vue';
 import router from './router/index.js';
-import { initAuth, authService } from './stores/auth.js';
+import { createPinia } from 'pinia'
+import { useAuthStore } from './stores/authStore';
 import apiClient from './api.js';
-import { tokenManager } from './stores/tokenManager.js';
 
+import './style.css';
+import { tokenManager } from './stores/tokenManager.js';
 import './assets/styles/global.css';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
@@ -16,46 +17,30 @@ import LoadingOverlay from './components/LoadingOverlay.vue';
 
 library.add(fas);
 
-// Global loading state
-window.isAuthLoading = true;
+const app = createApp(App);
+const pinia = createPinia(); // Buat instance Pinia
+app.use(pinia); // Gunakan Pinia
 
-// Ensure auth is initialized before app is mounted
-console.log('Initializing authentication...');
-initAuth()
-  .then(() => {
-    console.log('Authentication initialized successfully');
-    window.isAuthLoading = false;
-    
-    // Create the Vue app
-    const app = createApp(App);
-    
-    // Add apiClient globally
-    app.config.globalProperties.$api = apiClient;
-    
-    // Register components
-    app.component('font-awesome-icon', FontAwesomeIcon);
-    app.component('loading-overlay', LoadingOverlay);
-    
-    // Use router
-    app.use(router);
-    
-    // Start token refresher if user is authenticated
-    if (authService.isAuthenticated()) {
-      console.log('Starting token manager');
-      tokenManager.startTokenRefresher();
+// Ambil auth store setelah Pinia di-use
+const authStore = useAuthStore(); // Pindahkan ini ke dalam setup App.vue atau setelah app dibuat jika perlu akses awal
+
+console.log('Mounting Vue app immediately...');
+app.config.globalProperties.$api = apiClient;
+app.component('font-awesome-icon', FontAwesomeIcon);
+app.component('loading-overlay', LoadingOverlay);
+app.use(router);
+app.mount('#app');
+
+// Inisialisasi autentikasi secara paralel
+// authStore akan mengelola state isLoadingAuth
+console.log('Initializing authentication in background...');
+authStore.initAuth().then(() => { // initAuth di authStore
+    console.log('Background authentication process finished.');
+    if (authStore.isAuthenticated) {
+        console.log('Starting token manager after successful auth init.');
+        tokenManager.startTokenRefresher(); // Pastikan tokenManager juga menggunakan authStore jika perlu
     }
-    
-    // Mount the app
-    app.mount('#app');
-  })
-  .catch(error => {
-    console.error('Failed to initialize authentication:', error);
-    window.isAuthLoading = false;
-    
-    // Still mount the app even if auth fails
-    const app = createApp(App);
-    app.use(router);
-    app.component('font-awesome-icon', FontAwesomeIcon);
-    app.component('loading-overlay', LoadingOverlay);
-    app.mount('#app');
-  });
+}).catch(error => {
+    console.error('Background authentication initialization failed:', error);
+    // App sudah ter-mount, router guards akan menangani jika auth gagal
+});

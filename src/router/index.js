@@ -1,5 +1,6 @@
 // src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router';
+import { useAuthStore } from '../stores/authStore';
 import DefaultLayout from '../layouts/DefaultLayout.vue';
 import ProfileLayout from '../layouts/ProfileLayout.vue';
 
@@ -21,8 +22,6 @@ import Hipertensi from '../views/user/Hipertensi.vue';
 import TambahDataPeserta from '../views/user/TambahDataPeserta.vue';
 import DetailPasienDM from '../views/user/DetailPasienDM.vue';
 import DetailPasienHT from '../views/user/DetailPasienHT.vue';
-
-import { authService } from '../stores/auth';
 
 const routes = [
   // Admin Routes
@@ -132,59 +131,64 @@ const router = createRouter({
   routes,
 });
 
-// Helper functions to check auth state from localStorage
-const getAuthState = () => {
-  const token = localStorage.getItem('token');
-  const isAdmin = localStorage.getItem('isadmin') === 'true';
+router.beforeEach(async (to, from, next) => {
+    const authStore = useAuthStore();
   
-  return {
-    token,
-    isAdmin
-  };
-};
-
-const isAuthenticated = () => {
-  return !!localStorage.getItem('token');
-};
-
-const isAdmin = () => {
-  return localStorage.getItem('isadmin') === 'true';
-};
-
-// Middleware untuk route guards
-router.beforeEach((to, from, next) => {
-  const authenticated = isAuthenticated();
-  const isAdminUser = isAdmin();
-
-  // Routes that require guest access (not authenticated)
-  if (to.meta.requiresAuth === false) {
-    return next();
-  }
-  // Routes that require guest access but are already authenticated
-  if (to.meta.requiresGuest && authenticated) {
-    if (isAdminUser) {
-      return next({ path: '/admin/dashboard' });
-    } else {
-      return next({ path: '/user/dashboard' });
+    // Tunggu initAuth selesai jika belum dan rute memerlukan info auth
+    // Ini penting agar keputusan routing tidak dibuat prematur
+    if (authStore.isLoadingAuth && (to.meta.requiresAuth || to.meta.requiresGuest !== undefined)) {
+        try {
+            // Ini bisa jadi event atau menunggu promise sederhana dari initAuth
+            // Cara sederhana: tunggu isLoadingAuth menjadi false
+            await new Promise(resolve => {
+                const unwatch = authStore.$subscribe((mutation, state) => {
+                    if (!state.isLoadingAuth) {
+                        unwatch();
+                        resolve();
+                    }
+                });
+                // Jika sudah false saat ini, langsung resolve
+                if (!authStore.isLoadingAuth) {
+                    unwatch();
+                    resolve();
+                }
+            });
+        } catch (e) {
+            console.error("Error waiting for auth init in router guard:", e);
+            // Mungkin fallback ke login jika ada error kritis
+            return next({ name: 'Login', query: { redirect: to.fullPath } });
+        }
     }
-  }
 
-  // Routes that require authentication
-  if (to.meta.requiresAuth && !authenticated) {
-    return next({ name: 'Login' });
-  }
+    const isAuthenticated = authStore.isAuthenticated;
+    const isAdminUser = authStore.isAdmin;
 
-  // Routes that require admin role
-  if (to.meta.isAdmin !== undefined && to.meta.isAdmin !== isAdminUser) {
-    if (isAdminUser) {
-      return next({ path: '/admin/dashboard' });
-    } else {
-      return next({ path: '/user/dashboard' });
-    }
-  }
+    // Halaman login
+    if (to.name === 'Login') {
+      if (isAuthenticated) {
+        return next(isAdminUser ? { path: '/admin/dashboard' } : { path: '/user/dashboard' });
+      }
+      return next();
+    }
 
-  // All conditions satisfied, proceed
-  next();
-});
+    // Halaman lain// Rute yang memerlukan autentikasi
+    if (to.meta.requiresAuth && !isAuthenticated) {
+      console.log('Router Guard: requiresAuth=true, not authenticated. Redirecting to Login.');
+      return next({ name: 'Login', query: { redirect: to.fullPath } });
+    }
+  
+    // Rute yang memerlukan role admin
+    if (to.meta.isAdmin !== undefined && isAuthenticated) { // Cek isAuthenticated juga
+      if (to.meta.isAdmin && !isAdminUser) { // Membutuhkan admin, tapi user bukan admin
+        return next({ path: '/user/dashboard' }); // Atau halaman error akses
+      }
+      if (!to.meta.isAdmin && isAdminUser) { // Tidak boleh admin (misal user page), tapi user adalah admin
+        return next({ path: '/admin/dashboard' }); // Redirect admin ke dashboardnya
+      }
+    }
+  
+    // Jika semua kondisi terpenuhi
+    next();
+  });
 
 export default router;

@@ -154,15 +154,16 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { authService } from '../../stores/auth.js';
+import { useAuthStore } from '../../stores/authStore.js';
 import Swal from 'sweetalert2';
 
 export default {
   name: 'Login',
   setup() {
-    const router = useRouter();  
+    const router = useRouter();
+    const authStore = useAuthStore();
     const credentials = ref({
       username: '',
       password: '',
@@ -181,31 +182,22 @@ export default {
     const currentYear = new Date().getFullYear();
     const authCheckInProgress = ref(false);
 
-    onMounted(async () => {
-      if (authCheckInProgress.value) return;
-      authCheckInProgress.value = true;
-
-      try {
-        if (localStorage.getItem('isLoggedIn') === 'true') {
-          const isAuthenticated = await authStore.checkAuth();
-          
-          if (isAuthenticated) {
-            const userRole = authStore.user?.role || localStorage.getItem('userRole');
-            router.replace(userRole === 'admin' ? '/admin/dashboard' : '/user/dashboard');
-          } else {
-            localStorage.removeItem('isLoggedIn');
-            localStorage.removeItem('userRole');
-            localStorage.removeItem('user');
-            localStorage.removeItem('isAdmin');
-          }
-        }
-      } catch (error) {
-        console.error('Error checking authentication status:', error);
-      } finally {
-        authCheckInProgress.value = false;
-      }
-    });
-
+    const handleLogin = async () => {
+      if (!validateForm() || isLoading.value) return;
+      isLoading.value = true;
+      // ... (resetErrors)
+      
+      try {
+        await authStore.login(credentials.value.username, credentials.value.password);
+        // ... (Swal)
+        const isAdmin = authStore.isAdmin;
+        router.push(isAdmin ? '/admin/dashboard' : '/user/dashboard');
+      } catch (error) {
+        // ... (error handling)
+      } finally {
+        isLoading.value = false;
+      }
+    };
     const resetErrors = () => {
       errors.value = {
         username: '',
@@ -227,49 +219,6 @@ export default {
         isValid = false;
       }
       return isValid;
-    };
-
-    const handleLogin = async () => {
-      if (!validateForm() || isLoading.value) return;
-      isLoading.value = true;
-      resetErrors();
-      
-      try {
-        await authService.login(credentials.value.username, credentials.value.password);
-
-        Swal.fire({
-          title: 'Berhasil!',
-          text: 'Anda telah berhasil login.',
-          icon: 'success',
-          timer: 2000,
-          showConfirmButton: false,
-        });
-
-        const isAdmin = authService.isAdmin();
-        if (isAdmin) {
-          router.push('/admin/dashboard');
-        } else {
-          router.push('/user/dashboard');
-        }
-
-      } catch (error) {
-        console.error('Login error:', error);
-        resetErrors();
-
-        try {
-          const errorData = JSON.parse(error.message);
-          if (errorData.message) {
-            errors.value.general = errorData.message;
-          }
-          if (errorData.errors) {
-            errors.value.details = errorData.errors;
-          }
-        } catch (parseError) {
-          errors.value.general = 'Terjadi kesalahan saat login. Silakan coba lagi.';
-        }
-      } finally {
-        isLoading.value = false;
-      }
     };
 
     return {

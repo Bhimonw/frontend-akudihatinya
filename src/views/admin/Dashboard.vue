@@ -755,10 +755,14 @@ export default {
       this.showDownloadOptions = false;
       this.error = null;
       const programType = this.selectedProgram === "Hipertensi" ? "ht" : "dm";
-      const apiUrl = `/statistics/laporan/admin/download`;
+      const apiUrl = `/statistics/admin/export`;
       try {
         const response = await apiClient.get(apiUrl, {
-          params: { year: this.selectedYear, type: programType, format: format, },
+          params: { 
+            year: this.selectedYear, 
+            type: programType, 
+            format: format, 
+          },
           responseType: 'blob',
         });
         const blob = new Blob([response.data], { type: response.headers['content-type'] });
