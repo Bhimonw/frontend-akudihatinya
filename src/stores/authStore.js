@@ -59,22 +59,44 @@ export const useAuthStore = defineStore('auth', {
             localStorage.removeItem('isadmin');
             delete apiClient.defaults.headers.common['Authorization'];
         },
+        
+        // PERBAIKAN UTAMA: Method login dengan error handling yang lebih baik
         async login(username, password) {
-            // isLoadingAuth bisa di-set true di sini jika ingin ada loading global saat login
-            // this.isLoadingAuth = true;
             try {
+                console.log('AuthStore: Attempting login...');
                 const response = await apiClient.post('/login', { username, password });
+                
+                console.log('AuthStore: Login successful, response:', response.data);
                 this.setUser(response.data);
-                // this.isLoadingAuth = false;
                 return response.data;
+                
             } catch (error) {
-                // this.isLoadingAuth = false;
+                console.error('AuthStore: Login failed with error:', error);
+                
+                // Pastikan auth data dibersihkan saat login gagal
                 this.clearAuthData();
+                
+                // PENTING: Jangan memodifikasi struktur error
+                // Biarkan Vue component menangani error response yang lengkap
+                
+                // Log untuk debugging - lihat struktur error yang sebenarnya
+                if (error?.response?.data) {
+                    console.log('AuthStore: API Error Response Data:', error.response.data);
+                    console.log('AuthStore: HTTP Status:', error.response.status);
+                } else if (error?.request) {
+                    console.log('AuthStore: Network Error - No response received');
+                } else {
+                    console.log('AuthStore: Request setup error:', error.message);
+                }
+                
+                // Throw error asli tanpa modifikasi agar Login.vue bisa handle dengan benar
                 throw error;
             }
         },
+        
         async performRefresh() {
             if (!this.refreshTokenVal) {
+                console.warn('AuthStore: No refresh token available');
                 this.logout(); // Langsung logout jika tidak ada refresh token
                 throw new Error('Refresh token tidak ditemukan, logout.');
             }
@@ -88,13 +110,14 @@ export const useAuthStore = defineStore('auth', {
             }
             this.isRefreshingToken = true;
             try {
-                console.log("Attempting to refresh token from authStore...");
+                console.log("AuthStore: Attempting to refresh token...");
                 const response = await apiClient.post('/refresh', { refresh_token: this.refreshTokenVal });
+                console.log("AuthStore: Token refresh successful");
                 this.setUser(response.data); // setUser akan mengupdate accessToken, dll.
                 this.processQueue(null, response.data.access_token);
                 return response.data.access_token;
             } catch (error) {
-                console.error('Error refreshing token in authStore:', error);
+                console.error('AuthStore: Error refreshing token:', error);
                 this.processQueue(error, null);
                 this.logout(); // Gagal refresh, logout pengguna
                 throw error; // Lemparkan error agar interceptor bisa menanganinya
@@ -102,6 +125,7 @@ export const useAuthStore = defineStore('auth', {
                 this.isRefreshingToken = false;
             }
         },
+        
         processQueue(error, token = null) {
             this.failedQueue.forEach(prom => {
                 if (error) prom.reject(error);
@@ -109,32 +133,44 @@ export const useAuthStore = defineStore('auth', {
             });
             this.failedQueue = [];
         },
+        
         logout() {
+            console.log('AuthStore: Performing logout...');
             this.clearAuthData();
             // Hentikan token refresher jika ada
             // tokenManager.stopTokenRefresher(); // (Pastikan tokenManager bisa diakses atau ada metode global)
             router.push('/auth/login').catch(() => {}); // Gunakan router push, bukan window.location
         },
+        
         async validateCurrentToken() {
-            if (!this.accessToken) return false;
+            if (!this.accessToken) {
+                console.log('AuthStore: No access token to validate');
+                return false;
+            }
             try {
-                // Anda bisa menambahkan validasi sisi klien (expiry) di sini dulu
-                // const decoded = decodeJwt(this.accessToken);
-                // if (decoded && decoded.exp * 1000 < Date.now()) {
-                //   console.log("Access token expired (client-side check)");
-                //   return false;
-                // }
+                // Validasi sisi klien (expiry) terlebih dahulu
+                const decoded = decodeJwt(this.accessToken);
+                if (decoded && decoded.exp * 1000 < Date.now()) {
+                    console.log("AuthStore: Access token expired (client-side check)");
+                    return false;
+                }
 
                 await apiClient.get('/users/me'); // Endpoint ini akan menggunakan token dari header default
+                console.log('AuthStore: Token validation successful');
                 return true;
             } catch (error) {
-                console.warn("Token validation failed:", error.response?.status);
+                console.warn("AuthStore: Token validation failed:", error.response?.status);
                 return false; // Gagal validasi (mungkin 401)
             }
         },
+        
         async initAuth() {
+            console.log('AuthStore: Initializing authentication...');
             this.isLoadingAuth = true;
+            
+            // Jika di halaman login dan tidak ada token, skip validasi
             if (window.location.pathname === '/auth/login' && !this.accessToken && !this.refreshTokenVal) {
+                console.log('AuthStore: On login page without tokens, skipping auth init');
                 this.isLoadingAuth = false;
                 this.clearAuthData(); // Pastikan bersih jika ke login tanpa token
                 return;
@@ -144,35 +180,37 @@ export const useAuthStore = defineStore('auth', {
                 apiClient.defaults.headers.common['Authorization'] = `Bearer ${this.accessToken}`;
                 const isValid = await this.validateCurrentToken();
                 if (isValid) {
-                    console.log("Token is valid from initAuth.");
+                    console.log("AuthStore: Token is valid from initAuth.");
                     // User data sudah dimuat dari localStorage, bisa di-refresh di sini jika perlu
                     this.isLoadingAuth = false;
                     return;
                 } else if (this.refreshTokenVal) {
-                    console.log("Token invalid, attempting refresh from initAuth.");
+                    console.log("AuthStore: Token invalid, attempting refresh from initAuth.");
                     try {
                         await this.performRefresh();
                         // Jika berhasil, user/token sudah di-set
                     } catch (e) {
                         // Gagal refresh, performRefresh sudah handle logout
-                        console.log("Refresh failed in initAuth, user logged out.");
+                        console.log("AuthStore: Refresh failed in initAuth, user logged out.");
                     }
                 } else {
+                    console.log("AuthStore: Token invalid and no refresh token available");
                     this.logout(); // Token tidak valid, tidak ada refresh token
                 }
             } else if (this.refreshTokenVal) {
-                console.log("No access token, but refresh token exists. Attempting refresh from initAuth.");
+                console.log("AuthStore: No access token, but refresh token exists. Attempting refresh from initAuth.");
                 try {
                     await this.performRefresh();
                 } catch (e) {
-                    console.log("Initial refresh failed, user logged out.");
+                    console.log("AuthStore: Initial refresh failed, user logged out.");
                 }
             } else {
                 // Tidak ada token sama sekali, pastikan diarahkan ke login (router guard akan handle ini)
+                console.log("AuthStore: No tokens found, ensuring clean state.");
                 this.clearAuthData();
-                console.log("No tokens found, ensuring redirect to login via router guard.");
             }
             this.isLoadingAuth = false;
+            console.log('AuthStore: Authentication initialization completed');
         }
     }
 });

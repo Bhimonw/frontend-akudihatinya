@@ -132,6 +132,11 @@ export default {
         cancelButtonColor: '#d33',
         confirmButtonText: 'Ya, Logout!',
         cancelButtonText: 'Batal',
+        customClass: { // Opsional: untuk styling jika ada konflik
+          popup: 'custom-swal-popup',
+          confirmButton: 'custom-swal-confirm',
+          cancelButton: 'custom-swal-cancel'
+        }
       });
 
       // Jika pengguna membatalkan logout
@@ -139,32 +144,44 @@ export default {
         return;
       }
       
+      // Opsional: Tampilkan SweetAlert "Memproses..."
+      // Ini akan langsung ditutup oleh alert sukses/gagal berikutnya
+      Swal.fire({
+          title: 'Memproses Logout...',
+          text: 'Mohon tunggu sebentar.',
+          icon: 'info',
+          allowOutsideClick: false,
+          didOpen: () => {
+              Swal.showLoading();
+          }
+      });
+
       try {
         const token = localStorage.getItem('token');
-        if (!token) {
-          console.error('Token tidak ditemukan');
-          authService.logout(); // Logout anyway to clear localStorage
-          return;
+        if (token) { // Hanya panggil API jika ada token
+          await axios.post(
+            'http://localhost:8000/api/logout', // Pastikan URL API benar
+            {},
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
         }
 
-        // Panggil API logout
-        await axios.post(
-          'http://localhost:8000/api/logout',
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        // Tampilkan notifikasi sukses
-        Swal.fire({
-          title: 'Berhasil',
-          text: 'Anda telah berhasil logout.',
+        // 2. Tampilkan notifikasi sukses dan TUNGGU hingga timer selesai
+        await Swal.fire({
+          title: 'Berhasil Logout!',
+          text: 'Anda telah berhasil logout. Anda akan diarahkan ke halaman login.',
           icon: 'success',
-          timer: 2000,
+          timer: 2500, // Tunggu 2.5 detik
           showConfirmButton: false,
+          timerProgressBar: true, // Menampilkan progress bar untuk timer
+          willClose: () => {
+            // Ini akan dieksekusi sebelum alert ditutup (setelah timer habis)
+            // Di sinilah kita melakukan redirect
+          }
         });
 
         // Use auth service to logout

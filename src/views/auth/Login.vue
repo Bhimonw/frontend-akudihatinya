@@ -1,7 +1,6 @@
 <template>
   <div class="login-container">
     <div class="login-card">
-      <!-- Left Section - Logo & Illustration -->
       <div class="left-section">
         <div class="app-info">
           <div class="logo-container">
@@ -12,42 +11,28 @@
             <p class="app-description">Aplikasi Kesehatan untuk Diabetes Mellitus dan Hipertensi Terlayani</p>
           </div>
         </div>
-        
-        <!-- Healthcare Illustration -->
+
         <div class="illustration-container">
           <svg width="280" height="280" viewBox="0 0 280 280" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <!-- Background Circle -->
             <circle cx="140" cy="140" r="120" fill="#E5F4F1" opacity="0.5"/>
-            
-            <!-- Medical Cross -->
             <g transform="translate(140, 140)">
               <rect x="-40" y="-10" width="80" height="20" rx="4" fill="#10B981"/>
               <rect x="-10" y="-40" width="20" height="80" rx="4" fill="#10B981"/>
             </g>
-            
-            <!-- Heart Icon -->
             <path d="M100 120C100 105 110 95 120 95C125 95 130 97 135 102C140 97 145 95 150 95C160 95 170 105 170 120C170 135 135 160 135 160S100 135 100 120Z" fill="#EF4444" opacity="0.8"/>
-            
-            <!-- Stethoscope -->
             <path d="M180 140C180 140 175 145 175 150C175 160 185 165 195 165C205 165 215 160 215 150C215 145 210 140 210 140" stroke="#6B7280" stroke-width="3" stroke-linecap="round"/>
             <circle cx="195" cy="150" r="8" fill="#6B7280"/>
             <path d="M175 150C175 150 175 170 175 180C175 195 160 210 140 210C120 210 105 195 105 180C105 170 105 150 105 150" stroke="#6B7280" stroke-width="3" stroke-linecap="round" fill="none"/>
-            
-            <!-- Pills/Medicine -->
             <g transform="translate(60, 180)">
               <rect x="0" y="0" width="30" height="12" rx="6" fill="#3B82F6" opacity="0.7"/>
               <rect x="15" y="0" width="15" height="12" rx="0" fill="#93C5FD"/>
             </g>
-            
-            <!-- Health Chart -->
             <g transform="translate(200, 90)">
               <rect x="0" y="20" width="8" height="20" rx="2" fill="#10B981" opacity="0.6"/>
               <rect x="12" y="10" width="8" height="30" rx="2" fill="#10B981" opacity="0.7"/>
               <rect x="24" y="5" width="8" height="35" rx="2" fill="#10B981" opacity="0.8"/>
               <rect x="36" y="15" width="8" height="25" rx="2" fill="#10B981" opacity="0.9"/>
             </g>
-            
-            <!-- Floating Elements -->
             <circle cx="80" cy="80" r="5" fill="#10B981" opacity="0.3"/>
             <circle cx="200" cy="60" r="4" fill="#3B82F6" opacity="0.3"/>
             <circle cx="220" cy="180" r="6" fill="#EF4444" opacity="0.2"/>
@@ -55,7 +40,6 @@
           </svg>
         </div>
 
-        <!-- Decorative Elements -->
         <div class="decorative-dots">
           <span></span>
           <span></span>
@@ -63,13 +47,11 @@
         </div>
       </div>
 
-      <!-- Right Section - Login Form -->
       <div class="right-section">
         <div class="form-container">
           <h2 class="login-title">Selamat Datang</h2>
           <p class="login-subtitle">Silakan masuk ke akun Anda</p>
 
-          <!-- Username Input -->
           <div class="form-group">
             <div
               class="input-with-icon"
@@ -91,7 +73,6 @@
             <p v-if="errors.username" class="error-text">{{ errors.username }}</p>
           </div>
 
-          <!-- Password Input -->
           <div class="form-group">
             <div
               class="input-with-icon"
@@ -124,7 +105,6 @@
             <p v-if="errors.password" class="error-text">{{ errors.password }}</p>
           </div>
 
-          <!-- Login Button -->
           <button
             class="login-button"
             @click="handleLogin"
@@ -135,8 +115,7 @@
             <font-awesome-icon v-else :icon="['fas', 'circle-notch']" spin class="fa-spin" />
           </button>
 
-          <!-- General Error Message -->
-          <div v-if="errors.general || errors.details" class="general-error">
+          <div v-if="errors.general" class="general-error">
             <font-awesome-icon :icon="['fas', 'exclamation-circle']" class="error-icon" />
             <div class="general-error-content">
               <span>{{ errors.general }}</span>
@@ -146,7 +125,6 @@
         </div>
       </div>
     </div>
-    <!-- Footer -->
     <div class="copyright-footer">
       <p>Copyright © {{ currentYear }} Dinas Kesehatan. Hak Cipta Dilindungi</p>
     </div>
@@ -156,7 +134,7 @@
 <script>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useAuthStore } from '../../stores/authStore.js';
+import { useAuthStore } from '../../stores/authStore.js'; // Pastikan path ini benar
 import Swal from 'sweetalert2';
 
 export default {
@@ -180,24 +158,7 @@ export default {
       details: '',
     });
     const currentYear = new Date().getFullYear();
-    const authCheckInProgress = ref(false);
 
-    const handleLogin = async () => {
-      if (!validateForm() || isLoading.value) return;
-      isLoading.value = true;
-      // ... (resetErrors)
-      
-      try {
-        await authStore.login(credentials.value.username, credentials.value.password);
-        // ... (Swal)
-        const isAdmin = authStore.isAdmin;
-        router.push(isAdmin ? '/admin/dashboard' : '/user/dashboard');
-      } catch (error) {
-        // ... (error handling)
-      } finally {
-        isLoading.value = false;
-      }
-    };
     const resetErrors = () => {
       errors.value = {
         username: '',
@@ -219,6 +180,97 @@ export default {
         isValid = false;
       }
       return isValid;
+    };
+
+    const handleLogin = async () => {
+      if (!validateForm() || isLoading.value) return;
+
+      isLoading.value = true;
+
+      try {
+        await authStore.login(credentials.value.username, credentials.value.password);
+        
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+          icon: 'success',
+          title: 'Login berhasil!',
+          didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer);
+            toast.addEventListener('mouseleave', Swal.resumeTimer);
+          }
+        });
+
+        const isAdmin = authStore.isAdmin;
+        router.push(isAdmin ? '/admin/dashboard' : '/user/dashboard');
+
+      } catch (error) {
+        resetErrors();
+        // Prioritas 1: Cek error.response.data (standar Axios error)
+        if (error?.response?.data) {
+          const apiError = error.response.data;
+          console.log('API Error Response:', apiError);
+          
+          // Jika response sesuai format yang diharapkan
+          if (apiError.success === false && apiError.errors) {
+            errors.value.general = apiError.errors; // "Username atau password salah"
+            if (apiError.message) {
+              errors.value.details = apiError.message; // "Login gagal"  
+            }
+          }
+          // Fallback jika struktur berbeda tapi ada message
+          else if (apiError.message) {
+            errors.value.general = apiError.message;
+          }
+          // Jika apiError adalah string
+          else if (typeof apiError === 'string') {
+            errors.value.general = apiError;
+          }
+          else {
+            errors.value.general = 'Terjadi kesalahan pada server.';
+          }
+        }
+        
+        // Prioritas 2: Jika error object langsung berisi data response API
+        // (kemungkinan authStore throw langsung response data)
+        else if (error?.success === false && error?.errors) {
+          console.log('Direct API Error Object:', error);
+          errors.value.general = error.errors; // "Username atau password salah"
+          if (error.message) {
+            errors.value.details = error.message; // "Login gagal"
+          }
+        }
+        
+        // Prioritas 3: Network error (tidak ada response dari server)
+        else if (error?.request) {
+          console.log('Network Error:', error.request);
+          errors.value.general = 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.';
+        }
+        
+        // Prioritas 4: Error dengan message property
+        else if (error?.message) {
+          console.log('Generic Error:', error.message);
+          
+          // Cek apakah ini network timeout atau connection error
+          if (error.message.includes('timeout') || error.message.includes('Network Error')) {
+            errors.value.general = 'Koneksi timeout. Silakan coba lagi.';
+          } else {
+            errors.value.general = 'Terjadi kesalahan. Silakan coba lagi.';
+          }
+        }
+        
+        // Prioritas 5: Fallback untuk error tidak dikenal
+        else {
+          console.log('Unknown Error Type:', error);
+          errors.value.general = 'Terjadi kesalahan yang tidak diketahui. Silakan coba lagi.';
+        }
+        
+      } finally {
+        isLoading.value = false;
+      }
     };
 
     return {
