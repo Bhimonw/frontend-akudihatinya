@@ -3,7 +3,8 @@
     <div class="loading-bar-progress"></div>
   </div>
 
-  <div class="dashboard-content"> <div class="toolbar-card">
+  <div class="dashboard-content">
+    <div class="toolbar-card">
       <div class="toolbar-content">
         <div class="controls-section">
           <div class="control-group">
@@ -41,15 +42,29 @@
           </div>
         </div>
 
-        <button class="print-button" @click="printReport">
-          <span class="button-icon">🖨️</span>
-          <span>Unduh Laporan</span>
-          <div class="button-shine"></div>
-        </button>
+        <div class="download-button-container">
+          <button class="print-button" @click="toggleDownloadOptions" :disabled="isDownloading">
+            <span class="button-icon">
+              <font-awesome-icon v-if="isDownloading" :icon="['fas', 'spinner']" spin />
+              <font-awesome-icon v-else :icon="['fas', 'download']" />
+            </span>
+            <span>{{ isDownloading ? 'Memproses...' : 'Unduh Laporan' }}</span>
+            <div class="button-shine"></div>
+          </button>
+          <div v-if="showDownloadOptions" class="download-options" @mouseleave="showDownloadOptions = false">
+            <button @click="triggerDownload('excel')" class="download-option">
+              <font-awesome-icon :icon="['fas', 'file-excel']" /> Download Excel
+            </button>
+            <button @click="triggerDownload('pdf')" class="download-option">
+              <font-awesome-icon :icon="['fas', 'file-pdf']" /> Download PDF
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div v-if="error && apiStatus === 'error'" class="error-message"> <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
+    <div v-if="error && apiStatus === 'error'" class="error-message">
+      <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
       {{ error }}
       <button @click="fetchData" class="retry-button">
         <font-awesome-icon :icon="['fas', 'sync']" /> Coba Lagi
@@ -220,12 +235,26 @@
 
 <script>
 import { Chart } from "chart.js/auto";
-import apiClient from "../../api.js";
-// import LoadingPage from "../../components/LoadingPage.vue"; // Dihapus
+import apiClient from "../../api.js"; // Pastikan path ini benar
+
+// Import FontAwesome icons
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { library } from '@fortawesome/fontawesome-svg-core';
+import {
+  faExclamationCircle, faSync,
+  faDownload, faFileExcel, faFilePdf, faSpinner
+} from '@fortawesome/free-solid-svg-icons';
+
+library.add(
+  faExclamationCircle, faSync,
+  faDownload, faFileExcel, faFilePdf, faSpinner
+);
 
 export default {
   name: "Dashboard",
-  // components: { LoadingPage }, // Dihapus
+  components: {
+    FontAwesomeIcon
+  },
   data() {
     const currentYear = new Date().getFullYear();
     const startYear = 2020;
@@ -237,31 +266,30 @@ export default {
       selectedProgram: "Diabetes Mellitus",
       programs: ["Diabetes Mellitus", "Hipertensi"],
       summaryCards: {},
-      tableData: [],
-      data: {},
+      // tableData: [], // Tidak terpakai, bisa dihapus jika benar
+      // data: {}, // Tidak terpakai, bisa dihapus jika benar
       monthlyTableData: [],
       chartData: {},
-      // isLoading: true, // Dihapus
-      apiStatus: 'idle', // Tetap: 'idle', 'loading', 'success', 'error'
-      error: null
+      apiStatus: 'idle',
+      error: null,
+      isDownloading: false,
+      showDownloadOptions: false,
     };
   },
   mounted() {
     this.fetchData();
   },
   methods: {
-    // onLoadingComplete() dan onLoadingError() dihapus
-
     updateData() {
       this.fetchData();
     },
     async fetchData() {
       this.error = null;
-      this.apiStatus = 'loading'; // Set status ke loading
+      this.apiStatus = 'loading';
 
       try {
         const type = this.selectedProgram === "Hipertensi" ? "ht" : "dm";
-        const response = await apiClient.get("/statistics/dashboard-statistics", {
+        const response = await apiClient.get("/statistics/dashboard-statistics", { // Endpoint untuk data dashboard pengguna
           params: {
             year: this.selectedYear,
             type: type
@@ -274,38 +302,31 @@ export default {
         console.error("Error fetching data:", error);
         this.error = "Gagal memuat data. Silakan coba lagi nanti.";
         this.apiStatus = 'error';
-
-        // Kosongkan data jika terjadi error untuk mencegah tampilan data lama/salah
         this.summaryCards = {};
-        this.monthlyTableData = this.generateMonthlyTableData({}); // Kirim objek kosong untuk membersihkan tabel
+        this.monthlyTableData = this.generateMonthlyTableData({});
         this.chartData = { lakiLaki: [], perempuan: [] };
         if (this.chartInstance) {
-             this.chartInstance.data.datasets[0].data = [];
-             this.chartInstance.data.datasets[1].data = [];
-             this.chartInstance.update();
+            this.chartInstance.data.datasets[0].data = [];
+            this.chartInstance.data.datasets[1].data = [];
+            this.chartInstance.update();
         }
-        
-        // Tampilkan pesan toast jika tersedia
         if (this.$toast && typeof this.$toast.error === 'function') {
             this.$toast.error("Gagal memuat data: " + (error.response?.data?.message || error.message));
-        } else {
-            // console.warn("$toast.error is not a function. Pastikan library toast dikonfigurasi dengan benar jika ingin digunakan.");
         }
       }
     },
     processApiData(apiData) {
-    // Periksa apakah apiData atau apiData.data ada dan tidak kosong
-    if (!apiData || !apiData.data || apiData.data.length === 0) {
+      if (!apiData || !apiData.data || apiData.data.length === 0) {
         this.error = "Tidak ada data yang tersedia untuk parameter yang dipilih.";
         this.apiStatus = 'error';
-        this.summaryCards = { // Inisialisasi dengan nilai default atau kosong
+        this.summaryCards = {
             sasaran: '0',
             capaianStandar: '0',
             capaianTidakStandar: '0',
             totalPelayanan: '0',
             persenCapaianPelayanan: '0%'
         };
-        this.monthlyTableData = this.generateMonthlyTableData({}); // Menggunakan objek kosong
+        this.monthlyTableData = this.generateMonthlyTableData({});
         this.chartData = { lakiLaki: Array(12).fill(0), perempuan: Array(12).fill(0) };
         if (this.chartInstance) {
             this.chartInstance.data.datasets[0].data = this.chartData.lakiLaki;
@@ -313,13 +334,13 @@ export default {
             this.chartInstance.update();
         }
         return;
-    }
+      }
 
-    const puskesmasData = apiData.data[0];
-    const dataType = this.selectedProgram === "Hipertensi" ? "ht" : "dm";
-    const data = puskesmasData[dataType.toLowerCase()];
+      const puskesmasData = apiData.data[0]; // User dashboard biasanya menampilkan data satu puskesmas atau agregat sederhana
+      const dataType = this.selectedProgram === "Hipertensi" ? "ht" : "dm";
+      const data = puskesmasData[dataType.toLowerCase()];
 
-    if (!data) {
+      if (!data) {
         this.error = `Data ${this.selectedProgram} tidak tersedia.`;
         this.apiStatus = 'error';
         this.summaryCards = {
@@ -337,45 +358,34 @@ export default {
             this.chartInstance.update();
         }
         return;
-    }
-    
-    // Reset error jika data berhasil diproses
-    this.error = null;
-
-    this.summaryCards = {
-        sasaran: data.target || '0',
-        capaianStandar: data.standard_patients || '0',
-        capaianTidakStandar: data.non_standard_patients || '0',
-        totalPelayanan: data.total_patients || '0',
-        persenCapaianPelayanan: (data.achievement_percentage || 0) + "%"
-    };
-
-    this.monthlyTableData = this.generateMonthlyTableData(data.monthly_data || {});
-
-    const monthlyDataForChart = data.monthly_data && typeof data.monthly_data === 'object' ? data.monthly_data : {};
-    
-    const allMonthsMaleData = [];
-    const allMonthsFemaleData = [];
-
-    for (let i = 1; i <= 12; i++) {
-        const monthKey = String(i);
-        const currentMonthData = monthlyDataForChart[monthKey] || { male: 0, female: 0 };
-        allMonthsMaleData.push(currentMonthData.male || 0);
-        allMonthsFemaleData.push(currentMonthData.female || 0);
-    }
-
-    this.chartData = {
-        lakiLaki: allMonthsMaleData,
-        perempuan: allMonthsFemaleData
-    };
-
-    this.$nextTick(() => {
-        this.renderChart();
-    });
-},
-    // getMonthData sepertinya tidak digunakan dan bisa dihapus jika tidak diperlukan di tempat lain
-    // getMonthData(monthData, gender) { ... }
-
+      }
+      
+      this.error = null;
+      this.summaryCards = {
+          sasaran: data.target || '0',
+          capaianStandar: data.standard_patients || '0',
+          capaianTidakStandar: data.non_standard_patients || '0',
+          totalPelayanan: data.total_patients || '0',
+          persenCapaianPelayanan: (data.achievement_percentage || 0) + "%"
+      };
+      this.monthlyTableData = this.generateMonthlyTableData(data.monthly_data || {});
+      const monthlyDataForChart = data.monthly_data && typeof data.monthly_data === 'object' ? data.monthly_data : {};
+      const allMonthsMaleData = [];
+      const allMonthsFemaleData = [];
+      for (let i = 1; i <= 12; i++) {
+          const monthKey = String(i);
+          const currentMonthData = monthlyDataForChart[monthKey] || { male: 0, female: 0 };
+          allMonthsMaleData.push(currentMonthData.male || 0);
+          allMonthsFemaleData.push(currentMonthData.female || 0);
+      }
+      this.chartData = {
+          lakiLaki: allMonthsMaleData,
+          perempuan: allMonthsFemaleData
+      };
+      this.$nextTick(() => {
+          this.renderChart();
+      });
+    },
     renderChart() {
       const ctx = document.getElementById("chart");
       if (!ctx) return;
@@ -391,7 +401,7 @@ export default {
           datasets: [
             {
               label: "Laki-laki",
-              data: this.chartData.lakiLaki || Array(12).fill(0), // Pastikan data adalah array
+              data: this.chartData.lakiLaki || Array(12).fill(0),
               borderColor: "#3B82F6",
               backgroundColor: "rgba(59, 130, 246, 0.1)",
               borderWidth: 3,
@@ -405,7 +415,7 @@ export default {
             },
             {
               label: "Perempuan",
-              data: this.chartData.perempuan || Array(12).fill(0), // Pastikan data adalah array
+              data: this.chartData.perempuan || Array(12).fill(0),
               borderColor: "#EC4899",
               backgroundColor: "rgba(236, 72, 153, 0.1)",
               borderWidth: 3,
@@ -465,39 +475,95 @@ export default {
                   size: 12,
                   weight: '500'
                 },
-                beginAtZero: true // Pastikan sumbu Y dimulai dari 0
+                beginAtZero: true
               }
             }
           }
         },
       });
     },
-    printReport() {
-      window.print();
+    toggleDownloadOptions() {
+      this.showDownloadOptions = !this.showDownloadOptions;
+    },
+    // MODIFIED: triggerDownload method to use admin's API endpoint
+    async triggerDownload(format) {
+      if (this.isDownloading) return;
+      this.isDownloading = true;
+      this.showDownloadOptions = false;
+      this.error = null;
+
+      // Menggunakan programType yang sama dengan di admin dashboard
+      const programType = this.selectedProgram === "Hipertensi" ? "ht" : "dm";
+      const apiUrl = `/statistics/export`; // API endpoint yang sama dengan admin
+
+      try {
+        const response = await apiClient.get(apiUrl, {
+          params: {
+            year: this.selectedYear,
+            type: programType, // Parameter di API admin adalah 'type' untuk jenis penyakit
+            format: format,
+          },
+          responseType: 'blob', // Penting untuk menerima file
+        });
+
+        const blob = new Blob([response.data], { type: response.headers['content-type'] });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+
+        // Membuat nama file yang mirip dengan admin
+        const programNameSanitized = this.selectedProgram.toLowerCase().replace(/\s+/g, '_');
+        const fileName = `rekap_laporan_${programNameSanitized}_${this.selectedYear}.${format === 'excel' ? 'xlsx' : 'pdf'}`;
+        
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+        if (this.$toast && typeof this.$toast.success === 'function') {
+          this.$toast.success(`Laporan ${format.toUpperCase()} berhasil diunduh.`);
+        }
+
+      } catch (err) {
+        console.error(`Error downloading ${format} report:`, err);
+        let message = `Gagal mengunduh laporan ${format.toUpperCase()}. `;
+        
+        // Mencoba membaca pesan error dari respons blob jika ada
+        if (err.response && err.response.data && err.response.data instanceof Blob && err.response.data.type === "application/json") {
+            try {
+                const errorJson = JSON.parse(await err.response.data.text());
+                message += errorJson.message || 'Detail error tidak tersedia.';
+            } catch (parseError) {
+                message += 'Tidak bisa membaca detail error dari server.';
+            }
+        } else if (err.response && err.response.data && err.response.data.message) {
+            message += err.response.data.message;
+        } else {
+            message += err.message || 'Terjadi kesalahan tidak diketahui.';
+        }
+        
+        this.error = message;
+        if (this.$toast && typeof this.$toast.error === 'function') {
+            this.$toast.error(this.error);
+        }
+      } finally {
+        this.isDownloading = false;
+      }
     },
     generateMonthlyTableData(monthlyData) {
         const monthNames = [
             'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
             'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
         ];
-
-        // Tangani kasus jika monthlyData null/undefined atau bukan objek
         if (!monthlyData || typeof monthlyData !== 'object') { 
             return monthNames.map(monthName => ({
-                name: monthName,
-                standard: 0,
-                nonStandard: 0,
-                percentage: 0,
-                male: 0,
-                female: 0
+                name: monthName, standard: 0, nonStandard: 0, percentage: 0, male: 0, female: 0
             }));
         }
-
         return monthNames.map((monthName, index) => {
             const monthKey = String(index + 1);
-            // Default ke objek kosong jika data bulan tertentu tidak ada
             const currentMonthData = monthlyData[monthKey] || {}; 
-
             return {
                 name: monthName,
                 standard: currentMonthData.standard || 0,
@@ -513,7 +579,7 @@ export default {
 </script>
 
 <style scoped>
-/* Root Styles */
+/* Root Styles (Ensure these or equivalent are globally available or defined here) */
 :root {
   --primary-50: #ecfdf5;
   --primary-100: #d1fae5;
@@ -545,9 +611,10 @@ export default {
   --error-600: #dc2626;
   --error-700: #b91c1c;
   
-  --accent-500: #8b5cf6;
-  --accent-600: #7c3aed;
-  
+  --accent-500: #8b5cf6; /* Used by metric card, ensure defined */
+  --accent-600: #7c3aed; /* Used by metric card, ensure defined */
+  /* --accent-5000, --accent-6000 are typos in original user CSS, assuming they meant --accent-500, --accent-600 */
+
   --gray-50: #f9fafb;
   --gray-100: #f3f4f6;
   --gray-200: #e5e7eb;
@@ -673,8 +740,8 @@ export default {
 .error-message .fa-exclamation-circle { /* Untuk ikon FontAwesome */
   margin-right: 8px;
 }
+/* Styles for retry button in error message were duplicated, ensure one source of truth */
 .retry-button {
-  /* Penyesuaian untuk visibilitas dan konsistensi yang lebih baik */
   background-color: var(--error-500, #ef4444);
   color: white;
   border: none;
@@ -687,13 +754,12 @@ export default {
   gap: 0.5rem;
   transition: background-color 0.2s ease, transform 0.2s ease;
 }
-
 .retry-button:hover {
   background-color: var(--error-600, #dc2626);
-  transform: translateY(-1px); /* Efek angkat kecil saat hover */
+  transform: translateY(-1px);
 }
 
-body {
+body { /* This might conflict if user has global body styles, keep an eye on it */
   background: linear-gradient(135deg, var(--primary-500), var(--primary-700) 100%);
   min-height: 100vh;
   box-sizing: border-box;
@@ -731,12 +797,11 @@ body {
 }
 
 /* Toolbar */
- .toolbar-card {
+  .toolbar-card {
     background: white;
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-lg);
     margin-bottom: 2rem;
-    overflow: hidden;
   }
   
   .toolbar-content {
@@ -807,6 +872,7 @@ body {
     pointer-events: none;
   }
   
+  /* Styles for the main print/download button */
   .print-button {
     background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
     color: white;
@@ -818,19 +884,19 @@ body {
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.5rem; /* Adjusted from 0.5rem in user, 0.625rem in admin, using user's */
     position: relative;
     overflow: hidden;
-    transition: all 0.2s;
+    transition: all 0.2s; /* Adjusted from 0.2s ease-out in admin */
   }
   
   .print-button:hover {
     transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-lg); /* Consistent with user button hover */
   }
   
   .button-icon {
-    font-size: 1rem;
+    font-size: 1rem; /* Adjusted from 1.125rem in admin */
   }
   
   .button-shine {
@@ -840,14 +906,97 @@ body {
     width: 100%;
     height: 100%;
     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.5s;
+    transition: left 0.5s; /* Consistent with user button shine */
   }
   
   .print-button:hover .button-shine {
-    left: 100%;
+    left: 100%; /* Consistent */
   }
 
-    /* Error Card */
+  /* --- ADDED: Styles for Download Dropdown (from admin dashboard) --- */
+  .download-button-container {
+    position: relative;
+    display: inline-block;
+  }
+
+  .download-options {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: white;
+    border-radius: var(--radius-md, 0.5rem); /* Use existing var if available */
+    box-shadow: var(--shadow-lg); /* Use existing var */
+    border: 1px solid var(--gray-200, #e5e7eb); /* Use existing var */
+    z-index: 100;
+    min-width: 180px;
+    margin-top: 0.5rem;
+    overflow: hidden;
+    animation: fadeInScaleUp 0.2s ease-out;
+  }
+
+  @keyframes fadeInScaleUp { /* Copied from admin */
+    from { opacity: 0; transform: translateY(-10px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .download-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: var(--gray-700, #374151); /* Use existing var */
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+
+  .download-option .svg-inline--fa { /* For FontAwesome icons */
+    width: 1em;
+    height: 1em;
+    color: var(--gray-500); /* Use existing var */
+    transition: color 0.15s ease;
+  }
+  /* Ensure FontAwesomeIcon component usage sets class for this */
+   .download-option .fa-file-excel { color: var(--success-500, #22c55e); }
+   .download-option .fa-file-pdf { color: var(--error-500, #ef4444); }
+
+
+  .download-option:hover {
+    background-color: var(--primary-50, #ecfdf5); /* Use existing var */
+    color: var(--primary-600, #059669); /* Use existing var */
+  }
+  .download-option:hover .svg-inline--fa {
+    color: var(--primary-500, #10b981); /* Use existing var */
+  }
+   .download-option:hover .fa-file-excel { color: var(--success-600, #16a34a); }
+   .download-option:hover .fa-file-pdf { color: var(--error-600, #dc2626); }
+
+
+  .download-option:not(:last-child) {
+    border-bottom: 1px solid var(--gray-100, #f3f4f6); /* Use existing var */
+  }
+
+  .print-button .button-icon .svg-inline--fa.fa-spinner {
+    /* Custom styles for spinner if needed */
+  }
+
+  .print-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm); /* Use existing var */
+  }
+  .print-button:disabled:hover .button-shine {
+    opacity: 0;
+  }
+  /* --- END ADDED Styles --- */
+
+
+  /* Error Card (Original user styles had this, seems distinct from .error-message) */
     .error-card {
     background: var(--error-50);
     border: 1px solid var(--error-200);
@@ -864,7 +1013,8 @@ body {
   }
   
   .error-icon {
-    font-size: 2rem;
+    font-size: 2rem; /* Assuming this is for an emoji or a larger icon */
+    color: var(--error-500);
     flex-shrink: 0;
   }
   
@@ -885,32 +1035,12 @@ body {
     color: var(--error-500);
   }
   
-  .retry-button {
-    background: var(--error-500);
-    color: white;
-    border: none;
-    border-radius: var(--radius-md);
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: all 0.2s;
-  }
+  /* The .retry-button style was defined earlier. Re-defining it here might be redundant */
+  /* unless it's specifically for the .error-card context. */
+  /* .error-card .retry-button { ... } */
   
-  .retry-button:hover {
-    background: var(--error-600);
-  }
-  
-  .retry-icon {
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+  .retry-icon { /* This seems to be for an animated retry icon */
+    animation: spin 1s linear infinite; /* Uses the same spin animation */
   }
   
   /* Metrics Section */
@@ -918,26 +1048,27 @@ body {
     margin-bottom: 2rem;
   }
   
-  .section-title {
+  .section-title { /* This class wasn't used in the template but defined */
     font-size: 1.5rem;
     font-weight: 700;
-    color: black;
+    color: black; /* Consider var(--gray-900) */
     margin-bottom: 1rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
   }
   
+  /* .title-accent is used in chart and table, ensure consistency */
   .title-accent {
     width: 4px;
     height: 1.5rem;
-    background: linear-gradient(135deg, var(--primary-500));
+    background: var(--primary-500); /* Simplified from linear-gradient for this instance */
     border-radius: 2px;
   }
   
   .metrics-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(5, 1fr); /* Default in user dashboard */
     gap: 1.5rem;
   }
   
@@ -958,23 +1089,24 @@ body {
     left: 0;
     right: 0;
     height: 4px;
+    /* Default primary color for the top border */
     background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
   }
   
+  .metric-card.primary::before { /* Explicitly for the first card if needed, or rely on default */
+    background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+  }
   .metric-card.success::before {
     background: linear-gradient(135deg, var(--success-500), var(--success-600));
   }
-  
   .metric-card.warning::before {
     background: linear-gradient(135deg, var(--warning-500), var(--warning-600));
   }
-  
-  .metric-card.info::before {
-    background: linear-gradient(135deg, #06b6d4, #0891b2);
+  .metric-card.info::before { /* User dashboard has its own 'info' color */
+    background: linear-gradient(135deg, #06b6d4, #0891b2); /* Cyan shades */
   }
-  
-  .metric-card.accent::before {
-    background: linear-gradient(135deg, var(--accent-5000), var(--accent-6000));
+  .metric-card.accent::before { /* Uses --accent-500, --accent-600 which should be fine */
+    background: linear-gradient(135deg, var(--accent-500), var(--accent-600));
   }
   
   .metric-card:hover {
@@ -996,28 +1128,29 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    /* Default icon background and color (for primary) */
     background: var(--primary-50);
     color: var(--primary-500);
   }
-  
+  .metric-card.primary .metric-icon { /* Explicit for primary, if default isn't enough */
+     background: var(--primary-50);
+     color: var(--primary-500);
+  }
   .metric-card.success .metric-icon {
     background: var(--success-50);
     color: var(--success-500);
   }
-  
   .metric-card.warning .metric-icon {
     background: var(--warning-50);
     color: var(--warning-500);
   }
-  
-  .metric-card.info .metric-icon {
-    background: #f0f9ff;
-    color: #0891b2;
+  .metric-card.info .metric-icon { /* User dashboard info icon style */
+    background: #f0f9ff; /* Light cyan */
+    color: #0891b2; /* Darker cyan */
   }
-  
-  .metric-card.accent .metric-icon {
-    background: #f5f3ff;
-    color: var(--accent-5000);
+  .metric-card.accent .metric-icon { /* Uses --accent-500 */
+    background: #f5f3ff; /* Light violet */
+    color: var(--accent-500);
   }
   
   .metric-trend {
@@ -1048,6 +1181,8 @@ body {
     margin: 0;
     font-weight: 500;
   }
+
+/* Charts Section */
   .charts-section {
     margin-bottom: 2rem;
   }
@@ -1103,11 +1238,11 @@ body {
   }
   
   .legend-item.male {
-    color: var(--primary-600);
+    color: var(--primary-600); /* User CSS uses #3B82F6 directly in chart.js config, this is for legend */
   }
   
   .legend-item.female {
-    color: #ec4899;
+    color: #ec4899; /* Consistent */
   }
   
   .legend-dot {
@@ -1117,11 +1252,11 @@ body {
   }
   
   .legend-item.male .legend-dot {
-    background: var(--primary-500);
+    background: var(--primary-500); /* User CSS uses #3B82F6 directly in chart.js config */
   }
   
   .legend-item.female .legend-dot {
-    background: #ec4899;
+    background: #ec4899; /* Consistent */
   }
   
   .chart-container {
@@ -1139,19 +1274,20 @@ body {
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-lg);
     overflow: hidden;
-    padding: 20px;
+    padding: 20px; /* Original user table padding */
   }
   
-  .table-header {
-    padding: 1.5rem 1.5rem 1rem 1.5rem;
+  .table-header { /* Used by user table */
+    padding: 1.5rem 1.5rem 1rem 1.5rem; /* Original user table header padding */
     border-bottom: 1px solid var(--gray-100);
+    /* Note: admin table has a more complex .table-header-enhanced */
   }
   
-  .table-title-section {
+  .table-title-section { /* Shared between user and admin conceptually */
     text-align: left;
   }
   
-  .table-title {
+  .table-title { /* Shared */
     font-size: 1.25rem;
     font-weight: 700;
     color: var(--gray-900);
@@ -1161,40 +1297,41 @@ body {
     gap: 0.5rem;
   }
   
-  .table-subtitle {
+  .table-subtitle { /* Shared */
     font-size: 0.875rem;
     color: var(--gray-500);
     margin: 0;
   }
   
-  .table-container {
+  .table-container { /* User table container */
     overflow-x: auto;
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    /* User table specific shadow and radius, distinct from admin's enhanced container */
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); 
     border-radius: 10px;
   }
   
-  .data-table {
+  .data-table { /* User's data table style */
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
-    font-family: "Inter", sans-serif;
-    font-size: 14px;
-    color: #333333;
+    font-family: "Inter", sans-serif; /* User specific font */
+    font-size: 14px; /* User specific font size */
+    color: #333333; /* User specific color */
     background: #ffffff;
-    border-radius: 10px;
+    border-radius: 10px; /* Matches its container */
     overflow: hidden;
   }
   
-  .data-table thead th {
-    background: #f3f4f6;
-    color: #333333;
+  .data-table thead th { /* User specific header cell style */
+    background: #f3f4f6; /* var(--gray-100) */
+    color: #333333; /* var(--gray-800) */
     font-weight: 600;
     text-align: center;
-    padding: 16px;
-    border-bottom: 1px solid #e5e7eb;
+    padding: 16px; /* User specific padding */
+    border-bottom: 1px solid #e5e7eb; /* var(--gray-200) */
   }
   
-  .th-month {
+  .th-month { /* User specific */
     background: #f3f4f6;
     color: #333333;
     font-weight: 600;
@@ -1205,24 +1342,24 @@ body {
     vertical-align: middle;
   }
   
-  .th-group {
+  .th-group { /* User specific */
     border-left: 1px solid #e5e7eb;
     border-right: 1px solid #e5e7eb;
   }
   
-  .th-sub {
-    background: #f9fafb;
+  .th-sub { /* User specific */
+    background: #f9fafb; /* var(--gray-50) */
     font-size: 12px;
     font-weight: 600;
     padding: 12px;
   }
   
-  .table-row:hover {
-    background: #f9fafb;
+  .table-row:hover { /* User specific row hover */
+    background: #f9fafb; /* var(--gray-50) */
     transition: background-color 0.3s ease;
   }
   
-  .month-name {
+  .month-name { /* User specific */
     font-weight: 600;
     text-align: center;
     padding: 20px;
@@ -1230,19 +1367,19 @@ body {
     border-bottom: 1px solid #e5e7eb;
   }
   
-  .data-cell {
+  .data-cell { /* User specific */
     text-align: center;
     padding: 20px;
     border-bottom: 1px solid #e5e7eb;
   }
   
-  .percentage-value {
+  .percentage-value { /* User specific */
     display: block;
     margin-bottom: 4px;
     font-weight: 500;
   }
   
-  .percentage-bar {
+  .percentage-bar { /* User specific */
     width: 60px;
     height: 4px;
     background: #e5e7eb;
@@ -1251,61 +1388,61 @@ body {
     margin: 0 auto;
   }
   
-  .percentage-fill {
+  .percentage-fill { /* User specific */
     height: 100%;
     background: linear-gradient(90deg, var(--primary-500), var(--primary-700));
     border-radius: 2px;
     transition: width 0.3s ease;
   }
   
-  .data-table tr {
+  .data-table tr { /* User specific row height */
     height: 60px;
   }
 
 /* Responsive Styles */
 @media (max-width: 1200px) {
-    .metrics-grid {
+    .metrics-grid { /* Applies to user's 5-column grid */
       grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     }
   }
   
   @media (max-width: 768px) {
-    .dashboard-wrapper {
+    .dashboard-wrapper { /* This class seems to be from a parent or global scope */
       padding: 1rem;
     }
     
-    .page-title {
+    .page-title { /* From user's header section */
       font-size: 2rem;
     }
     
-    .toolbar-content {
+    .toolbar-content { /* Affects user's toolbar */
       flex-direction: column;
       align-items: stretch;
     }
     
-    .controls-section {
+    .controls-section { /* User's toolbar controls */
       justify-content: center;
     }
     
-    .control-group {
+    .control-group { /* User's toolbar control group */
       flex: 1;
       min-width: 200px;
     }
     
-    .metrics-grid {
-      grid-template-columns: 1fr;
+    .metrics-grid { /* User's metrics grid */
+      grid-template-columns: 1fr; /* Stack metrics on smaller screens */
     }
     
-    .chart-header {
+    .chart-header { /* User's chart header */
       flex-direction: column;
       align-items: stretch;
     }
     
-    .chart-legends {
+    .chart-legends { /* User's chart legends */
       justify-content: center;
     }
     
-    .chart-container {
+    .chart-container { /* User's chart container */
       height: 300px;
     }
   }
@@ -1317,7 +1454,7 @@ body {
       gap: 0.5rem;
     }
     
-    .header-content {
+    .header-content { /* From user's header section */
       padding: 1.5rem;
     }
     
@@ -1325,7 +1462,7 @@ body {
       padding: 1rem;
     }
     
-    .metric-card {
+    .metric-card { /* Affects user's metric cards */
       padding: 1rem;
     }
     
@@ -1337,57 +1474,65 @@ body {
 
 /* Print Styles */
 @media print {
-    .dashboard-wrapper {
+    .dashboard-wrapper { /* Global/parent class */
       background: white;
       padding: 0;
     }
     
-    .page-header,
-    .toolbar-card {
+    /* Hide toolbar and original page header when printing */
+    .page-header, 
+    .toolbar-card,
+    .download-button-container /* Hide new download button too */ {
       display: none;
     }
     
     .metric-card,
     .chart-card,
-    .table-card {
+    .table-card { /* Styling for cards in print mode */
       box-shadow: none;
       border: 1px solid var(--gray-300);
       break-inside: avoid;
       margin-bottom: 1rem;
     }
     
-    .chart-container {
-      height: 300px;
+    .chart-container { /* Adjust chart height for print */
+      height: 300px; 
     }
   }
-  /* Enhanced Hover Effects */
-  .summary-card:hover .summary-icon {
+
+  /* Enhanced Hover Effects (from original user CSS, likely for other elements) */
+  .summary-card:hover .summary-icon { /* .summary-card not in provided HTML */
     transform: scale(1.1);
     transition: transform 0.3s ease;
   }
   
-  .print-report-button:hover {
+  /* .print-report-button was the old button, new one is .print-button */
+  /* .print-report-button:hover { 
     box-shadow: 0px 4px 12px rgba(16, 185, 129, 0.3);
-  }
-  /* Accessibility Improvements */
-  .dropdown-select:focus,
-  .print-report-button:focus,
+  } */
+
+  /* Accessibility Improvements (from original user CSS) */
+  .dropdown-select:focus, /* .dropdown-select not in provided HTML */
+  .print-button:focus, /* Applies to new button too */
   .retry-button:focus {
     outline: 2px solid var(--primary-500);
     outline-offset: 2px;
   }
-  /* Enhanced Table Styling */
+
+  /* Enhanced Table Styling (from original user CSS, for .data-table) */
   .data-table tbody tr:nth-child(even) {
-    background-color: rgba(249, 250, 251, 0.5);
+    background-color: rgba(249, 250, 251, 0.5); /* var(--gray-50) with alpha */
   }
   
-  .data-table tbody tr:hover {
-    background-color: #f0f9ff;
-    transform: scale(1.01);
-    transition: all 0.2s ease;
+  .data-table tbody tr:hover { /* This is .table-row:hover in user CSS */
+    background-color: #f0f9ff; /* Lighter blue, distinct from var(--primary-50) */
+    transform: scale(1.01); /* Subtle scale effect */
+    transition: all 0.2s ease; /* Ensure this doesn't conflict with .table-row's transition */
   }
-  /* Smooth Transitions */
-  * {
-    transition: all 0.2s ease;
-  }
+
+  /* Smooth Transitions (Global, from original user CSS - use with caution) */
+  /* It's generally better to apply transitions to specific elements */
+  /* * {
+    transition: all 0.2s ease; 
+  } */
 </style>
