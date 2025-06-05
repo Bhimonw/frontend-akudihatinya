@@ -71,6 +71,7 @@ const toggleSidebar = () => {
   height: 100%; /* Tinggi 100% dari parent (.layout) */
   /* overflow: hidden; */ /* Hapus atau komentari baris ini */
   min-height: 0; /* Pastikan tinggi minimum adalah 0 */
+  min-width: 0;
 }
 
 /* Navbar */
@@ -92,7 +93,7 @@ const toggleSidebar = () => {
   overflow-y: auto; /* Aktifkan scrolling hanya pada content-area */
   overflow-x: hidden;
   min-height: 0; /* Pastikan tinggi minimum adalah 0 */
-  padding: 26px;
+  min-width: 0;
   padding-top: 0;
   background-color: #f7f8f9;
   box-sizing: border-box;

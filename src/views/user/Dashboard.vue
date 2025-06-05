@@ -605,6 +605,7 @@ export default {
   max-width: 1400px;
   margin: 0 auto;
   animation: fadeInUp 0.6s ease-out;
+  padding: 1rem 1.5rem;
 }
 
 @keyframes fadeInUp {

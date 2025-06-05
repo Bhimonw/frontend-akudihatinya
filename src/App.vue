@@ -22,6 +22,7 @@ html, body {
   margin: 0; /* Tailwind Preflight biasanya sudah melakukan ini */
   padding: 0; /* Tailwind Preflight biasanya sudah melakukan ini */
   overflow: hidden; /* PENTING: Mencegah scrollbar di html dan body */
+  overflow-x: hidden;
 }
 
 #app {
