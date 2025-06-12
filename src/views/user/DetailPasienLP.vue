@@ -1651,7 +1651,6 @@ export default {
 .bg-white { background-color: #ffffff; }
 .px-4 { padding-left: 1rem; padding-right: 1rem; } 
 .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; } 
-.sm\:px-6 { }
 @media (min-width: 640px) {
   .sm\:px-6 { padding-left: 1.5rem; padding-right: 1.5rem; } 
   .hidden.sm\:flex { display: flex; }

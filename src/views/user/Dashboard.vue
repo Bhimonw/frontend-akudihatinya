@@ -980,10 +980,6 @@ body { /* This might conflict if user has global body styles, keep an eye on it 
     border-bottom: 1px solid var(--gray-100, #f3f4f6); /* Use existing var */
   }
 
-  .print-button .button-icon .svg-inline--fa.fa-spinner {
-    /* Custom styles for spinner if needed */
-  }
-
   .print-button:disabled {
     opacity: 0.7;
     cursor: not-allowed;

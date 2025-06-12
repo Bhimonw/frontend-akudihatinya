@@ -1168,37 +1168,6 @@ export default {
     flex-direction: column;
   }
   
-  .toolbar { /* Sudah dihandle di 992px, bisa dikonsolidasikan jika sama */
-    /* flex-direction: column;
-    align-items: flex-start;
-    gap: 16px; */
-  }
-
-  .left-section,
-  .right-section { /* Sudah dihandle di 992px, bisa dikonsolidasikan jika sama */
-    /* flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-    width: 100%; */
-  }
-    .add-data-button { /* Sudah dihandle di 992px */
-    /* margin-left: 0; */
-  }
-
-  .search-container { /* Sudah dihandle di 992px */
-    /* width: 100%; */
-  }
-
-  .search-input { /* Sudah dihandle di 992px */
-    /* width: 100%; */
-  }
-
-  .add-data-button,
-  .print-report-button { /* Sudah dihandle di 992px */
-    /* width: 100%;
-    text-align: center;
-    justify-content: center; */
-  }
 }
 
 .table-container {
@@ -1234,12 +1203,7 @@ export default {
   transition: background-color 0.3s ease;
 }
 
-.data-table th { /* Redundant with thead th? Consolidating */
-  /* text-align: center; 
-  font-weight: 600;
-  color: #5f5f5f;
-  background: #f3f3f3;  */
-}
+
 
 .data-table td {
   text-align: center; 
@@ -1473,7 +1437,7 @@ export default {
 .bg-white { background-color: #ffffff; }
 .px-4 { padding-left: 1rem; padding-right: 1rem; } 
 .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; } 
-.sm\:px-6 { }
+
 @media (min-width: 640px) {
   .sm\:px-6 { padding-left: 1.5rem; padding-right: 1.5rem; } 
   .hidden.sm\:flex { display: flex; }
