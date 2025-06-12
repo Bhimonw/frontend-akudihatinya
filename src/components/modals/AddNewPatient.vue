@@ -7,7 +7,7 @@
           <font-awesome-icon :icon="['fas', 'times']" />
         </button>
       </div>
-      
+
       <div class="modal-body">
         <div class="new-patient-form">
           <form @submit.prevent="submitForm">
@@ -16,7 +16,7 @@
                 <font-awesome-icon :icon="['fas', 'id-card']" class="section-icon" />
                 <h3>Informasi Dasar</h3>
               </div>
-              
+
               <div class="form-row">
                 <div class="form-group">
                   <label for="name">Nama Pasien <span class="required">*</span></label>
@@ -34,7 +34,7 @@
                   </div>
                   <transition name="fade">
                     <p v-if="errors.name" class="error-message">
-                      <font-awesome-icon :icon="['fas', 'exclamation-circle']" /> 
+                      <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
                       Nama pasien wajib diisi
                     </p>
                   </transition>
@@ -48,6 +48,7 @@
                       type="text"
                       id="nik"
                       v-model="form.nik"
+                      @input="handleNikInput"
                       class="form-input"
                       placeholder="16 digit NIK"
                       maxlength="16"
@@ -66,11 +67,20 @@
                       type="text"
                       id="bpjs"
                       v-model="form.bpjs"
+                      @input="handleBpjsInput"
                       class="form-input"
-                      placeholder="Nomor BPJS (jika ada)"
+                      :class="{ 'input-error': errors.bpjs }"
+                      placeholder="13 digit nomor BPJS"
+                      max="13"
                     />
                   </div>
-                  <small class="helper-text">Kosongkan jika tidak ada</small>
+                  <transition name="fade">
+                    <p v-if="errors.bpjs" class="error-message">
+                      <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
+                      Nomor BPJS harus terdiri dari 13 digit angka
+                    </p>
+                    <small v-else class="helper-text">Kosongkan jika tidak ada</small>
+                  </transition>
                 </div>
 
                 <div class="form-group">
@@ -104,23 +114,23 @@
                 <font-awesome-icon :icon="['fas', 'calendar-alt']" class="section-icon" />
                 <h3>Informasi Usia</h3>
               </div>
-              
+
               <div class="form-row">
                 <div class="form-group">
                   <label for="dob">Tanggal Lahir</label>
                   <div class="input-wrapper">
                     <font-awesome-icon :icon="['fas', 'calendar']" class="input-icon" />
                     <input
-                      type="date"
+                      type="text"
                       id="dob"
                       v-model="form.dob"
-                      @change="calculateAge"
+                      ref="dobInput" 
                       class="form-input date-input"
-                      :max="maxDate"
-                    />
-                  </div>
+                      placeholder="Pilih tanggal lahir"
+                      readonly />
+                    </div>
                   <small class="helper-text">Format: DD/MM/YYYY</small>
-                </div>
+                  </div>
 
                 <div class="form-group">
                   <label for="age">Umur <span class="required">*</span></label>
@@ -155,7 +165,7 @@
                 <font-awesome-icon :icon="['fas', 'map-marker-alt']" class="section-icon" />
                 <h3>Alamat</h3>
               </div>
-              
+
               <div class="form-group full-width">
                 <label for="address">Alamat Lengkap <span class="required">*</span></label>
                 <div class="input-wrapper textarea-wrapper">
@@ -178,12 +188,12 @@
                 </transition>
               </div>
             </div>
-             <div class="form-actions">
+            <div class="form-actions">
               <button type="button" class="btn-cancel" @click="closeModal" :disabled="isSubmitting">
                 <font-awesome-icon :icon="['fas', 'times']" /> Batal
               </button>
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 class="btn-save"
                 :disabled="isSubmitting"
               >
@@ -200,11 +210,14 @@
       </div>
     </div>
   </div>
-</template> 
+</template>
 
 <script>
 import Swal from 'sweetalert2';
-import axios from 'axios'; // Import axios
+import axios from 'axios';
+import flatpickr from 'flatpickr'; // Import flatpickr
+import 'flatpickr/dist/flatpickr.min.css'; // Import flatpickr styles
+import { Indonesian } from 'flatpickr/dist/l10n/id.js'; // Import Indonesian locale
 
 export default {
   name: 'AddNewPatientModal',
@@ -218,7 +231,7 @@ export default {
         nik: "",
         bpjs: "",
         gender: "",
-        dob: "",
+        dob: "", // Akan menyimpan format YYYY-MM-DD untuk backend dan kalkulasi
         age: "",
         address: ""
       },
@@ -227,13 +240,57 @@ export default {
         gender: false,
         age: false,
         address: false,
+        bpjs: false,
       },
       isAgeDisabled: false,
       isSubmitting: false,
-      maxDate: new Date().toISOString().split('T')[0], 
+      maxDate: new Date().toISOString().split('T')[0],
+      flatpickrInstance: null, // Untuk menyimpan instance flatpickr
     };
   },
+  mounted() {
+    this.initializeFlatpickr();
+  },
+  beforeUnmount() {
+    // Hancurkan instance flatpickr saat komponen dihancurkan
+    if (this.flatpickrInstance) {
+      this.flatpickrInstance.destroy();
+    }
+  },
   methods: {
+    handleBpjsInput(event) {
+        this.form.bpjs = event.target.value.replace(/\D/g, '');
+        this.clearError('bpjs');
+    },
+    handleNikInput(event) {
+        this.form.nik = event.target.value.replace(/\D/g, '');
+    },
+    initializeFlatpickr() {
+      if (this.$refs.dobInput) {
+        this.flatpickrInstance = flatpickr(this.$refs.dobInput, {
+          locale: Indonesian, // Set bahasa Indonesia
+          altInput: true, // Membuat input tambahan yang terlihat user dengan format berbeda
+          altFormat: "d F Y", // Format tampilan: 07 Juni 2024
+          dateFormat: "Y-m-d", // Format nilai aktual (untuk v-model/data dan backend)
+          maxDate: this.maxDate,
+          allowInput: false, // Mencegah input manual di field, user harus memilih dari kalender
+          onChange: (selectedDates, dateStr, instance) => {
+            // dateStr adalah tanggal dalam format "dateFormat" (Y-m-d)
+            this.form.dob = dateStr;
+            this.calculateAge(); // Panggil calculateAge setelah tanggal berubah
+            this.clearError('age'); // Bersihkan error umur jika tanggal dipilih
+          },
+           onClose: (selectedDates, dateStr, instance) => {
+            // Jika input dibersihkan (misalnya, jika allowInput true dan user menghapus)
+            // atau jika plugin clear button digunakan (tidak ada secara default)
+            if (selectedDates.length === 0) {
+              this.form.dob = "";
+              this.calculateAge(); // Akan mereset umur dan mengaktifkan input umur
+            }
+          }
+        });
+      }
+    },
     validateForm() {
       // ... (validateForm logic remains the same as previous version) ...
       let isValid = true;
@@ -246,19 +303,20 @@ export default {
         isValid = false;
         this.scrollToError('name');
       }
-      
+
       if (!this.form.gender) {
         this.errors.gender = true;
         isValid = false;
         if (!this.errors.name) this.scrollToError('gender');
       }
-      
-      if (!this.form.age && this.form.age !== 0) { 
+
+      // Validasi umur masih diperlukan, karena tanggal lahir tidak wajib
+      if (!this.form.age && this.form.age !== 0) {
         this.errors.age = true;
         isValid = false;
         if (!this.errors.name && !this.errors.gender) this.scrollToError('age');
       }
-      
+
       if (!this.form.address.trim()) {
         this.errors.address = true;
         isValid = false;
@@ -274,25 +332,33 @@ export default {
         isValid = false;
         if (!this.errors.name && !this.errors.gender && !this.errors.age && !this.errors.address) this.scrollToError('nik');
       }
+
+      if (this.form.bpjs && !/^\d{13}$/.test(this.form.bpjs)) {
+          this.errors.bpjs = true; // Set status error untuk BPJS
+          isValid = false;
+          if (!this.errors.name && !this.errors.gender) this.scrollToError('bpjs');
+      }
       return isValid;
     },
-    
+
     scrollToError(fieldId) {
       // ... (scrollToError logic remains the same) ...
-      this.$nextTick(() => { 
+      this.$nextTick(() => {
         const errorElement = document.getElementById(fieldId);
         if (errorElement) {
           errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          errorElement.focus();
+          if(fieldId !== 'dob') {
+            errorElement.focus();
+          }
         }
       });
     },
-    
+
     calculateAge() {
-      // ... (calculateAge logic remains the same) ...
+      // Logika calculateAge tetap sama, karena this.form.dob akan berisi 'YYYY-MM-DD'
       if (this.form.dob) {
         const today = new Date();
-        const birthDate = new Date(this.form.dob);
+        const birthDate = new Date(this.form.dob); // this.form.dob sudah YYYY-MM-DD
         let age = today.getFullYear() - birthDate.getFullYear();
         const monthDifference = today.getMonth() - birthDate.getMonth();
         if (
@@ -301,20 +367,19 @@ export default {
         ) {
           age--;
         }
-        this.form.age = age >= 0 ? age : 0; 
+        this.form.age = age >= 0 ? age : 0;
         this.isAgeDisabled = true;
-        this.clearError('age'); 
+        this.clearError('age');
       } else {
-        this.form.age = "";
-        this.isAgeDisabled = false;
+        this.form.age = ""; // Kosongkan umur jika tanggal lahir dikosongkan
+        this.isAgeDisabled = false; // Aktifkan kembali input umur
       }
     },
-    
+
     async submitForm() {
       if (!this.validateForm()) {
         return;
       }
-
       const result = await Swal.fire({
         title: 'Konfirmasi',
         text: 'Apakah Anda yakin akan menyimpan data pasien ini?',
@@ -322,7 +387,7 @@ export default {
         showCancelButton: true,
         confirmButtonText: 'Ya, Simpan',
         cancelButtonText: 'Batal',
-        confirmButtonColor: '#10B981', 
+        confirmButtonColor: '#10B981',
         cancelButtonColor: '#6B7280',
       });
 
@@ -330,18 +395,18 @@ export default {
         return;
       }
 
-      this.isSubmitting = true; 
-      
+      this.isSubmitting = true;
+
       const patientData = {
         name: this.form.name,
         nik: this.form.nik || null,
         bpjs_number: this.form.bpjs || null,
         address: this.form.address,
         gender: this.form.gender,
-        birth_date: this.form.dob || null, 
+        birth_date: this.form.dob || null, // form.dob sudah 'YYYY-MM-DD' atau ""
         age: this.form.age ? parseInt(this.form.age) : null,
-        ht_years: [], 
-        dm_years: []  
+        ht_years: [],
+        dm_years: []
       };
 
       try {
@@ -362,8 +427,7 @@ export default {
             },
           }
         );
-        
-        // Assuming a successful POST returns 201 or 200
+
         Swal.fire({
           icon: 'success',
           title: 'Berhasil!',
@@ -372,9 +436,9 @@ export default {
           timerProgressBar: true,
           showConfirmButton: false
         });
-        
-        this.$emit('patient-created', response.data); // Emit success event with new patient data
-        this.closeModal(); // Close modal on success
+
+        this.$emit('patient-created', response.data);
+        this.closeModal();
 
       } catch (error) {
         let errorMessage = "Terjadi kesalahan saat menyimpan data pasien.";
@@ -396,24 +460,22 @@ export default {
         }
         Swal.fire("Gagal Menyimpan!", errorMessage, "error");
       } finally {
-        this.isSubmitting = false; 
+        this.isSubmitting = false;
       }
     },
-    
+
     closeModal() {
       this.resetForm();
       this.$emit("close");
     },
 
     clearError(fieldName) {
-      // ... (clearError logic remains the same) ...
       if (this.errors[fieldName]) {
         this.errors[fieldName] = false;
       }
     },
-    
+
     resetForm() {
-      // ... (resetForm logic remains the same, ensures isSubmitting is false) ...
       this.form = {
         name: "",
         nik: "",
@@ -423,17 +485,23 @@ export default {
         age: "",
         address: ""
       };
-      
+
+      // Reset flatpickr juga jika ada
+      if (this.flatpickrInstance) {
+        this.flatpickrInstance.clear(); // Membersihkan tanggal yang dipilih
+      }
+
       Object.keys(this.errors).forEach(key => {
         this.errors[key] = false;
       });
-      
+
       this.isAgeDisabled = false;
-      this.isSubmitting = false; 
+      this.isSubmitting = false;
     }
   },
 };
 </script>
+
 
 <style scoped>
 /* ... (Your existing styles for AddNewPatient.vue remain unchanged) ... */

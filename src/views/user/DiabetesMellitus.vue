@@ -403,7 +403,7 @@ export default {
     handlePatientSubmit(patientData) {
       console.log("Data yang disimpan:", patientData);
       this.closeAddPatientModal();
-      this.fetchPatients(); // Muat ulang data setelah menambahkan pasien
+      this.fetchPatients();
     },
     prevPage() {
       if (this.currentPage > 1) {

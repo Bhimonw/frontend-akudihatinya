@@ -145,7 +145,6 @@
 import apiClient from "../../api.js"; 
 import Swal from "sweetalert2";
 import AddPatientModal from "../../components/modals/AddNewPatient.vue";
-// No need to import axios here if apiClient is used for all calls, or if AddNewPatient handles its own.
 
 export default {
   name: "ListPasien",
@@ -153,7 +152,6 @@ export default {
     AddPatientModal,
   },
   data() {
-    // ... (data remains the same as previous version) ...
     return {
       patients: [], 
       currentPage: 1,
@@ -164,6 +162,7 @@ export default {
       totalPages: 0,
       links: {},
       isLoading: false,
+      searchTImeout: null,
     };
   },
   computed: {
@@ -307,19 +306,34 @@ export default {
     },
   },
   watch: {
-    // ... (watchers remain the same as previous version) ...
     currentPage() { this.fetchPatients(); },
     pageSize() {
       if (this.currentPage !== 1) this.currentPage = 1; 
       else this.fetchPatients();
     },
     searchQuery() {
-      if (this.currentPage !== 1) this.currentPage = 1;
-      else this.fetchPatients(); 
+      // 1. Hapus timeout sebelumnya untuk me-reset timer setiap kali ada ketukan baru
+      clearTimeout(this.searchTimeout);
+
+      // 2. Atur timeout baru. Kode di dalamnya hanya akan berjalan setelah 500ms
+      //    jika tidak ada ketukan tombol baru dalam rentang waktu tersebut.
+      this.searchTimeout = setTimeout(() => {
+        // 3. Logika asli dipindahkan ke dalam callback setTimeout
+        if (this.currentPage !== 1) {
+          // Mereset ke halaman 1 akan otomatis memicu watcher `currentPage` untuk memanggil API
+          this.currentPage = 1;
+        } else {
+          // Jika sudah di halaman 1, panggil API secara langsung
+          this.fetchPatients();
+        }
+      }, 1000); // Penundaan 500 milidetik
     },
   },
   created() {
     this.fetchPatients(); 
+  },
+  beforeUnmount() {
+    clearTimeout(this.searchTimeout);
   },
 };
 </script>

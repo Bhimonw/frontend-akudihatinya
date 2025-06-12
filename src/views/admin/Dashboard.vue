@@ -175,13 +175,13 @@
                 </div>
                 <div class="view-toggle-tabs">
                     <button @click="tableViewMode = 'detailed'" :class="{ active: tableViewMode === 'detailed' }">
-                        <font-awesome-icon :icon="['fas', 'table-list']" /> Detailed
+                        <font-awesome-icon :icon="['fas', 'table-list']" /> Semua
                     </button>
                     <button @click="tableViewMode = 'monthly'" :class="{ active: tableViewMode === 'monthly' }">
-                        <font-awesome-icon :icon="['fas', 'calendar-days']" /> Monthly
+                        <font-awesome-icon :icon="['fas', 'calendar-days']" /> Bulanan
                     </button>
                     <button @click="tableViewMode = 'quarterly'" :class="{ active: tableViewMode === 'quarterly' }">
-                        <font-awesome-icon :icon="['fas', 'calendar-week']" /> Quarterly
+                        <font-awesome-icon :icon="['fas', 'calendar-week']" /> Triwulan
                     </button>
                 </div>
             </div>
@@ -755,6 +755,8 @@ export default {
       this.showDownloadOptions = false;
       this.error = null;
       const programType = this.selectedProgram === "Hipertensi" ? "ht" : "dm";
+      const tableTypePayload = this.tableViewMode === 'detailed' ? 'all' : this.tableViewMode;
+
       const apiUrl = `/statistics/admin/export`;
       try {
         const response = await apiClient.get(apiUrl, {
@@ -762,6 +764,7 @@ export default {
             year: this.selectedYear, 
             type: programType, 
             format: format, 
+            table_type: tableTypePayload,
           },
           responseType: 'blob',
         });
@@ -770,7 +773,7 @@ export default {
         const link = document.createElement('a');
         link.href = url;
         const programNameSanitized = this.selectedProgram.toLowerCase().replace(/\s+/g, '_');
-        const fileName = `rekap_laporan_${programNameSanitized}_${this.selectedYear}.${format === 'excel' ? 'xlsx' : 'pdf'}`;
+        const fileName = `rekap_laporan_${programNameSanitized}_${this.selectedYear}.${tableTypePayload}.${format === 'excel' ? 'xlsx' : 'pdf'}`;
         link.setAttribute('download', fileName);
         document.body.appendChild(link);
         link.click();
