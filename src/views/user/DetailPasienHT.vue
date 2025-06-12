@@ -8,11 +8,11 @@
       <div class="breadcrumb">
         <span><router-link to="/user/hipertensi">Hipertensi</router-link></span>
         <span> / </span>
-        <span>Detail Pasien</span>
+        <span>Detail Pasien Hipertensi</span>
       </div>
       <div class="profile-section">
         <div class="profile-header">
-          <h2>Detail Pasien</h2>
+          <h2>Informasi Pasien</h2>
         </div>
 
         <div v-if="isLoading" class="loading-container">

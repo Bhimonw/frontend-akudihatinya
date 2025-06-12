@@ -8,11 +8,11 @@
       <div class="breadcrumb">
         <span><router-link :to="breadcrumbLink">{{ breadcrumbText }}</router-link></span>
         <span> / </span>
-        <span>Data Pasien</span>
+        <span>Detail Pasien</span>
       </div>
       <div class="profile-section">
         <div class="profile-header">
-          <h2>Detail Pasien</h2>
+          <h2>Informasi Pasien</h2>
         </div>
 
         <div v-if="isLoading" class="loading-container">
@@ -381,12 +381,12 @@ export default {
   computed: {
     breadcrumbLink() {
       if (this.selectedDiseaseType === 'DM') return '/user/diabetes-mellitus';
-      if (this.selectedDiseaseType === 'HT') return '/user/hipertensi';
+      if (this.selectedDiseaseType === 'HT') return '/user/list-pasien';
       return '/user/list-pasien'; // Fallback
     },
     breadcrumbText() {
       if (this.selectedDiseaseType === 'DM') return 'Diabetes Mellitus';
-      if (this.selectedDiseaseType === 'HT') return 'Hipertensi';
+      if (this.selectedDiseaseType === 'HT') return 'Daftar Pasien';
       return 'Daftar Pasien'; // Fallback
     },
     diseaseYears() {

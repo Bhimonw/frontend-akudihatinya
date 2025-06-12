@@ -8,11 +8,11 @@
       <div class="breadcrumb">
         <span><router-link to="/user/diabetes-mellitus">Diabetes Mellitus</router-link></span>
         <span> / </span>
-        <span>Data Pasien</span>
+        <span>Detail Pasien Diabetes Mellitus</span>
       </div>
       <div class="profile-section">
         <div class="profile-header">
-          <h2>Detail Pasien</h2>
+          <h2>Informasi Pasien</h2>
         </div>
 
         <div v-if="isLoading" class="loading-container">

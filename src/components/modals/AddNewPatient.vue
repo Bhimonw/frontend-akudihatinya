@@ -10,7 +10,7 @@
 
       <div class="modal-body">
         <div class="new-patient-form">
-          <form @submit.prevent="submitForm">
+          <form @submit.prevent.stop="submitForm">
             <div class="form-section">
               <div class="section-header">
                 <font-awesome-icon :icon="['fas', 'id-card']" class="section-icon" />
@@ -403,10 +403,8 @@ export default {
         bpjs_number: this.form.bpjs || null,
         address: this.form.address,
         gender: this.form.gender,
-        birth_date: this.form.dob || null, // form.dob sudah 'YYYY-MM-DD' atau ""
+        birth_date: this.form.dob || null,
         age: this.form.age ? parseInt(this.form.age) : null,
-        ht_years: [],
-        dm_years: []
       };
 
       try {
@@ -437,7 +435,7 @@ export default {
           showConfirmButton: false
         });
 
-        this.$emit('patient-created', response.data);
+        this.$emit('patient-created', response.data.patient);
         this.closeModal();
 
       } catch (error) {

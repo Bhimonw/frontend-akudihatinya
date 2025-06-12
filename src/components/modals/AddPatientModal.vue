@@ -1,166 +1,148 @@
 <template>
-  <div class="modal-overlay" v-if="show" @click="closeModal">
-    <div class="modal-container" @click.stop>
-      <div class="modal-header">
-        <h2>Tambah Pasien</h2>
-        <button class="close-button" @click.prevent="closeModal">
-          ✕
-        </button>
-      </div>
-      <div class="modal-body">
-        <!-- Tampilan Daftar Pasien -->
-        <div v-if="!showNewPatientForm" class="patient-selection">
-          <!-- Toolbar -->
-          <div class="patient-toolbar">
-            <div class="search-container">
-              <font-awesome-icon :icon="['fas', 'search']" class="search-icon" />
-              <input
-                type="text"
-                class="search-input"
-                placeholder="Cari pasien..."
-                v-model="searchPatientQuery"
-              />
+  <div v-if="show">
+    <div class="modal-overlay" v-if="!showNewPatientForm" @click="closeModal">
+      <div class="modal-container" @click.stop>
+        <div class="modal-header">
+          <h2>Tambah Pasien</h2>
+          <button class="close-button" @click.prevent="closeModal">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="patient-selection">
+            <div class="patient-toolbar">
+              <div class="search-container">
+                <font-awesome-icon :icon="['fas', 'search']" class="search-icon" />
+                <input
+                  type="text"
+                  class="search-input"
+                  placeholder="Cari pasien..."
+                  v-model="searchPatientQuery"
+                />
+              </div>
+              <button class="add-new-patient-button" @click="showNewPatientForm = true">
+                <font-awesome-icon :icon="['fas', 'plus']" />
+                Tambah Pasien Baru
+              </button>
             </div>
-            <button class="add-new-patient-button" @click="showNewPatientForm = true">
-              <font-awesome-icon :icon="['fas', 'plus']" />
-              Tambah Pasien Baru
-            </button>
-          </div>
-          <!-- Patient Table -->
-          <div class="table-container">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>No.</th>
-                  <th>Nama</th>
-                  <th>NIK</th>
-                  <th>No. BPJS</th>
-                  <th>Jenis Kelamin</th>
-                  <th>Tanggal Lahir</th>
-                  <th>Umur</th>
-                  <th>Alamat</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                <!-- Indikator Loading -->
-                <tr v-if="isLoading">
-                  <td colspan="9">
-                    <div class="loading-container">
-                      <div class="loading-content">
-                        <div class="spinner"></div>
-                        <p>Memuat data...</p>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>No.</th>
+                    <th>Nama</th>
+                    <th>NIK</th>
+                    <th>No. BPJS</th>
+                    <th>Jenis Kelamin</th>
+                    <th>Tanggal Lahir</th>
+                    <th>Umur</th>
+                    <th>Alamat</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="isLoading">
+                    <td colspan="9">
+                      <div class="loading-container">
+                        <div class="loading-content">
+                          <div class="spinner"></div>
+                          <p>Memuat data...</p>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                </tr>
-                <!-- Data Pasien -->
-                <tr v-else-if="filteredPatients.length > 0" v-for="(patient, index) in filteredPatients" :key="patient.id">
-                  <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
-                  <td>{{ patient.name || '-'}}</td>
-                  <td>{{ patient.nik || '-'}}</td>
-                  <td>{{ patient.bpjs || '-'}}</td>
-                  <td>{{ patient.gender === "male" ? "Laki-laki" : "Perempuan" || '-'}}</td>
-                  <td>{{ patient.dob || '-'}}</td>
-                  <td>{{ patient.age || '-'}}</td>
-                  <td>{{ patient.address || '-'}}</td>
-                  <td>
-                    <button class="action-button select" @click="selectPatient(patient)">
-                      Tambahkan
-                    </button>
-                  </td>
-                </tr>
-                <!-- Pesan "Tidak Ada Data" -->
-                <tr v-else>
-                  <td colspan="9" class="no-data-message">Tidak ada data pasien yang sesuai dengan pencarian</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <!-- Pagination -->
-          <div class="pagination-container">
-            <div class="flex items-center justify-between bg-white px-4 py-3 sm:px-6">
-              <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                <!-- Showing Text -->
-                <div>
-                  <p class="text-sm text-gray-700 flex items-center gap-2">
-                    Baris per halaman:
-                    <div class="dropdown-container">
-                      <select
-                        id="rowsPerPage"
-                        v-model="pageSize"
-                        @change="resetPagination"
-                        class="dropdown-select"
-                      >
-                        <option value="10">10</option>
-                        <option value="25">25</option>
-                        <option value="100">100</option>
-                      </select>
-                    </div>
-                    {{ firstItemIndex + 1 }}-{{ lastItemIndex }} dari
-                    {{ totalPatients }} item
-                  </p>
-                </div>
-                <!-- Pagination Buttons -->
-                <nav
-                  class="isolate inline-flex -space-x-px rounded-md shadow-xs"
-                  aria-label="Pagination"
-                >
-                  <!-- Tombol Previous -->
-                  <button
-                    class="pagination-button prev"
-                    @click="prevPage"
-                    :disabled="currentPage === 1"
-                  >
-                    <font-awesome-icon :icon="['fas', 'chevron-left']" />
-                  </button>
-                  <!-- Page numbers and ellipsis -->
-                  <template v-for="(item, index) in paginationItems">
+                    </td>
+                  </tr>
+                  <tr v-else-if="filteredPatients.length > 0" v-for="(patient, index) in filteredPatients" :key="patient.id">
+                    <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
+                    <td>{{ patient.name || '-' }}</td>
+                    <td>{{ patient.nik || '-' }}</td>
+                    <td>{{ patient.bpjs_number || '-' }}</td> <td>{{ patient.gender === "male" ? "Laki-laki" : "Perempuan" || '-' }}</td>
+                    <td>{{ patient.birth_date || '-' }}</td> <td>{{ patient.age || '-' }}</td>
+                    <td>{{ patient.address || '-' }}</td>
+                    <td>
+                      <button class="action-button select" @click="selectPatient(patient)">
+                        Tambahkan
+                      </button>
+                    </td>
+                  </tr>
+                  <tr v-else>
+                    <td colspan="9" class="no-data-message">Tidak ada data pasien yang sesuai dengan pencarian</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="pagination-container">
+              <div class="flex items-center justify-between bg-white px-4 py-3 sm:px-6">
+                <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                  <div>
+                    <p class="text-sm text-gray-700 flex items-center gap-2">
+                      Baris per halaman:
+                      <div class="dropdown-container">
+                        <select
+                          id="rowsPerPage"
+                          v-model="pageSize"
+                          @change="resetPagination"
+                          class="dropdown-select"
+                        >
+                          <option value="10">10</option>
+                          <option value="25">25</option>
+                          <option value="100">100</option>
+                        </select>
+                      </div>
+                      {{ firstItemIndex + 1 }}-{{ lastItemIndex }} dari
+                      {{ totalPatients }} item
+                    </p>
+                  </div>
+                  <nav class="isolate inline-flex -space-x-px rounded-md shadow-xs" aria-label="Pagination">
                     <button
-                      v-if="item !== 'ellipsis'"
-                      :key="'page-' + index"
-                      :class="[
-                        currentPage === item ? 'active' : '',
-                        'pagination-button',
-                      ]"
-                      @click="goToPage(item)"
+                      class="pagination-button prev"
+                      @click="prevPage"
+                      :disabled="currentPage === 1"
                     >
-                      {{ item }}
+                      <font-awesome-icon :icon="['fas', 'chevron-left']" />
                     </button>
-                    <div
-                      v-else
-                      :key="'ellipsis-' + index"
-                      class="pagination-ellipsis"
+                    <template v-for="(item, index) in paginationItems">
+                      <button
+                        v-if="item !== 'ellipsis'"
+                        :key="'page-' + index"
+                        :class="[
+                          currentPage === item ? 'active' : '',
+                          'pagination-button',
+                        ]"
+                        @click="goToPage(item)"
+                      >
+                        {{ item }}
+                      </button>
+                      <div
+                        v-else
+                        :key="'ellipsis-' + index"
+                        class="pagination-ellipsis"
+                      >
+                        ...
+                      </div>
+                    </template>
+                    <button
+                      class="pagination-button next"
+                      @click="nextPage"
+                      :disabled="currentPage === totalPages"
                     >
-                      ...
-                    </div>
-                  </template>
-                  <!-- Tombol Next -->
-                  <button
-                    class="pagination-button next"
-                    @click="nextPage"
-                    :disabled="currentPage === totalPages"
-                  >
-                    <font-awesome-icon :icon="['fas', 'chevron-right']" />
-                  </button>
-                </nav>
+                      <font-awesome-icon :icon="['fas', 'chevron-right']" />
+                    </button>
+                  </nav>
+                </div>
               </div>
             </div>
+            <div class="modal-footer">
+              <button class="cancel-button" @click="closeModal">Batal</button>
+            </div>
           </div>
-          <div class="modal-footer">
-            <button class="cancel-button" @click="closeModal">Batal</button>
-          </div>
-        </div>
-         <!-- Form Tambah Pasien Baru (Menggunakan Komponen AddNewPatient) -->
-        <div v-else>
-          <AddNewPatientModal
-            :show="showNewPatientForm" 
-            @close="showNewPatientForm = false"
-            @submit="handleNewPatientSubmit"
-          />
         </div>
       </div>
     </div>
+    
+    <AddNewPatientModal
+      v-else
+      :show="showNewPatientForm"
+      @close="showNewPatientForm = false"
+      @patient-created="handleNewPatientCreated"
+    />
   </div>
 </template>
 
@@ -192,35 +174,23 @@ export default {
   },
   data() {
     return {
-      patients: [], 
+      patients: [],
       searchPatientQuery: "",
-      showNewPatientForm: false, // Untuk <AddNewPatientModal> yang terpisah
-      isLoading: false, 
+      showNewPatientForm: false,
+      isLoading: false,
       currentPage: 1,
       pageSize: 10,
       totalPatients: 0,
       totalPages: 0,
-      formData: { // Data untuk form internal
-        id: null,
-        name: "",
-        nik: "",
-        bpjs: "",
-        gender: "",
-        dob: "",
-        age: "",
-        address: "",
-      },
     };
   },
   computed: {
     firstItemIndex() {
+      if (this.totalPatients === 0) return -1;
       return (this.currentPage - 1) * this.pageSize;
     },
     lastItemIndex() {
       return Math.min(this.currentPage * this.pageSize, this.totalPatients);
-    },
-    paginatedPatients() {
-      return this.filteredPatients;
     },
     filteredPatients() {
       return this.patients;
@@ -230,35 +200,31 @@ export default {
       const totalPages = this.totalPages;
       const currentPage = this.currentPage;
 
-      // For 7 or fewer pages, show all
       if (totalPages <= 7) {
         for (let i = 1; i <= totalPages; i++) {
           result.push(i);
         }
         return result;
       }
-      // Always show first page
       result.push(1);
 
-    // Case 1: Current page is near the beginning
-    if (currentPage <= 4) {
-      for (let i = 2; i <= 5; i++) {
-        result.push(i);
+      if (currentPage <= 4) {
+        for (let i = 2; i <= 5; i++) {
+          result.push(i);
+        }
+        result.push('ellipsis');
+        result.push(totalPages);
+        return result;
       }
-      result.push('ellipsis');
-      result.push(totalPages);
-      return result;
-    }
-    // Case 2: Current page is near the end
-    if (currentPage >= totalPages - 3) {
+      if (currentPage >= totalPages - 3) {
         result.push('ellipsis');
         for (let i = totalPages - 4; i < totalPages; i++) {
           result.push(i);
         }
+        result.push(totalPages); // Add the last page
         return result;
       }
 
-      // Case 3: Current page is in the middle
       result.push('ellipsis');
       result.push(currentPage - 1);
       result.push(currentPage);
@@ -293,9 +259,9 @@ export default {
       this.fetchPatients();
     },
     async fetchPatients(page = this.currentPage) {
-      this.isLoading = true; // Aktifkan loading
+      this.isLoading = true;
       try {
-        const token = localStorage.getItem("token"); // Ambil token dari localStorage
+        const token = localStorage.getItem("token");
         if (!token) {
           console.error("Token tidak ditemukan");
           return;
@@ -303,14 +269,17 @@ export default {
         const response = await axios.get("http://localhost:8000/api/puskesmas/patients", {
           params:{
             page: page,
-            per_page: this. pageSize,
+            per_page: this.pageSize,
             search: this.searchPatientQuery || undefined,
+            // Add a parameter to exclude patients already in the current year's list
+            exclude_year: this.selectedYear,
+            exclude_type: this.examinationType,
           },
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
-        // Validasi struktur respons API
+        
         if (!response.data || !response.data.meta) {
           console.error("Invalid API response structure:", response.data);
           alert("Terjadi kesalahan: Struktur respons API tidak sesuai.");
@@ -318,17 +287,13 @@ export default {
         }
         
         const { data, meta } = response.data;
-        // Proses respons API
-        this.patients = typeof data === 'object' && !Array.isArray(data) 
-          ? Object.values(data) 
-          : data;
-          
-        // Fix the meta data processing as well
-        this.totalPatients = Array.isArray(meta.total) ? meta.total[0] : meta.total;
-        this.pageSize = Array.isArray(meta.per_page) ? meta.per_page[0] : meta.per_page;
-        this.currentPage = Array.isArray(meta.current_page) ? meta.current_page[0] : meta.current_page;
-        this.totalPages = Array.isArray(meta.last_page) ? meta.last_page[0] : meta.last_page;
-        this.links = meta.links;
+        this.patients = Array.isArray(data) ? data : Object.values(data || {});
+        
+        this.totalPatients = parseInt(meta.total) || 0;
+        this.pageSize = parseInt(meta.per_page) || 10;
+        this.currentPage = parseInt(meta.current_page) || 1;
+        this.totalPages = parseInt(meta.last_page) || 0;
+
       } catch (error) {
         Swal.fire({
           title: "Error!",
@@ -343,43 +308,28 @@ export default {
       this.$emit("close");
       this.resetForm();
     },
-    handleNewPatientSubmit(patientData) {
-      // Proses data pasien baru yang diterima dari AddNewPatientModal
-      console.log("Data pasien baru diterima:", patientData);
-      
-      // Bisa tambahkan pasien baru ke daftar atau langsung kirim ke parent
-      this.$emit("submit", patientData);
-      
-      // Tutup modal dan reset form
-      this.showNewPatientForm = false;
-      this.closeModal();
+    // FIX: This handler is triggered AFTER a new patient is successfully created and saved in AddNewPatientModal.
+    handleNewPatientCreated(newlyCreatedPatient) {
+      // The goal is to add this newly created patient to the examination list for the current year.
+      // So, we'll call `selectPatient` with the data of the new patient.
+      console.log("Pasien baru berhasil dibuat, sekarang menambahkannya ke tahun pemeriksaan...", newlyCreatedPatient);
+      this.selectPatient(newlyCreatedPatient);
     },
     async selectPatient(patient) {
       try {
-        // Validasi selectedYear
         if (!this.selectedYear) {
           console.error("Selected year is missing or invalid.");
-          Swal.fire({
-            icon: "error",
-            title: "Kesalahan",
-            text: "Tahun pemeriksaan tidak valid. Silakan pilih tahun yang sesuai.",
-          });
+          Swal.fire("Kesalahan", "Tahun pemeriksaan tidak valid. Silakan pilih tahun yang sesuai.", "error");
           return;
         }
 
-        // Convert selectedYear to a number
         const yearAsNumber = parseInt(this.selectedYear, 10);
         if (isNaN(yearAsNumber)) {
           console.error("Invalid year format:", this.selectedYear);
-          Swal.fire({
-            icon: "error",
-            title: "Kesalahan",
-            text: "Format tahun tidak valid. Harap periksa input.",
-          });
+          Swal.fire("Kesalahan", "Format tahun tidak valid. Harap periksa input.", "error");
           return;
         }
-
-        // Tampilkan dialog konfirmasi dengan SweetAlert2
+        
         const confirmation = await Swal.fire({
           title: "Konfirmasi",
           html: `Apakah Anda yakin akan menambahkan <strong>${patient.name}</strong> ke data pasien Diabetes Mellitus tahun <strong>${this.selectedYear}</strong>?`,
@@ -389,32 +339,21 @@ export default {
           cancelButtonText: "Batal",
         });
 
-        // Jika pengguna membatalkan, hentikan proses
         if (!confirmation.isConfirmed) {
           return;
         }
 
-        // Buat payload untuk API
         const payload = {
-          year: yearAsNumber, // Ensure year is a number
+          year: yearAsNumber,
           examination_type: this.examinationType,
         };
 
-        console.log("Payload being sent:", payload); // Debugging: Log the payload
-
-        // Ambil token dari localStorage
         const token = localStorage.getItem("token");
         if (!token) {
-          console.error("Token tidak ditemukan");
-          Swal.fire({
-            icon: "error",
-            title: "Sesi Berakhir",
-            text: "Silakan login kembali.",
-          });
+          Swal.fire("Sesi Berakhir", "Silakan login kembali.", "error");
           return;
         }
 
-        // Kirim data ke API
         const response = await axios.post(
           `http://localhost:8000/api/puskesmas/patients/${patient.id}/examination-year`,
           payload,
@@ -425,55 +364,32 @@ export default {
           }
         );
 
-        console.log("API Response:", response.data);
-
-        // Validasi respons API
         if (!response.data || !response.data.message) {
-          console.error("Invalid API response structure:", response.data);
-          Swal.fire({
-            icon: "error",
-            title: "Kesalahan",
-            text: "Struktur respons API tidak sesuai.",
-          });
+          Swal.fire("Kesalahan", "Struktur respons API tidak sesuai.", "error");
           return;
         }
 
-        // Tampilkan notifikasi sukses menggunakan SweetAlert
-        Swal.fire({
-          icon: "success",
-          title: "Berhasil!",
-          text: "Data pasien berhasil ditambahkan!",
-        });
+        Swal.fire("Berhasil!", "Data pasien berhasil ditambahkan!", "success");
 
-        // Emit event ke parent component
+        // Emit event to parent (DiabetesMellitus.vue) to refresh its list
         this.$emit("submit", patient);
 
-        // Tutup modal
+        // Close the entire modal component
         this.closeModal();
+
       } catch (error) {
         console.error("Error adding examination year:", error.response?.data || error.message);
-
-        // Tampilkan notifikasi gagal menggunakan SweetAlert
-        Swal.fire({
-          icon: "error",
-          title: "Kesalahan",
-          text: "Gagal menambahkan tahun pemeriksaan. Silakan coba lagi.",
-        });
+        let errorMessage = "Gagal menambahkan tahun pemeriksaan.";
+        if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        }
+        Swal.fire("Kesalahan", errorMessage, "error");
       }
     },
     resetForm() {
-      this.formData = {
-        id: null,
-        name: "",
-        nik: "",
-        bpjs: "",
-        gender: "",
-        dob: "",
-        age: "",
-        address: "",
-      };
       this.showNewPatientForm = false;
       this.searchPatientQuery = "";
+      this.currentPage = 1;
     },
   },
   watch: {
@@ -484,21 +400,21 @@ export default {
       immediate: true,
       handler(newVal) {
         if (newVal) {
-          this.fetchPatients(this.currentPage);
+          // Reset state every time the modal is opened
           this.showNewPatientForm = false;
+          this.searchPatientQuery = "";
+          this.currentPage = 1;
+          this.fetchPatients(1);
         }
       }
     }
   },
-  created() {
-    if (this.show) {
-      this.fetchPatients(); // Muat data pasien saat komponen dibuat
-    }
-  },
+  // The 'created' hook is no longer necessary because the 'show' watcher with `immediate: true` handles the initial data fetch.
 };
 </script>
 
 <style scoped>
+/* Styling Anda tidak perlu diubah, jadi saya akan salin kembali */
 /* Variables for consistent colors */
 :root {
   --primary-50: #ECFDF5;
@@ -882,6 +798,28 @@ export default {
   cursor: pointer;
   transition: all 0.3s ease;
 }
+.dropdown-container {
+  position: relative;
+  width: 80px;
+}
+
+.dropdown-select {
+  width: 100%;
+  height: 42px;
+  padding: 8px;
+  border: 1px solid #eaeaea;
+  border-radius: 10px;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  color: #000000;
+  background: #ffffff;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  outline: none;
+}
+
 
 .pagination-button:hover {
   color: var(--primary-500);
