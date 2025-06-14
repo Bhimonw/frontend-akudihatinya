@@ -154,7 +154,7 @@
               </tr>
               <tr v-else v-for="(exam, index) in paginatedExams" :key="exam.id">
                 <td>{{ firstItemIndex + index + 1 }}</td>
-                <td>{{ exam.examination_date }}</td>
+                <td>{{ formatDate(exam.examination_date) }}</td>
                 <td>{{ exam.systolic || '-' }}</td>
                 <td>{{ exam.diastolic || '-' }}</td>
                 <td>
@@ -361,6 +361,25 @@ export default {
     },
   },
   methods: {
+    formatDate(dateString) {
+      if (!dateString) {
+        return '-'; // Kembalikan strip jika tanggal tidak ada
+      }
+
+      // Daftar nama bulan dalam Bahasa Indonesia
+      const months = [
+        "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+      ];
+
+      const date = new Date(dateString);
+      const day = date.getDate();
+      const monthName = months[date.getMonth()];
+      const year = date.getFullYear();
+
+      // Gabungkan menjadi format yang diinginkan
+      return `${day} ${monthName} ${year}`;
+    },
     async fetchPatientDetails() {
       this.isLoading = true;
       try {
