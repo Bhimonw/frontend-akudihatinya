@@ -500,8 +500,9 @@ export default {
         const response = await apiClient.get(apiUrl, {
           params: {
             year: this.selectedYear,
-            type: programType, // Parameter di API admin adalah 'type' untuk jenis penyakit
+            disease_type: programType, // Parameter di API admin adalah 'type' untuk jenis penyakit
             format: format,
+            table_type: "puskesmas",
           },
           responseType: 'blob', // Penting untuk menerima file
         });

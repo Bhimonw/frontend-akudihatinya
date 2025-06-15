@@ -202,14 +202,18 @@
                   <td>{{ exam.systolic || '-' }}</td>
                   <td>{{ exam.diastolic || '-' }}</td>
                 </template>
-                <td>
+               <td class="action-cell">
+                <div class="action-buttons-container">
                   <button class="action-button edit" @click="openEditExamModal(exam)">
                     <font-awesome-icon :icon="['fas', 'edit']" />
+                    <span class="tooltip">Ubah Data</span>
                   </button>
                   <button class="action-button delete" @click="deleteExam(exam.id)">
                     <font-awesome-icon :icon="['fas', 'trash']" />
+                    <span class="tooltip">Hapus Data</span>
                   </button>
-                </td>
+                </div>
+              </td>
               </tr>
             </tbody>
              <tbody v-else>
@@ -1485,30 +1489,105 @@ export default {
 
 
 
-.action-button.edit, /* For table actions */
-.action-button.delete { /* For table actions */
+/* Tambahkan atau Modifikasi CSS berikut */
+
+/* Styling untuk sel yang berisi tombol aksi */
+.data-table .action-cell {
+  padding: 12px 16px; /* Sedikit adjust padding untuk ruang vertikal */
+}
+
+/* Kontainer untuk mengelompokkan tombol aksi */
+.action-buttons-container {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Pusatkan tombol di dalam sel */
+  gap: 12px; /* Jarak antar tombol */
+}
+
+/* Refinement pada styling tombol aksi umum di dalam tabel */
+.action-button.edit,
+.action-button.delete {
+  position: relative; /* Diperlukan untuk positioning tooltip */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
   padding: 8px;
-  border-radius: 4px;
+  border-radius: 8px; /* Lebih bulat */
   cursor: pointer;
-  transition: background-color 0.3s ease;
-  border: none;
+  transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+  border: 1px solid transparent;
   background: transparent;
 }
 
+/* Styling spesifik untuk tombol Edit */
 .action-button.edit {
-  color: var(--primary-500);
+  color: var(--primary-500, #3b82f6); /* Warna biru untuk aksi positif/netral */
+  border-color: #dbeafe; /* Border biru muda */
+  background-color: #eff6ff; /* Background biru sangat muda */
 }
 
-.action-button.delete {
-  color: #e53935;
-}
-
+/* Hover state untuk tombol Edit */
 .action-button.edit:hover {
-  background-color: rgba(0, 123, 255, 0.1);
+  background-color: #dbeafe; /* Warna background lebih gelap saat hover */
+  color: var(--primary-700, #1d4ed8);
+  transform: translateY(-2px); /* Efek sedikit terangkat */
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2);
 }
 
+/* Styling spesifik untuk tombol Delete */
+.action-button.delete {
+  color: #ef4444; /* Warna merah untuk aksi destruktif */
+  border-color: #fee2e2; /* Border merah muda */
+  background-color: #fef2f2; /* Background merah sangat muda */
+}
+
+/* Hover state untuk tombol Delete */
 .action-button.delete:hover {
-  background-color: rgba(229, 57, 53, 0.1);
+  background-color: #fee2e2; /* Warna background lebih gelap saat hover */
+  color: #b91c1c;
+  transform: translateY(-2px); /* Efek sedikit terangkat */
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.2);
+}
+
+/* Styling untuk Tooltip */
+.action-button .tooltip {
+  visibility: hidden; /* Sembunyikan secara default */
+  width: max-content; /* Lebar tooltip sesuai konten */
+  background-color: #334155; /* Warna latar belakang tooltip (abu-abu gelap) */
+  color: #fff; /* Teks putih */
+  text-align: center;
+  border-radius: 6px;
+  padding: 6px 10px;
+  position: absolute;
+  z-index: 10;
+  bottom: 125%; /* Posisi di atas tombol */
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0; /* Mulai dengan transparan */
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  font-size: 12px;
+  font-weight: 500;
+  pointer-events: none; /* Tooltip tidak bisa di-klik */
+}
+
+/* Arrow untuk Tooltip */
+.action-button .tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #334155 transparent transparent transparent;
+}
+
+/* Tampilkan Tooltip saat tombol di-hover */
+.action-button:hover .tooltip {
+  visibility: visible;
+  opacity: 1;
 }
 
 .table-container::-webkit-scrollbar {

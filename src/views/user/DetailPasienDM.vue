@@ -162,12 +162,15 @@
                 <td>{{ exam.examination_results.gd2jpp || '-' }}</td>
                 <td>{{ exam.examination_results.hba1c || '-' }}</td>
                 <td>
-                  <button class="action-button edit" @click="openEditExamModal(exam)">
-                    <font-awesome-icon :icon="['fas', 'edit']" />
-                  </button>
-                  <button class="action-button delete" @click="deleteExam(exam.id)">
-                    <font-awesome-icon :icon="['fas', 'trash']" />
-                  </button>
+                  <div class="action-buttons-container">
+                    <button class="action-button edit" @click="openEditExamModal(exam)">
+                      <font-awesome-icon :icon="['fas', 'edit']" />
+                      Ubah
+                    </button>
+                    <button class="action-button delete" @click="deleteExam(exam.id)">
+                      <font-awesome-icon :icon="['fas', 'trash']" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -1238,47 +1241,54 @@ export default {
   border-bottom: none; 
 }
 
+.action-buttons-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
 
-
-.action-button.detail { /* Not used in this specific table, but keeping for general consistency if used elsewhere */
-  padding: 8px 16px; 
-  border: 1px solid var(--primary-300);
+.action-button {
+  padding: 8px 16px;
   border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  background: var(--secondary-100); 
-  color: var(--primary-500);
-  transition: background-color 0.3s ease, transform 0.3s ease;
-}
-.action-button.detail:hover {
-  background: var(--secondary-300); 
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.action-button.edit, /* For table actions */
-.action-button.delete { /* For table actions */
-  padding: 8px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  border: none;
-  background: transparent;
-}
-
+/* Style untuk tombol utama (Ubah), menggunakan class .detail */
 .action-button.edit {
+  border: 1px solid var(--primary-300);
+  background: var(--secondary-100);
   color: var(--primary-500);
-}
-
-.action-button.delete {
-  color: #e53935;
 }
 
 .action-button.edit:hover {
-  background-color: rgba(0, 123, 255, 0.1);
+  background: var(--secondary-300);
+  transform: scale(1.05);
+}
+
+/* Style untuk tombol Hapus */
+.action-button.delete {
+  border: 1px solid #e53935;
+  background: white;
+  color: #e53935;
+  height: 36px;
+  width: 36px;
+  padding: 8px 12px; /* Sesuaikan padding jika perlu */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .action-button.delete:hover {
-  background-color: rgba(229, 57, 53, 0.1);
+  background: #ffebee;
+  color: #c62828;
+  transform: scale(1.05);
 }
 
 .table-container::-webkit-scrollbar {

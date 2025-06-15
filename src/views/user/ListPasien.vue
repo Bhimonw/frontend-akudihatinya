@@ -339,8 +339,6 @@ export default {
 </script>
 
 <style scoped>
-/* ... (Your existing styles for ListPasien.vue remain unchanged) ... */
-/* Root Styles */
 .diabetes-mellitus {
   display: flex;
   justify-content: center;
