@@ -4,7 +4,7 @@
       <div class="left-section">
         <div class="app-info">
           <div class="logo-container">
-            <div class="logo-circle"></div>
+            <img :src="logoImageSrc" alt="Logo Aplikasi" class="logo-image" />
           </div>
           <div class="app-text">
             <h1 class="app-title">akudihatinya</h1>
@@ -134,8 +134,10 @@
 <script>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useAuthStore } from '../../stores/authStore.js'; // Pastikan path ini benar
+import { useAuthStore } from '../../stores/authStore.js';
 import Swal from 'sweetalert2';
+// 1. IMPORT GAMBAR LOGO (pastikan path ini benar sesuai struktur proyek Anda)
+import logoImage from '../../assets/ptm-icon.jpg';
 
 export default {
   name: 'Login',
@@ -209,23 +211,19 @@ export default {
 
       } catch (error) {
         resetErrors();
-        // Prioritas 1: Cek error.response.data (standar Axios error)
         if (error?.response?.data) {
           const apiError = error.response.data;
           console.log('API Error Response:', apiError);
           
-          // Jika response sesuai format yang diharapkan
           if (apiError.success === false && apiError.errors) {
-            errors.value.general = apiError.errors; // "Username atau password salah"
+            errors.value.general = apiError.errors;
             if (apiError.message) {
-              errors.value.details = apiError.message; // "Login gagal"  
+              errors.value.details = apiError.message;
             }
           }
-          // Fallback jika struktur berbeda tapi ada message
           else if (apiError.message) {
             errors.value.general = apiError.message;
           }
-          // Jika apiError adalah string
           else if (typeof apiError === 'string') {
             errors.value.general = apiError;
           }
@@ -234,27 +232,22 @@ export default {
           }
         }
         
-        // Prioritas 2: Jika error object langsung berisi data response API
-        // (kemungkinan authStore throw langsung response data)
         else if (error?.success === false && error?.errors) {
           console.log('Direct API Error Object:', error);
-          errors.value.general = error.errors; // "Username atau password salah"
+          errors.value.general = error.errors;
           if (error.message) {
-            errors.value.details = error.message; // "Login gagal"
+            errors.value.details = error.message;
           }
         }
         
-        // Prioritas 3: Network error (tidak ada response dari server)
         else if (error?.request) {
           console.log('Network Error:', error.request);
           errors.value.general = 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.';
         }
         
-        // Prioritas 4: Error dengan message property
         else if (error?.message) {
           console.log('Generic Error:', error.message);
           
-          // Cek apakah ini network timeout atau connection error
           if (error.message.includes('timeout') || error.message.includes('Network Error')) {
             errors.value.general = 'Koneksi timeout. Silakan coba lagi.';
           } else {
@@ -262,7 +255,6 @@ export default {
           }
         }
         
-        // Prioritas 5: Fallback untuk error tidak dikenal
         else {
           console.log('Unknown Error Type:', error);
           errors.value.general = 'Terjadi kesalahan yang tidak diketahui. Silakan coba lagi.';
@@ -283,6 +275,8 @@ export default {
       errors,
       currentYear,
       handleLogin,
+      // 2. EXPOSE SUMBER GAMBAR KE TEMPLATE
+      logoImageSrc: logoImage,
     };
   },
 };
@@ -310,7 +304,6 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   z-index: 0;
 }
 
@@ -396,13 +389,15 @@ export default {
   background: white;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
   flex-shrink: 0;
+  /* 3. TAMBAHKAN OVERFLOW HIDDEN AGAR GAMBAR TERPOTONG SESUAI BENTUK CONTAINER */
+  overflow: hidden; 
 }
 
-.logo-circle {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--primary-500);
+/* 3. HAPUS .logo-circle DAN GANTI DENGAN STYLE UNTUK .logo-image */
+.logo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Memastikan gambar memenuhi container */
 }
 
 .app-title {

@@ -53,7 +53,7 @@
               <td>{{ patient.nik || '-'}}</td>
               <td>{{ patient.bpjs_number || '-'}}</td>
               <td>{{ patient.gender === "male" ? "Laki-laki" : "Perempuan" || '-'}}</td>
-              <td>{{ patient.birth_date || '-'}}</td>
+              <td>{{ formatDate(patient.birth_date) || '-'}}</td>
               <td>{{ patient.age || '-'}}</td>
               <td>{{ patient.address || '-'}}</td>
               <td>
@@ -221,6 +221,30 @@ export default {
     },
   },
   methods: {
+    formatDate(dateString) {
+      // Jika tanggal kosong atau tidak valid, kembalikan strip (-)
+      if (!dateString) {
+        return '-';
+      }
+
+      const date = new Date(dateString);
+      // Cek apakah tanggal yang dihasilkan valid
+      if (isNaN(date.getTime())) {
+          return dateString; // Kembalikan string asli jika formatnya tidak dikenali
+      }
+
+      // Daftar nama bulan dalam Bahasa Indonesia
+      const monthNames = [
+        "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+      ];
+
+      const day = date.getDate();
+      const monthIndex = date.getMonth();
+      const year = date.getFullYear();
+
+      return `${day} ${monthNames[monthIndex]} ${year}`;
+    },
     async fetchPatients() {
       // ... (fetchPatients logic remains the same as previous version) ...
       this.isLoading = true;

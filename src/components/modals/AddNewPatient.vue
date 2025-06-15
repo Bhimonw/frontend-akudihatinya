@@ -22,15 +22,7 @@
                   <label for="name">Nama Pasien <span class="required">*</span></label>
                   <div class="input-wrapper">
                     <font-awesome-icon :icon="['fas', 'user']" class="input-icon" />
-                    <input
-                      type="text"
-                      id="name"
-                      v-model="form.name"
-                      @input="clearError('name')"
-                      class="form-input"
-                      :class="{ 'input-error': errors.name }"
-                      placeholder="Masukkan nama lengkap"
-                    />
+                    <input type="text" id="name" v-model="form.name" @input="clearError('name')" class="form-input" :class="{ 'input-error': errors.name }" placeholder="Masukkan nama lengkap" />
                   </div>
                   <transition name="fade">
                     <p v-if="errors.name" class="error-message">
@@ -39,20 +31,11 @@
                     </p>
                   </transition>
                 </div>
-
                 <div class="form-group">
                   <label for="nik">NIK</label>
                   <div class="input-wrapper">
                     <font-awesome-icon :icon="['fas', 'id-card']" class="input-icon" />
-                    <input
-                      type="text"
-                      id="nik"
-                      v-model="form.nik"
-                      @input="handleNikInput"
-                      class="form-input"
-                      placeholder="16 digit NIK"
-                      maxlength="16"
-                    />
+                    <input type="text" id="nik" v-model="form.nik" @input="handleNikInput" class="form-input" placeholder="16 digit NIK" maxlength="16" />
                   </div>
                   <small class="helper-text">Kosongkan jika tidak ada</small>
                 </div>
@@ -63,16 +46,7 @@
                   <label for="bpjs">Nomor BPJS</label>
                   <div class="input-wrapper">
                     <font-awesome-icon :icon="['fas', 'hospital']" class="input-icon" />
-                    <input
-                      type="text"
-                      id="bpjs"
-                      v-model="form.bpjs"
-                      @input="handleBpjsInput"
-                      class="form-input"
-                      :class="{ 'input-error': errors.bpjs }"
-                      placeholder="13 digit nomor BPJS"
-                      max="13"
-                    />
+                    <input type="text" id="bpjs" v-model="form.bpjs" @input="handleBpjsInput" class="form-input" :class="{ 'input-error': errors.bpjs }" placeholder="13 digit nomor BPJS" maxlength="13" />
                   </div>
                   <transition name="fade">
                     <p v-if="errors.bpjs" class="error-message">
@@ -82,18 +56,11 @@
                     <small v-else class="helper-text">Kosongkan jika tidak ada</small>
                   </transition>
                 </div>
-
                 <div class="form-group">
                   <label for="gender">Jenis Kelamin <span class="required">*</span></label>
                   <div class="input-wrapper">
                     <font-awesome-icon :icon="['fas', 'venus-mars']" class="input-icon" />
-                    <select
-                      id="gender"
-                      v-model="form.gender"
-                      @input="clearError('gender')"
-                      class="form-select"
-                      :class="{ 'input-error': errors.gender }"
-                    >
+                    <select id="gender" v-model="form.gender" @input="clearError('gender')" class="form-select" :class="{ 'input-error': errors.gender }">
                       <option value="" disabled selected>Pilih Jenis Kelamin</option>
                       <option value="male">Laki-laki</option>
                       <option value="female">Perempuan</option>
@@ -120,34 +87,27 @@
                   <label for="dob">Tanggal Lahir</label>
                   <div class="input-wrapper">
                     <font-awesome-icon :icon="['fas', 'calendar']" class="input-icon" />
-                    <input
-                      type="text"
+                    <VueDatePicker
                       id="dob"
                       v-model="form.dob"
-                      ref="dobInput" 
-                      class="form-input date-input"
+                      locale="id"
+                      :enable-time-picker="false"
+                      :max-date="new Date()"
                       placeholder="Pilih tanggal lahir"
-                      readonly />
-                    </div>
-                  <small class="helper-text">Format: DD/MM/YYYY</small>
+                      :format="formatDateForPicker"
+                      model-type="yyyy-MM-dd"
+                      auto-apply
+                      :teleport="true"
+                      @update:model-value="calculateAge"
+                    />
                   </div>
-
+                  <small class="helper-text">Kosongkan untuk mengisi umur manual</small>
+                </div>
                 <div class="form-group">
                   <label for="age">Umur <span class="required">*</span></label>
                   <div class="input-wrapper">
                     <font-awesome-icon :icon="['fas', 'birthday-cake']" class="input-icon" />
-                    <input
-                      type="number"
-                      id="age"
-                      v-model="form.age"
-                      @input="clearError('age')"
-                      class="form-input"
-                      :class="{ 'input-error': errors.age }"
-                      :disabled="isAgeDisabled"
-                      placeholder="Usia pasien"
-                      min="0"
-                      max="150"
-                    />
+                    <input type="number" id="age" v-model="form.age" @input="clearError('age')" class="form-input" :class="{ 'input-error': errors.age }" :disabled="isAgeDisabled" placeholder="Usia pasien" min="0" max="150" />
                     <span v-if="isAgeDisabled" class="badge-auto">Auto</span>
                   </div>
                   <transition name="fade">
@@ -165,20 +125,11 @@
                 <font-awesome-icon :icon="['fas', 'map-marker-alt']" class="section-icon" />
                 <h3>Alamat</h3>
               </div>
-
               <div class="form-group full-width">
                 <label for="address">Alamat Lengkap <span class="required">*</span></label>
                 <div class="input-wrapper textarea-wrapper">
                   <font-awesome-icon :icon="['fas', 'home']" class="input-icon textarea-icon" />
-                  <textarea
-                    id="address"
-                    v-model="form.address"
-                    @input="clearError('address')"
-                    class="form-textarea"
-                    :class="{ 'input-error': errors.address }"
-                    placeholder="Masukkan alamat lengkap pasien"
-                    rows="3"
-                  ></textarea>
+                  <textarea id="address" v-model="form.address" @input="clearError('address')" class="form-textarea" :class="{ 'input-error': errors.address }" placeholder="Masukkan alamat lengkap pasien" rows="3"></textarea>
                 </div>
                 <transition name="fade">
                   <p v-if="errors.address" class="error-message">
@@ -192,11 +143,7 @@
               <button type="button" class="btn-cancel" @click="closeModal" :disabled="isSubmitting">
                 <font-awesome-icon :icon="['fas', 'times']" /> Batal
               </button>
-              <button
-                type="submit"
-                class="btn-save"
-                :disabled="isSubmitting"
-              >
+              <button type="submit" class="btn-save" :disabled="isSubmitting">
                 <span v-if="isSubmitting">
                   <font-awesome-icon :icon="['fas', 'spinner']" spin /> Menyimpan...
                 </span>
@@ -215,12 +162,15 @@
 <script>
 import Swal from 'sweetalert2';
 import axios from 'axios';
-import flatpickr from 'flatpickr'; // Import flatpickr
-import 'flatpickr/dist/flatpickr.min.css'; // Import flatpickr styles
-import { Indonesian } from 'flatpickr/dist/l10n/id.js'; // Import Indonesian locale
+import VueDatePicker from '@vuepic/vue-datepicker';
+import '@vuepic/vue-datepicker/dist/main.css';
 
 export default {
   name: 'AddNewPatientModal',
+  // PERUBAHAN: Daftarkan komponen VueDatePicker
+  components: {
+    VueDatePicker,
+  },
   props: {
     show: Boolean,
   },
@@ -231,7 +181,7 @@ export default {
         nik: "",
         bpjs: "",
         gender: "",
-        dob: "", // Akan menyimpan format YYYY-MM-DD untuk backend dan kalkulasi
+        dob: "",
         age: "",
         address: ""
       },
@@ -244,55 +194,27 @@ export default {
       },
       isAgeDisabled: false,
       isSubmitting: false,
-      maxDate: new Date().toISOString().split('T')[0],
-      flatpickrInstance: null, // Untuk menyimpan instance flatpickr
+      // PERUBAHAN: Hapus flatpickrConfig
     };
   },
-  mounted() {
-    this.initializeFlatpickr();
-  },
-  beforeUnmount() {
-    // Hancurkan instance flatpickr saat komponen dihancurkan
-    if (this.flatpickrInstance) {
-      this.flatpickrInstance.destroy();
-    }
-  },
+  // PERUBAHAN: mounted dan beforeUnmount tidak lagi diperlukan
   methods: {
+    formatDateForPicker(date) {
+          const day = date.getDate();
+          const month = date.toLocaleString('id-ID', { month: 'long' });
+          const year = date.getFullYear();
+          return `${day} ${month} ${year}`;
+      },
     handleBpjsInput(event) {
         this.form.bpjs = event.target.value.replace(/\D/g, '');
-        this.clearError('bpjs');
+        if(this.form.bpjs.length === 13) {
+            this.clearError('bpjs');
+        }
     },
     handleNikInput(event) {
         this.form.nik = event.target.value.replace(/\D/g, '');
     },
-    initializeFlatpickr() {
-      if (this.$refs.dobInput) {
-        this.flatpickrInstance = flatpickr(this.$refs.dobInput, {
-          locale: Indonesian, // Set bahasa Indonesia
-          altInput: true, // Membuat input tambahan yang terlihat user dengan format berbeda
-          altFormat: "d F Y", // Format tampilan: 07 Juni 2024
-          dateFormat: "Y-m-d", // Format nilai aktual (untuk v-model/data dan backend)
-          maxDate: this.maxDate,
-          allowInput: false, // Mencegah input manual di field, user harus memilih dari kalender
-          onChange: (selectedDates, dateStr, instance) => {
-            // dateStr adalah tanggal dalam format "dateFormat" (Y-m-d)
-            this.form.dob = dateStr;
-            this.calculateAge(); // Panggil calculateAge setelah tanggal berubah
-            this.clearError('age'); // Bersihkan error umur jika tanggal dipilih
-          },
-           onClose: (selectedDates, dateStr, instance) => {
-            // Jika input dibersihkan (misalnya, jika allowInput true dan user menghapus)
-            // atau jika plugin clear button digunakan (tidak ada secara default)
-            if (selectedDates.length === 0) {
-              this.form.dob = "";
-              this.calculateAge(); // Akan mereset umur dan mengaktifkan input umur
-            }
-          }
-        });
-      }
-    },
     validateForm() {
-      // ... (validateForm logic remains the same as previous version) ...
       let isValid = true;
       Object.keys(this.errors).forEach(key => {
         this.errors[key] = false;
@@ -310,7 +232,6 @@ export default {
         if (!this.errors.name) this.scrollToError('gender');
       }
 
-      // Validasi umur masih diperlukan, karena tanggal lahir tidak wajib
       if (!this.form.age && this.form.age !== 0) {
         this.errors.age = true;
         isValid = false;
@@ -334,31 +255,32 @@ export default {
       }
 
       if (this.form.bpjs && !/^\d{13}$/.test(this.form.bpjs)) {
-          this.errors.bpjs = true; // Set status error untuk BPJS
+          this.errors.bpjs = true;
           isValid = false;
-          if (!this.errors.name && !this.errors.gender) this.scrollToError('bpjs');
+          if (!this.errors.name && !this.errors.gender && !this.errors.age && !this.errors.address && !this.errors.nik) this.scrollToError('bpjs');
       }
       return isValid;
     },
 
     scrollToError(fieldId) {
-      // ... (scrollToError logic remains the same) ...
       this.$nextTick(() => {
-        const errorElement = document.getElementById(fieldId);
-        if (errorElement) {
-          errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          if(fieldId !== 'dob') {
-            errorElement.focus();
-          }
+        // PERUBAHAN: Menargetkan komponen VueDatePicker secara spesifik
+        const element = document.getElementById(fieldId);
+        if(fieldId === 'dob' && element) {
+           element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+           // Tidak perlu focus manual karena akan membuka kalender
+        } else if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.focus();
         }
       });
     },
 
     calculateAge() {
-      // Logika calculateAge tetap sama, karena this.form.dob akan berisi 'YYYY-MM-DD'
+      // LOGIC INI TETAP BERJALAN KARENA form.dob TETAP STRING "YYYY-MM-DD"
       if (this.form.dob) {
         const today = new Date();
-        const birthDate = new Date(this.form.dob); // this.form.dob sudah YYYY-MM-DD
+        const birthDate = new Date(this.form.dob);
         let age = today.getFullYear() - birthDate.getFullYear();
         const monthDifference = today.getMonth() - birthDate.getMonth();
         if (
@@ -371,8 +293,8 @@ export default {
         this.isAgeDisabled = true;
         this.clearError('age');
       } else {
-        this.form.age = ""; // Kosongkan umur jika tanggal lahir dikosongkan
-        this.isAgeDisabled = false; // Aktifkan kembali input umur
+        this.form.age = "";
+        this.isAgeDisabled = false;
       }
     },
 
@@ -381,14 +303,9 @@ export default {
         return;
       }
       const result = await Swal.fire({
-        title: 'Konfirmasi',
-        text: 'Apakah Anda yakin akan menyimpan data pasien ini?',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Ya, Simpan',
-        cancelButtonText: 'Batal',
-        confirmButtonColor: '#10B981',
-        cancelButtonColor: '#6B7280',
+        title: 'Konfirmasi', text: 'Apakah Anda yakin akan menyimpan data pasien ini?',
+        icon: 'question', showCancelButton: true, confirmButtonText: 'Ya, Simpan',
+        cancelButtonText: 'Batal', confirmButtonColor: '#10B981', cancelButtonColor: '#6B7280',
       });
 
       if (!result.isConfirmed) {
@@ -403,7 +320,7 @@ export default {
         bpjs_number: this.form.bpjs || null,
         address: this.form.address,
         gender: this.form.gender,
-        birth_date: this.form.dob || null,
+        birth_date: this.form.dob || null, // form.dob sudah "YYYY-MM-DD"
         age: this.form.age ? parseInt(this.form.age) : null,
       };
 
@@ -416,7 +333,7 @@ export default {
         }
 
         const response = await axios.post(
-          "http://localhost:8000/api/puskesmas/patients", // API Endpoint
+          "http://localhost:8000/api/puskesmas/patients",
           patientData,
           {
             headers: {
@@ -427,12 +344,8 @@ export default {
         );
 
         Swal.fire({
-          icon: 'success',
-          title: 'Berhasil!',
-          text: 'Data pasien baru berhasil disimpan.',
-          timer: 2000,
-          timerProgressBar: true,
-          showConfirmButton: false
+          icon: 'success', title: 'Berhasil!', text: 'Data pasien baru berhasil disimpan.',
+          timer: 2000, timerProgressBar: true, showConfirmButton: false
         });
 
         this.$emit('patient-created', response.data.patient);
@@ -448,9 +361,9 @@ export default {
           if (error.response.status === 422 && error.response.data.errors) {
             let errorsArray = [];
             for (const key in error.response.data.errors) {
-              errorsArray.push(`${key}: ${error.response.data.errors[key].join(', ')}`);
+              errorsArray.push(`${error.response.data.errors[key].join(', ')}`);
             }
-            errorMessage += `\n\nDetail:\n${errorsArray.join('\n')}`;
+            errorMessage = errorsArray.join('\n');
           }
         } else {
           console.error("Network/Request Error:", error.message);
@@ -475,24 +388,12 @@ export default {
 
     resetForm() {
       this.form = {
-        name: "",
-        nik: "",
-        bpjs: "",
-        gender: "",
-        dob: "",
-        age: "",
-        address: ""
+        name: "", nik: "", bpjs: "", gender: "",
+        dob: "", age: "", address: ""
       };
-
-      // Reset flatpickr juga jika ada
-      if (this.flatpickrInstance) {
-        this.flatpickrInstance.clear(); // Membersihkan tanggal yang dipilih
-      }
-
       Object.keys(this.errors).forEach(key => {
         this.errors[key] = false;
       });
-
       this.isAgeDisabled = false;
       this.isSubmitting = false;
     }
@@ -500,10 +401,8 @@ export default {
 };
 </script>
 
-
 <style scoped>
-/* ... (Your existing styles for AddNewPatient.vue remain unchanged) ... */
-/* Variables for consistent colors */
+/* ... Gaya CSS Anda tetap sama ... */
 :root {
   --primary-50: #ECFDF5;
   --primary-100: #D1FAE5;
@@ -533,7 +432,32 @@ export default {
   
   --warning-500: #F59E0B;
   
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+}
+:deep(.dp__input) {
+  /* Meniru SEMUA properti dari .form-input agar 100% identik */
+  box-sizing: border-box; /* Ini kunci untuk menyamakan tinggi */
+  width: 100%;
+  padding: 12px 12px 12px 40px;
+  border: 1px solid var(--neutral-300);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  color: var(--neutral-800);
+  background-color: white;
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+:deep(.dp__input:hover) {
+  border-color: var(--primary-300);
+}
+
+:deep(.dp__input:focus) {
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+  outline: none;
 }
 
 /* Modal Backdrop - Improved with animation */
@@ -732,6 +656,7 @@ export default {
   font-size: 16px;
   pointer-events: none;
   transition: color 0.3s ease;
+  z-index: 3; /* Pastikan ikon di atas input flatpickr */
 }
 
 .textarea-wrapper {
@@ -755,6 +680,8 @@ export default {
   transition: all 0.3s ease;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
+
+
 
 .form-input:hover,
 .form-select:hover,
