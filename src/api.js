@@ -1,17 +1,10 @@
 // src/api.js
 import axios from "axios";
-// import { authService } from "./stores/auth.js"; // Ganti dengan store Pinia
-import { useAuthStore } from "./stores/authStore"; // Impor store Pinia
+import { useAuthStore } from "./stores/authStore";
 
 const apiClient = axios.create({
   baseURL: "http://localhost:8000/api",
 });
-
-// Hapus let isRefreshing dan failedQueue jika dikelola oleh authStore
-// let isRefreshing = false;
-// let failedQueue = [];
-
-// const processQueue = (error, token = null) => { ... }; // Pindahkan ke authStore
 
 apiClient.interceptors.request.use(
   config => {

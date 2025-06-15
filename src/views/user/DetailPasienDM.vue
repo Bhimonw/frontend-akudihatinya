@@ -518,6 +518,8 @@ export default {
             cancelButtonColor: '#3085d6',
             confirmButtonText: 'Ya, hapus!',
             cancelButtonText: 'Batal',
+
+            showLoaderOnConfirm: true,
         });
 
         if (!confirmation.isConfirmed) {
@@ -530,7 +532,10 @@ export default {
             await axios.delete(`http://localhost:8000/api/puskesmas/dm-examinations/${id}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            Swal.fire('Berhasil', 'Data pemeriksaan berhasil dihapus.', 'success');
+            await Swal.fire('Berhasil', 'Data pemeriksaan berhasil dihapus.', 'success');
+            if (this.paginatedExams.length === 1 && this.currentPage > 1) {
+                this.currentPage--;
+            }
             this.fetchExaminations(); 
         } catch (error) {
             console.error("Error deleting examination:", error);

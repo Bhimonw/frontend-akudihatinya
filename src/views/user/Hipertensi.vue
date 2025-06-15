@@ -176,7 +176,7 @@
 
 <script>
 import Swal from 'sweetalert2';
-import axios from 'axios';
+import apiClient from "../../api.js";
 import AddPatientModal from "../../components/modals/AddPatientModal.vue";
 
 export default {
@@ -200,7 +200,8 @@ export default {
       totalPatients: 0,
       totalPages: 0,
       links: {},
-      isLoading: false
+      isLoading: false,
+      searchTimeout: null,
     };
   },
   computed: {
@@ -214,7 +215,8 @@ export default {
       return (this.currentPage - 1) * this.pageSize;
     },
     lastItemIndex() {
-      return Math.min(this.firstItemIndex * this.patients.length, this.totalPatients);
+      const currentLast = this.currentPage * this.pageSize;
+      return Math.min(currentLast, this.totalPatients);
     },
     paginationItems() {
       const result = [];
@@ -265,135 +267,88 @@ export default {
   methods: {
     async fetchPatients() {
       this.isLoading = true;
-      
       try {
-        const token = localStorage.getItem("token"); 
-        if (!token) {
-          console.error("Token tidak ditemukan");
-          return;
-        }
-
-        const response = await axios.get("http://localhost:8000/api/puskesmas/patients", {
+        // Gunakan apiClient, hapus header manual
+        const response = await apiClient.get("/puskesmas/patients", {
           params: {
-            disease_type: "ht",
+            disease_type: "ht", // Bedanya di sini
             year: this.selectedYear,
-            search: this.searchQuery,
+            search: this.searchQuery || undefined,
             per_page: this.pageSize,
             page: this.currentPage,
           },
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
         });
 
-        console.log("API Response:", response.data);
-
         if (!response.data || !response.data.meta) {
-          console.error("Invalid API response structure:", response.data);
-          alert("Terjadi kesalahan: Struktur respons API tidak sesuai.");
+          Swal.fire("Error", "Terjadi kesalahan: Struktur respons API tidak sesuai.", "error");
           return;
         }
 
         const { data, meta } = response.data;
+        this.patients = Array.isArray(data) ? data : Object.values(data || {});
+        this.totalPatients = parseInt(meta.total) || 0;
+        this.pageSize = parseInt(meta.per_page) || 10;
+        this.currentPage = parseInt(meta.current_page) || 1;
+        this.totalPages = parseInt(meta.last_page) || 0;
+        this.links = meta.links || {};
 
-        // IMPORTANT: Ensure data is properly converted from object to array
-        this.patients = typeof data === 'object' && !Array.isArray(data) 
-          ? Object.values(data) 
-          : data;
-          
-        // Fix the meta data processing as well
-        this.totalPatients = Array.isArray(meta.total) ? meta.total[0] : meta.total;
-        this.pageSize = Array.isArray(meta.per_page) ? meta.per_page[0] : meta.per_page;
-        this.currentPage = Array.isArray(meta.current_page) ? meta.current_page[0] : meta.current_page;
-        this.totalPages = Array.isArray(meta.last_page) ? meta.last_page[0] : meta.last_page;
-        this.links = meta.links;
-        
-        console.log("Processed patient data:", this.patients);
-        console.log("Total Patients:", this.totalPatients);
-        console.log("Current Page:", this.currentPage, "of", this.totalPages);
       } catch (error) {
-        console.error("Error fetching patients:", error);
-        alert("Terjadi kesalahan saat memuat data pasien.");
+        // Penanganan error konsisten dengan ListPasien.vue
+        if (error.response?.status === 401) {
+          Swal.fire({
+            title: "Session Expired!",
+            text: "Sesi Anda telah berakhir. Silakan login kembali.",
+            icon: "warning",
+          }).then(() => {
+            // authStore.logout() akan menangani redirect
+          });
+        } else {
+          Swal.fire("Error!", "Gagal memuat data pasien. Silakan coba lagi.", "error");
+        }
       } finally {
         this.isLoading = false;
       }
     },
     async deleteExaminationYear(patientId) {
-    // Gunakan SweetAlert untuk konfirmasi
-    const confirmation = await Swal.fire({
-      title: 'Apakah Anda yakin?',
-      text: "Anda akan menghapus data pemeriksaan pasien ini!",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Ya, hapus!',
-      cancelButtonText: 'Batal'
-    });
+      const confirmation = await Swal.fire({
+        title: 'Apakah Anda yakin?',
+        text: "Anda akan menghapus data pemeriksaan pasien ini untuk tahun yang dipilih!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ya, hapus!',
+        cancelButtonText: 'Batal'
+      });
 
-    // Jika pengguna membatalkan, hentikan proses
-    if (!confirmation.isConfirmed) {
-      return;
-    }
-
-    try {
-      // Construct the payload
-      const payload = {
-        year: this.selectedYear,
-        examination_type: "ht",
-      };
-      console.log("Payload being sent:", payload); // Debugging: Log the payload
-      const token = localStorage.getItem("token");
-      if (!token) {
-        console.error("Token tidak ditemukan");
-        Swal.fire({
-          icon: 'error',
-          title: 'Sesi Berakhir',
-          text: 'Silakan login kembali.',
-        });
+      if (!confirmation.isConfirmed) {
         return;
       }
 
-      const response = await axios.put(
-        `http://localhost:8000/api/puskesmas/patients/${patientId}/examination-year`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      try {
+        const payload = {
+          year: this.selectedYear,
+          examination_type: "ht", // Bedanya di sini
+        };
+        // Gunakan apiClient, hapus header manual
+        await apiClient.put(
+          `/puskesmas/patients/${patientId}/examination-year`,
+          payload
+        );
+
+        Swal.fire('Berhasil!', 'Data pemeriksaan berhasil dihapus.', 'success');
+        this.fetchPatients();
+      } catch (error) {
+        console.error("Error deleting examination year:", error.response?.data || error.message);
+        if (error.response?.status !== 401) {
+             Swal.fire({
+                icon: 'error',
+                title: 'Gagal',
+                text: error.response?.data?.message || 'Terjadi kesalahan saat menghapus data.',
+            });
         }
-      );
-
-      console.log("API Response:", response.data);
-      if (!response.data || !response.data.message) {
-        console.error("Invalid API response structure:", response.data);
-        Swal.fire({
-          icon: 'error',
-          title: 'Kesalahan',
-          text: 'Struktur respons API tidak sesuai.',
-        });
-        return;
       }
-
-      // Tampilkan notifikasi sukses menggunakan SweetAlert
-      Swal.fire({
-        icon: 'success',
-        title: 'Berhasil',
-        text: 'Data berhasil dihapus!',
-      });
-
-      this.fetchPatients(); // Refresh patient list after deletion
-    } catch (error) {
-      console.error("Error deleting examination year:", error.response?.data || error.message);
-
-      // Tampilkan notifikasi gagal menggunakan SweetAlert
-      Swal.fire({
-        icon: 'error',
-        title: 'Gagal',
-        text: 'Terjadi kesalahan saat menghapus data. Silakan coba lagi.',
-      });
-    }
-  },
+    },
     openAddPatientModal() {
       this.showAddPatientModal = true;
     },
@@ -465,21 +420,36 @@ export default {
       this.fetchPatients();
     },
     selectedYear() {
-      this.currentPage = 1; // Reset halaman saat tahun berubah
-      this.fetchPatients();
-    },
-    searchQuery() {
-      this.currentPage = 1; // Reset halaman saat pencarian berubah
-      this.fetchPatients();
-    },
+      if (this.currentPage !== 1) {
+        this.currentPage = 1;
+      } else {
+        this.fetchPatients();
+      }
+    },
     pageSize() {
-      this.currentPage = 1; // Reset halaman saat jumlah baris per halaman berubah
-      this.fetchPatients();
-    }
+      if (this.currentPage !== 1) {
+        this.currentPage = 1;
+      } else {
+        this.fetchPatients();
+      }
+    },
+    searchQuery() {
+      clearTimeout(this.searchTimeout);
+      this.searchTimeout = setTimeout(() => {
+        if (this.currentPage !== 1) {
+          this.currentPage = 1;
+        } else {
+          this.fetchPatients();
+        }
+      }, 500); // Penundaan 500 milidetik
+    },
   },
   created() {
     this.fetchPatients(); // Muat data pasien saat komponen dibuat
-  }
+  },
+  beforeUnmount() {
+    clearTimeout(this.searchTimeout);
+  },
 };
 </script>
 
