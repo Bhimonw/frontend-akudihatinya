@@ -9,6 +9,7 @@ import apiClient from './api.js';
 import './style.css';
 import { tokenManager } from './stores/tokenManager.js';
 import './assets/styles/global.css';
+import './assets/styles/swal-custom.css';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { fas } from '@fortawesome/free-solid-svg-icons';

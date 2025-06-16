@@ -4,6 +4,8 @@ import { useAuthStore } from '../stores/authStore';
 import DefaultLayout from '../layouts/DefaultLayout.vue';
 import ProfileLayout from '../layouts/ProfileLayout.vue';
 
+import HomePage from '../views/HomePage.vue';
+
 //Auth
 import Login from '../views/auth/Login.vue';
 
@@ -24,6 +26,12 @@ import DetailPasienDM from '../views/user/DetailPasienDM.vue';
 import DetailPasienHT from '../views/user/DetailPasienHT.vue';
 
 const routes = [
+  {
+    path: '/',
+    name: 'Home',
+    component: HomePage,
+    meta: { requiresGuest: true }
+  },
   // Admin Routes
   {
     path: '/auth',
@@ -121,25 +129,25 @@ const routes = [
       },
     ],
   },
-
-  // Default Route (Redirect to Login)
-  { path: '/', redirect: '/auth/login' },
 ];
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition;
+    } else {
+      return { top: 0 };
+    }
+  },
 });
 
 router.beforeEach(async (to, from, next) => {
     const authStore = useAuthStore();
   
-    // Tunggu initAuth selesai jika belum dan rute memerlukan info auth
-    // Ini penting agar keputusan routing tidak dibuat prematur
     if (authStore.isLoadingAuth && (to.meta.requiresAuth || to.meta.requiresGuest !== undefined)) {
         try {
-            // Ini bisa jadi event atau menunggu promise sederhana dari initAuth
-            // Cara sederhana: tunggu isLoadingAuth menjadi false
             await new Promise(resolve => {
                 const unwatch = authStore.$subscribe((mutation, state) => {
                     if (!state.isLoadingAuth) {
@@ -147,7 +155,6 @@ router.beforeEach(async (to, from, next) => {
                         resolve();
                     }
                 });
-                // Jika sudah false saat ini, langsung resolve
                 if (!authStore.isLoadingAuth) {
                     unwatch();
                     resolve();
@@ -155,7 +162,6 @@ router.beforeEach(async (to, from, next) => {
             });
         } catch (e) {
             console.error("Error waiting for auth init in router guard:", e);
-            // Mungkin fallback ke login jika ada error kritis
             return next({ name: 'Login', query: { redirect: to.fullPath } });
         }
     }
@@ -164,18 +170,14 @@ router.beforeEach(async (to, from, next) => {
     const isAdminUser = authStore.isAdmin;
 
     // Halaman login
-    if (to.name === 'Login') {
-      if (isAuthenticated) {
-        return next(isAdminUser ? { path: '/admin/dashboard' } : { path: '/user/dashboard' });
-      }
-      return next();
-    }
+    if (to.meta.requiresGuest && isAuthenticated) {
+      return next(isAdminUser ? { path: '/admin/dashboard' } : { path: '/user/dashboard' });
+    }
 
-    // Halaman lain// Rute yang memerlukan autentikasi
-    if (to.meta.requiresAuth && !isAuthenticated) {
-      console.log('Router Guard: requiresAuth=true, not authenticated. Redirecting to Login.');
-      return next({ name: 'Login', query: { redirect: to.fullPath } });
-    }
+    if (to.meta.requiresAuth && !isAuthenticated) {
+      console.log('Router Guard: requiresAuth=true, not authenticated. Redirecting to Login.');
+      return next({ name: 'Login', query: { redirect: to.fullPath } });
+    }
   
     // Rute yang memerlukan role admin
     if (to.meta.isAdmin !== undefined && isAuthenticated) { // Cek isAuthenticated juga

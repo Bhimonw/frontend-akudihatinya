@@ -129,8 +129,7 @@
 </template>
 
 <script>
-  // TIDAK ADA PERUBAHAN PADA SCRIPT
-  import Swal from "sweetalert2";
+  import MySwal from "../../utils/swal-custom.js";
   import axios from "axios";
   import VueDatePicker from '@vuepic/vue-datepicker';
   import '@vuepic/vue-datepicker/dist/main.css';
@@ -239,7 +238,7 @@
                                     (this.formData.gdsp !== null && this.formData.gdsp !== '');
         
         if (!hasExaminationValue) {
-          Swal.fire({
+          MySwal.fire({
             icon: 'warning', title: 'Data Tidak Lengkap', text: 'Minimal satu data hasil pemeriksaan (GDS, GDP, GD2JPP, atau HbA1c) harus diisi.',
           });
           isValid = false;
@@ -295,14 +294,14 @@
               headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", },
             }
           );
-          Swal.fire({
+          MySwal.fire({
             icon: "success", title: "Berhasil", text: "Data pemeriksaan berhasil ditambahkan.",
             timer: 2000, timerProgressBar: true, showConfirmButton: false,
           });
           this.$emit("submit"); this.$emit("close");
         } catch (error) {
           console.error("Error adding examination:", error);
-          Swal.fire({
+          MySwal.fire({
             icon: "error", title: "Gagal", text: error.response?.data?.message || error.message || "Terjadi kesalahan saat menambahkan data.",
           });
         } finally {

@@ -157,14 +157,15 @@
                 <td>{{ formatDate(exam.examination_date) }}</td>
                 <td>{{ exam.systolic || '-' }}</td>
                 <td>{{ exam.diastolic || '-' }}</td>
-                <td>
+                <td class="action-cell">
                   <div class="action-buttons-container">
                     <button class="action-button edit" @click="openEditExamModal(exam)">
                       <font-awesome-icon :icon="['fas', 'edit']" />
-                      Ubah
+                      <span class="tooltip">Ubah Data</span>
                     </button>
                     <button class="action-button delete" @click="deleteExam(exam.id)">
                       <font-awesome-icon :icon="['fas', 'trash']" />
+                      <span class="tooltip">Hapus Data</span>
                     </button>
                   </div>
                 </td>
@@ -539,7 +540,6 @@ export default {
     },
     handleAddExamSubmit() { // Renamed from handleModalSubmit
         this.fetchExaminations();
-        this.closeModal();
     },
     handleEditPatientSubmit(updatedPatient) {
         this.patient = { ...this.patient, ...updatedPatient }; 
@@ -1233,36 +1233,106 @@ export default {
 }
 
 /* Style untuk tombol utama (Ubah), menggunakan class .detail */
-.action-button.edit {
-  border: 1px solid var(--primary-300);
-  background: var(--secondary-100);
-  color: var(--primary-500);
+/* KODE CSS BARU: Salin dan tempel ini ke dalam <style scoped> di DetailPasienHT.vue */
+
+/* Styling untuk sel yang berisi tombol aksi */
+.data-table .action-cell {
+  padding: 12px 16px;
 }
 
-.action-button.edit:hover {
-  background: var(--secondary-300);
-  transform: scale(1.05);
-}
-
-/* Style untuk tombol Hapus */
-.action-button.delete {
-  border: 1px solid #e53935;
-  background: white;
-  color: #e53935;
-  height: 36px;
-  width: 36px;
-  padding: 8px 12px; /* Sesuaikan padding jika perlu */
+/* Kontainer untuk mengelompokkan tombol aksi */
+.action-buttons-container {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 12px;
 }
 
+/* Refinement pada styling tombol aksi umum di dalam tabel */
+.action-button.edit,
+.action-button.delete {
+  position: relative; /* Diperlukan untuk positioning tooltip */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+  border: 1px solid transparent;
+  background: transparent;
+}
+
+/* Styling spesifik untuk tombol Edit */
+.action-button.edit {
+  color: var(--primary-500, #3b82f6);
+  border-color: #dbeafe;
+  background-color: #eff6ff;
+}
+
+/* Hover state untuk tombol Edit */
+.action-button.edit:hover {
+  background-color: #dbeafe;
+  color: var(--primary-700, #1d4ed8);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2);
+}
+
+/* Styling spesifik untuk tombol Delete */
+.action-button.delete {
+  color: #ef4444;
+  border-color: #fee2e2;
+  background-color: #fef2f2;
+}
+
+/* Hover state untuk tombol Delete */
 .action-button.delete:hover {
-  background: #ffebee;
-  color: #c62828;
-  transform: scale(1.05);
+  background-color: #fee2e2;
+  color: #b91c1c;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.2);
 }
 
+/* Styling untuk Tooltip */
+.action-button .tooltip {
+  visibility: hidden;
+  width: max-content;
+  background-color: #334155;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 6px 10px;
+  position: absolute;
+  z-index: 10;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  font-size: 12px;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+/* Arrow untuk Tooltip */
+.action-button .tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #334155 transparent transparent transparent;
+}
+
+/* Tampilkan Tooltip saat tombol di-hover */
+.action-button:hover .tooltip {
+  visibility: visible;
+  opacity: 1;
+}
 .table-container::-webkit-scrollbar {
   height: 8px;
 }

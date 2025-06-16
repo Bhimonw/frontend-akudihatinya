@@ -1,123 +1,125 @@
 <template>
   <div class="modal-backdrop" v-if="visible">
     <div class="modal-container">
-      <!-- Header Modal dengan styling dari AddExaminationDataDM -->
       <div class="modal-header">
         <h2><font-awesome-icon :icon="['fas', 'edit']" class="icon-margin" /> Edit Data Pemeriksaan</h2>
         <button class="close-button" @click="$emit('close')" aria-label="Tutup">
           <font-awesome-icon :icon="['fas', 'times']" />
         </button>
       </div>
-
-      <!-- Form Modal dengan layout sebaris -->
       <div class="modal-body">
         <form class="examination-form" @submit.prevent="handleSubmit">
-          <!-- Tanggal Pemeriksaan -->
           <div class="form-section">
             <div class="section-header">
               <font-awesome-icon :icon="['fas', 'calendar-alt']" class="section-icon" />
               <h3>Tanggal Pemeriksaan<span class="required">*</span></h3>
             </div>
-            
             <div class="form-group">
               <div class="input-wrapper">
                 <font-awesome-icon :icon="['fas', 'calendar-alt']" class="input-icon" />
-                <input
-                  type="date"
+                <VueDatePicker
                   id="date"
                   v-model="formData.date"
+                  :enable-time-picker="false"
+                  :year-picker="false"
+                  :format="formatDateForPicker"
+                  locale="id"
+                  :teleport="true"
+                  placeholder="Pilih Tanggal"
+                  auto-apply
                   required
-                  class="form-input date-input"
+                  :state="errors.date ? false : null"
+                  ref="dateInput"
+                  @update:model-value="errors.date = ''"
                 />
               </div>
+              <transition name="fade">
+                <p v-if="errors.date" class="error-message">
+                  <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
+                  {{ errors.date }}
+                </p>
+              </transition>
             </div>
           </div>
 
-          <!-- Bagian: Hasil Pemeriksaan Gula Darah (Termasuk HbA1c) -->
           <div class="form-section">
             <div class="section-header">
               <font-awesome-icon :icon="['fas', 'vial']" class="section-icon" />
               <h3>Hasil Pemeriksaan Gula Darah</h3>
             </div>
-            
-            <!-- GDS -->
             <div class="form-group">
               <label for="gdsp">Gula Darah Sewaktu</label>
-              <div class="input-wrapper input-unit-wrapper">
-                <font-awesome-icon :icon="['fas', 'heartbeat']" class="input-icon" />
-                <input 
-                  type="number" 
-                  id="gdsp"
-                  v-model.number="formData.gdsp" 
-                  placeholder="Masukkan nilai" 
-                  class="form-input unit-input"
-                />
+              <div class="input-wrapper input-unit-wrapper" :class="{ 'input-error-wrapper': errors.gdsp }">
+                <font-awesome-icon :icon="['fas', 'heartbeat']" class="input-icon" :class="{ 'error-icon': errors.gdsp }" />
+                <input type="number" id="gdsp" v-model.number="formData.gdsp" @input="validateGdsp" @change="validateGdsp" placeholder="Masukkan nilai" class="form-input unit-input" :class="{ 'input-error': errors.gdsp }" ref="gdspInput" />
                 <span class="unit-label">mg/dL</span>
               </div>
+              <transition name="fade">
+                <p v-if="errors.gdsp" class="error-message">
+                  <font-awesome-icon :icon="['fas', 'exclamation-circle']" /> {{ errors.gdsp }}
+                </p>
+              </transition>
             </div>
-
-            <!-- GDP -->
             <div class="form-group">
               <label for="gdp">Gula Darah Puasa</label>
-              <div class="input-wrapper input-unit-wrapper">
-                <font-awesome-icon :icon="['fas', 'tint']" class="input-icon" />
-                <input 
-                  type="number" 
-                  id="gdp"
-                  v-model.number="formData.gdp" 
-                  placeholder="Masukkan nilai" 
-                  class="form-input unit-input"
-                />
+              <div class="input-wrapper input-unit-wrapper" :class="{ 'input-error-wrapper': errors.gdp }">
+                <font-awesome-icon :icon="['fas', 'tint']" class="input-icon" :class="{ 'error-icon': errors.gdp }" />
+                <input type="number" id="gdp" v-model.number="formData.gdp" @input="validateGdp" @change="validateGdp" placeholder="Masukkan nilai" class="form-input unit-input" :class="{ 'input-error': errors.gdp }" ref="gdpInput" />
                 <span class="unit-label">mg/dL</span>
               </div>
+              <transition name="fade">
+                <p v-if="errors.gdp" class="error-message">
+                  <font-awesome-icon :icon="['fas', 'exclamation-circle']" /> {{ errors.gdp }}
+                </p>
+              </transition>
             </div>
-            
-            <!-- GD2JPP -->
             <div class="form-group">
               <label for="gd2jpp">Gula Darah 2 Jam PP</label>
-              <div class="input-wrapper input-unit-wrapper">
-                <font-awesome-icon :icon="['fas', 'clock']" class="input-icon" />
-                <input 
-                  type="number" 
-                  id="gd2jpp"
-                  v-model.number="formData.gd2jpp" 
-                  placeholder="Masukkan nilai" 
-                  class="form-input unit-input"
-                />
+              <div class="input-wrapper input-unit-wrapper" v-if="formData.gdp !== null && formData.gdp !== ''" :class="{ 'input-error-wrapper': errors.gd2jpp }">
+                <font-awesome-icon :icon="['fas', 'clock']" class="input-icon" :class="{ 'error-icon': errors.gd2jpp }" />
+                <input type="number" id="gd2jpp" v-model.number="formData.gd2jpp" @input="validateGd2jpp" @change="validateGd2jpp" placeholder="Masukkan nilai" class="form-input unit-input" :class="{ 'input-error': errors.gd2jpp }" ref="gd2jppInput" />
                 <span class="unit-label">mg/dL</span>
               </div>
+              <div class="input-wrapper input-unit-wrapper disabled" v-else>
+                <font-awesome-icon :icon="['fas', 'clock']" class="input-icon" />
+                <input type="number" disabled class="form-input unit-input disabled" placeholder="Tidak tersedia" />
+                <span class="unit-label disabled">mg/dL</span>
+              </div>
+              <transition name="fade">
+                <p v-if="errors.gd2jpp" class="error-message">
+                  <font-awesome-icon :icon="['fas', 'exclamation-circle']" /> {{ errors.gd2jpp }}
+                </p>
+              </transition>
+              <small v-if="formData.gdp === null || formData.gdp === ''" class="helper-text">
+                <font-awesome-icon :icon="['fas', 'info-circle']" /> Silakan isi GDP terlebih dahulu
+              </small>
             </div>
-            
-            <!-- Hba1c -->
             <div class="form-group">
               <label for="hba1c">HbA1c</label>
-              <div class="input-wrapper input-unit-wrapper">
-                <font-awesome-icon :icon="['fas', 'percent']" class="input-icon" />
-                <input
-                  type="number"
-                  id="hba1c"
-                  v-model.number="formData.hba1c"
-                  placeholder="Masukkan nilai"
-                  class="form-input unit-input"
-                  step="0.1"
-                />
+              <div class="input-wrapper input-unit-wrapper hba1c-wrapper" :class="{ 'input-error-wrapper': errors.hba1c }">
+                <font-awesome-icon :icon="['fas', 'percent']" class="input-icon" :class="{ 'error-icon': errors.hba1c }" />
+                <div class="hba1c-inputs">
+                  <input type="number" id="hba1c-int" min="3" max="15" step="1" v-model.number="hba1cInt" @input="validateHba1c" @change="validateHba1c" placeholder="0" class="form-input hba1c-input" :class="{ 'input-error': errors.hba1c }" ref="hba1cIntInput" />
+                  <span class="dot" :class="{ 'error-dot': errors.hba1c }">.</span>
+                  <input type="number" id="hba1c-dec" min="0" max="9" step="1" v-model.number="hba1cDec" @input="validateHba1c" @change="validateHba1c" placeholder="0" class="form-input hba1c-input" :class="{ 'input-error': errors.hba1c }" ref="hba1cDecInput" />
+                </div>
                 <span class="unit-label">%</span>
               </div>
+              <transition name="fade">
+                <p v-if="errors.hba1c" class="error-message">
+                  <font-awesome-icon :icon="['fas', 'exclamation-circle']" /> {{ errors.hba1c }}
+                </p>
+              </transition>
             </div>
           </div>
-          
-          <!-- Tombol Aksi -->
+
           <div class="form-actions">
             <button class="btn-cancel" @click="$emit('close')" type="button">
               <font-awesome-icon :icon="['fas', 'times']" /> Batal
             </button>
             <button class="btn-save" type="submit" :disabled="isSubmitting">
-              <span v-if="isSubmitting">
-                <font-awesome-icon :icon="['fas', 'spinner']" spin /> Menyimpan...
-              </span>
-              <span v-else>
-                <font-awesome-icon :icon="['fas', 'save']" /> Simpan Perubahan
-              </span>
+              <span v-if="isSubmitting"><font-awesome-icon :icon="['fas', 'spinner']" spin /> Menyimpan...</span>
+              <span v-else><font-awesome-icon :icon="['fas', 'save']" /> Simpan Perubahan</span>
             </button>
           </div>
         </form>
@@ -127,928 +129,454 @@
 </template>
 
 <script>
-import Swal from "sweetalert2";
+import MySwal from "../../utils/swal-custom.js";
 import axios from "axios";
+import VueDatePicker from '@vuepic/vue-datepicker';
+import '@vuepic/vue-datepicker/dist/main.css';
 
 export default {
   props: {
-    visible: {
-      type: Boolean,
-      required: true,
-    },
-    patientId: {
-      type: [Number, String],
-      required: true,
-    },
-    examData: {
-      type: Object,
-      required: true,
-    },
+    visible: { type: Boolean, required: true },
+    patientId: { type: [Number, String], required: true },
+    examData: { type: Object, required: true },
+  },
+  components: {
+    VueDatePicker
   },
   data() {
     return {
       formData: {
-        date: "",
+        date: null,
         hba1c: null,
         gdp: null,
         gd2jpp: null,
         gdsp: null,
       },
+      hba1cInt: null,
+      hba1cDec: null,
       isSubmitting: false,
+      errors: {
+        date: '', gdsp: '', gdp: '', gd2jpp: '', hba1c: '',
+      },
     };
   },
   watch: {
-      examData: {
-          immediate: true,
-          handler(newData) {
-          if (newData) {
-              this.formData = {
-              date: newData.examination_date || "",
-              hba1c: newData.examination_results?.hba1c || null,
-              gdp: newData.examination_results?.gdp || null,
-              gd2jpp: newData.examination_results?.gd2jpp || null,
-              gdsp: newData.examination_results?.gdsp || null,
-              };
-          }
-          },
+    visible(newValue) {
+      if (newValue) {
+        this.resetForm();
+        if (this.examData) {
+          this.populateForm(this.examData);
+        }
+      }
+    },
+    examData: {
+      immediate: true,
+      handler(newData) {
+        if (newData && this.visible) {
+          this.populateForm(newData);
+        }
       },
+    },
   },
   methods: {
-      async handleSubmit() {
-          try {
-              this.isSubmitting = true;
+    populateForm(data) {
+      this.formData.date = data.examination_date ? new Date(data.examination_date) : null;
+      this.formData.gdsp = data.examination_results?.gdsp || null;
+      this.formData.gdp = data.examination_results?.gdp || null;
+      this.formData.gd2jpp = data.examination_results?.gd2jpp || null;
+      this.formData.hba1c = data.examination_results?.hba1c || null;
 
-              // Validasi input minimal satu nilai pemeriksaan
-              if (
-              !this.formData.hba1c &&
-              !this.formData.gdp &&
-              !this.formData.gd2jpp &&
-              !this.formData.gdsp
-              ) {
-              throw new Error("Minimal satu nilai pemeriksaan harus diisi.");
+      // Memisahkan nilai HbA1c menjadi bagian integer dan desimal
+      if (this.formData.hba1c !== null) {
+        const hba1cString = this.formData.hba1c.toString();
+        const parts = hba1cString.split('.');
+        this.hba1cInt = parseInt(parts[0], 10) || null;
+        this.hba1cDec = parts[1] ? parseInt(parts[1], 10) : null;
+      } else {
+        this.hba1cInt = null;
+        this.hba1cDec = null;
+      }
+    },
+    formatDateForPicker(date) {
+        const day = date.getDate();
+        const month = date.toLocaleString('id-ID', { month: 'long' });
+        const year = date.getFullYear();
+        return `${day} ${month} ${year}`;
+    },
+    scrollToError(refName) {
+      this.$nextTick(() => {
+        const errorElement = this.$refs[refName];
+        if (errorElement) {
+          const targetEl = errorElement.$el ? errorElement.$el : errorElement;
+          if (targetEl) {
+              targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              if (typeof errorElement.focus === 'function') {
+                  errorElement.focus();
+              } else if (targetEl.querySelector('input')) {
+                  targetEl.querySelector('input').focus();
+              } else if (typeof targetEl.focus === 'function') {
+                  targetEl.focus();
               }
-
-              const token = localStorage.getItem("token");
-              if (!token) {
-              throw new Error("Token tidak ditemukan");
-              }
-
-              // Format payload sesuai dengan API
-              const payload = {
-              patient_id: parseInt(this.patientId), // Pastikan patient_id adalah integer
-              examination_date: this.formData.date,
-              examinations: {
-                  hba1c: this.formData.hba1c || null, // Kirim null jika kosong
-                  gdp: this.formData.gdp || null,
-                  gd2jpp: this.formData.gd2jpp || null,
-                  gdsp: this.formData.gdsp || null,
-              },
-              };
-
-              console.log("Payload being sent:", payload); // Debugging: Log the payload
-
-              // Kirim data ke API
-              await axios.put(
-              `http://localhost:8000/api/puskesmas/dm-examinations/${this.examData.id}`,
-              payload,
-              {
-                  headers: {
-                  Authorization: `Bearer ${token}`,
-                  "Content-Type": "application/json",
-                  },
-              }
-              );
-
-              // Tampilkan notifikasi sukses
-              Swal.fire({
-              icon: "success",
-              title: "Berhasil",
-              text: "Data pemeriksaan berhasil diperbarui.",
-              confirmButtonText: "Tutup",
-              });
-
-              // Emit event untuk memberi tahu parent component
-              this.$emit("submit");
-
-              // Reset form dan tutup modal
-              this.resetForm();
-              this.$emit("close");
-          } catch (error) {
-              console.error("Error updating examination:", error);
-
-              // Tampilkan notifikasi gagal
-              Swal.fire({
-              icon: "error",
-              title: "Gagal",
-              text:
-                  error.response?.data?.message ||
-                  error.message ||
-                  "Terjadi kesalahan saat memperbarui data pemeriksaan.",
-              confirmButtonText: "Tutup",
-              });
-          } finally {
-              this.isSubmitting = false;
           }
-          },
-  resetForm() {
-    this.formData = {
-      date: "",
-      hba1c: null,
-      gdp: null,
-      gd2jpp: null,
-      gdsp: null,
-    };
+        }
+      });
+    },
+    validateForm() {
+      Object.keys(this.errors).forEach(key => {
+        this.errors[key] = '';
+      });
+      let isValid = true;
+      let firstErrorField = null;
+
+      if (!this.formData.date) {
+        this.errors.date = "Tanggal pemeriksaan wajib diisi.";
+        isValid = false;
+        if (!firstErrorField) firstErrorField = 'dateInput';
+      }
+
+      this.validateGdsp(); this.validateGdp(); this.validateGd2jpp(); this.validateHba1c();
+
+      if (this.errors.gdsp) { isValid = false; if (!firstErrorField) firstErrorField = 'gdspInput'; }
+      if (this.errors.gdp) { isValid = false; if (!firstErrorField) firstErrorField = 'gdpInput'; }
+      if (this.errors.gd2jpp) { isValid = false; if (!firstErrorField) firstErrorField = 'gd2jppInput'; }
+      if (this.errors.hba1c) { isValid = false; if (!firstErrorField) firstErrorField = 'hba1cIntInput'; }
+      
+      if (!isValid) {
+        this.scrollToError(firstErrorField);
+        return false;
+      }
+
+      const hasExaminationValue = this.formData.hba1c !== null ||
+                                (this.formData.gdp !== null && this.formData.gdp !== '') ||
+                                (this.formData.gd2jpp !== null && this.formData.gd2jpp !== '') ||
+                                (this.formData.gdsp !== null && this.formData.gdsp !== '');
+      
+      if (!hasExaminationValue) {
+        MySwal.fire({
+          icon: 'warning', title: 'Data Tidak Lengkap', text: 'Minimal satu data hasil pemeriksaan (GDS, GDP, GD2JPP, atau HbA1c) harus diisi.',
+        });
+        isValid = false;
+      }
+      return isValid;
+    },
+    validateGdsp() {
+      const val = this.formData.gdsp;
+      if (val === null || val === '') { this.errors.gdsp = ""; return; }
+      if (val < 20 || val > 600) { this.errors.gdsp = "Nilai GDS harus antara 20 dan 600."; } 
+      else { this.errors.gdsp = ""; }
+    },
+    validateGdp() {
+      const val = this.formData.gdp;
+      if (val === null || val === '') { this.errors.gdp = ""; this.formData.gd2jpp = null; this.errors.gd2jpp = ""; return; }
+      if (val < 20 || val > 600) { this.errors.gdp = "Nilai GDP harus antara 20 dan 600."; } 
+      else { this.errors.gdp = ""; }
+    },
+    validateGd2jpp() {
+      if (this.formData.gdp === null || this.formData.gdp === '') { this.errors.gd2jpp = ""; return; }
+      const val = this.formData.gd2jpp;
+      if (val === null || val === '') { this.errors.gd2jpp = ""; return; }
+      if (val < 20 || val > 600) { this.errors.gd2jpp = "Nilai GD2JPP harus antara 20 dan 600."; } 
+      else { this.errors.gd2jpp = ""; }
+    },
+    validateHba1c() {
+      let int = this.hba1cInt; let dec = this.hba1cDec;
+      if ((int === null || int === '') && (dec === null || dec === '')) { this.formData.hba1c = null; this.errors.hba1c = ""; return; }
+      int = (int === null || int === '') ? 0 : parseFloat(int); dec = (dec === null || dec === '') ? 0 : parseFloat(dec);
+      if (isNaN(int) || isNaN(dec)) { this.errors.hba1c = "Masukkan angka yang valid."; this.formData.hba1c = null; return; }
+      const total = parseFloat((int + (dec / 10)).toFixed(1));
+      if (total < 3.0 || total > 15.0) { this.errors.hba1c = "Nilai HbA1c harus antara 3.0 dan 15.0."; this.formData.hba1c = null; } 
+      else { this.formData.hba1c = total; this.errors.hba1c = ""; }
+    },
+    async handleSubmit() {
+      // 1. Lakukan validasi terlebih dahulu
+      if (!this.validateForm()) {
+        return; // Hentikan proses jika form tidak valid
+      }
+
+      // Tampilkan dialog konfirmasi yang sudah diperbaiki
+      const result = await MySwal.fire({
+        title: 'Konfirmasi Perubahan',
+        text: "Apakah Anda yakin ingin menyimpan perubahan data ini?", // Gunakan 'text' untuk pesan simpel
+        icon: 'warning',
+        showCancelButton: true,
+        
+        // HANYA GUNAKAN TEKS BIASA DI SINI
+        confirmButtonText: 'Ya, simpan!',
+        cancelButtonText: 'Batal',
+
+        // INI BAGIAN PENTINGNYA:
+        // Terapkan kelas CSS tambahan untuk memunculkan ikon
+        customClass: {
+          popup: 'swal-popup-custom', // Sebenarnya ini sudah di mixin, tapi tidak apa-apa untuk eksplisit
+          title: 'swal-title-custom', // Sama seperti di atas
+          confirmButton: 'btn-swal-confirm swal-icon-save', // Tambahkan 'swal-icon-save'
+          cancelButton: 'btn-swal-cancel swal-icon-times',   // Tambahkan 'swal-icon-times'
+        },
+        
+        // Pastikan properti ini ada untuk menjamin gaya kustom Anda diterapkan
+        buttonsStyling: false, 
+        reverseButtons: true,
+      });
+
+      // 3. Lanjutkan proses HANYA jika pengguna mengklik "Ya, simpan!"
+      if (result.isConfirmed) {
+        this.isSubmitting = true;
+        try {
+          const dateToUse = this.formData.date;
+          const examinationDate = `${dateToUse.getFullYear()}-${(dateToUse.getMonth() + 1).toString().padStart(2, '0')}-${dateToUse.getDate().toString().padStart(2, '0')}`;
+          const token = localStorage.getItem("token");
+          if (!token) throw new Error("Token tidak ditemukan");
+
+          const payload = {
+            patient_id: parseInt(this.patientId),
+            examination_date: examinationDate,
+            examinations: {
+              hba1c: this.formData.hba1c,
+              gdp: (this.formData.gdp === '') ? null : this.formData.gdp,
+              gd2jpp: (this.formData.gd2jpp === '') ? null : this.formData.gd2jpp,
+              gdsp: (this.formData.gdsp === '') ? null : this.formData.gdsp,
+            },
+          };
+          
+          await axios.put(`http://localhost:8000/api/puskesmas/dm-examinations/${this.examData.id}`, payload, {
+            headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          });
+
+          // Ganti notifikasi sukses dengan yang lebih informatif
+          await MySwal.fire({
+            icon: "success", 
+            title: "Berhasil!", 
+            text: "Data pemeriksaan telah berhasil diperbarui.",
+            timer: 2000,
+            showConfirmButton: false,
+          });
+
+          this.$emit("submit");
+          this.$emit("close");
+
+        } catch (error) {
+          console.error("Error updating examination:", error);
+          MySwal.fire({
+            icon: "error", title: "Gagal",
+            text: error.response?.data?.message || error.message || "Terjadi kesalahan saat memperbarui data.",
+          });
+        } finally {
+          this.isSubmitting = false;
+        }
+      }
+    },
+    resetForm() {
+      this.formData = {
+        date: null, hba1c: null, gdp: null, gd2jpp: null, gdsp: null,
+      };
+      this.hba1cInt = null;
+      this.hba1cDec = null;
+      this.errors = { date: '', gdsp: '', gdp: '', gd2jpp: '', hba1c: '' };
+    },
   },
-},
 };
 </script>
 
 <style scoped>
-/* Modal Backdrop - Slightly softer blur, smoother transition */
-.modal-backdrop {
- position: fixed;
- top: 0;
- left: 0;
- width: 100%;
- height: 100%;
- background-color: rgba(0, 0, 0, 0.55); /* Slightly darker for better focus on modal */
- backdrop-filter: blur(3px); /* Slightly more blur */
- display: flex;
- justify-content: center;
- align-items: center;
- z-index: 1000;
- animation: fadeIn 0.25s ease-out; /* Slightly longer animation */
-}
-
-@keyframes fadeIn {
- from { opacity: 0; }
- to { opacity: 1; }
-}
-
-/* Modal Container - Refined shadow, increased border-radius */
-.modal-container {
- width: 90%;
- max-width: 600px; /* Slightly wider for comfort */
- max-height: 90vh;
- background-color: #ffffff;
- border-radius: 16px; /* Softer corners */
- box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.15), 0 8px 15px -10px rgba(0, 0, 0, 0.1); /* Refined shadow */
- overflow: hidden;
- display: flex;
- flex-direction: column;
- animation: slideIn 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Smoother easing */
-}
-
-@keyframes slideIn {
- from { transform: translateY(15px) scale(0.98); opacity: 0; }
- to { transform: translateY(0) scale(1); opacity: 1; }
-}
-
-/* Modal Header - Enhanced padding and visual separation */
-.modal-header {
- padding: 20px 24px; /* Increased padding */
- display: flex;
- justify-content: space-between;
- align-items: center;
- border-bottom: 1px solid var(--neutral-200);
- background-color: var(--primary-50); /* Lighter background for a cleaner look */
-}
-
-.modal-header h2 {
- margin: 0;
- font-size: 1.15rem; /* Slightly larger */
- font-weight: 600;
- color: var(--neutral-800); /* Darker for better contrast on light bg */
- display: flex;
- align-items: center;
-}
-
-.icon-margin {
- margin-right: 12px; /* Increased margin */
- color: var(--primary-500);
- font-size: 1.2em; /* Slightly larger icon */
-}
-
-.close-button {
- background: transparent;
- border: none;
- font-size: 20px; /* Larger close icon */
- color: var(--neutral-500);
- cursor: pointer;
- width: 36px; /* Larger touch target */
- height: 36px;
- border-radius: 8px; /* Rounded square for a modern feel */
- display: flex;
- align-items: center;
- justify-content: center;
- transition: all 0.2s ease;
-}
-
-.close-button:hover {
- background-color: var(--neutral-200);
- color: var(--neutral-900);
-}
-
-/* Modal Body - Improved padding and scrollbar aesthetics */
-.modal-body {
- padding: 20px 24px; /* Consistent padding with header */
- flex-grow: 1;
- overflow-y: auto;
- scrollbar-width: thin;
- scrollbar-color: var(--neutral-300) var(--neutral-100); /* Softer scrollbar */
-}
-
-.modal-body::-webkit-scrollbar {
- width: 8px; /* Slightly wider scrollbar */
-}
-
-.modal-body::-webkit-scrollbar-track {
- background: var(--neutral-100);
- border-radius: 10px;
-}
-
-.modal-body::-webkit-scrollbar-thumb {
- background-color: var(--neutral-300);
- border-radius: 10px;
- border: 2px solid var(--neutral-100); /* Creates a "floating" thumb effect */
-}
-
-.modal-body::-webkit-scrollbar-thumb:hover {
- background-color: var(--neutral-400);
-}
-
-/* Form Sections - Cleaner look, more spacing */
-.form-section {
- background-color: white;
- border-radius: 12px; /* Consistent with modal container */
- border: 1px solid var(--neutral-200);
- padding: 20px; /* Increased padding */
- margin-bottom: 24px; /* More space between sections */
- box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); /* Softer shadow */
- transition: box-shadow 0.3s ease;
-}
-
-.form-section:last-child {
-    margin-bottom: 16px; /* Reduced bottom margin for the last section */
-}
-
-.form-section:hover {
- box-shadow: 0 5px 12px -2px rgba(0, 0, 0, 0.08), 0 3px 7px -3px rgba(0, 0, 0, 0.07); /* Refined hover shadow */
-}
-
-.section-header {
- display: flex;
- align-items: center;
- margin-bottom: 18px; /* Increased margin */
- padding-bottom: 12px; /* Increased padding */
- border-bottom: 1px solid var(--neutral-200);
-}
-
-.section-icon {
- font-size: 1.1rem; /* Slightly larger */
- color: var(--primary-500);
- margin-right: 12px; /* Increased margin */
-}
-
-.section-header h3 {
- margin: 0;
- font-size: 1rem; /* Standardized size */
- font-weight: 600; /* Semi-bold for clarity */
- color: var(--neutral-700);
-}
-
-.examination-form {
- width: 100%;
-}
-
-/* Form Groups - Better spacing */
-.form-group {
- margin-bottom: 20px; /* Increased spacing */
-}
-
-.form-group:last-child {
- margin-bottom: 0;
-}
-
-.form-group label {
- font-size: 0.875rem; /* 14px */
- font-weight: 500;
- margin-bottom: 8px; /* More space below label */
- color: var(--neutral-700);
- display: block;
-}
-
-.required {
- color: var(--danger-500);
- margin-left: 3px;
- font-weight: 600;
-}
-
-/* Input Wrappers with Icons */
-.input-wrapper {
- position: relative;
- display: flex;
- align-items: center;
-}
-
-.input-icon {
- position: absolute;
- left: 14px; /* Adjusted for padding */
- color: var(--neutral-400); /* Lighter default icon color */
- font-size: 1rem; /* 16px */
- pointer-events: none;
- transition: color 0.2s ease;
-}
-
-/* Input with Unit Styling */
-.input-unit-wrapper {
-  display: flex; /* Added to ensure children align well */
- border: 1px solid var(--neutral-300);
- border-radius: 10px; /* Slightly more rounded */
- overflow: hidden; /* Crucial for child border-radius */
- box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03); /* Softer shadow */
- transition: all 0.2s ease;
-}
-
-.input-unit-wrapper:hover {
- border-color: var(--neutral-400); /* Softer hover */
-}
-
-.input-unit-wrapper:focus-within {
- border-color: var(--primary-500);
- box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25); /* Slightly more prominent focus shadow */
-}
-.input-unit-wrapper:focus-within .input-icon {
-  color: var(--primary-500); /* Change icon color on focus-within */
-}
-
-
-.input-unit-wrapper.disabled {
- background-color: var(--neutral-100);
- opacity: 0.8; /* Slightly more visible when disabled */
- cursor: not-allowed;
-  border-color: var(--neutral-200);
-}
-.input-unit-wrapper.disabled .input-icon,
-.input-unit-wrapper.disabled .unit-label {
-  color: var(--neutral-400);
-}
-.input-unit-wrapper.disabled .unit-input { /* Target child input when wrapper is disabled */
-  background-color: var(--neutral-100); /* Ensure input bg matches */
-  color: var(--neutral-500);
-}
-
-
-.unit-input {
- border: none !important;
- box-shadow: none !important;
- flex: 1;
-  /* Remove individual border-radius if it's inside a wrapper that has overflow:hidden and its own border-radius */
- border-radius: 0; 
-  min-width: 0; /* Allow shrinking */
-  background-color: white; /* Ensure it's white by default */
-}
-
-.unit-label {
- padding: 0 14px; /* Slightly more padding */
- color: var(--neutral-600); /* Darker for better readability */
- font-size: 0.875rem; /* 14px */
- background-color: var(--neutral-100); /* Slightly different from disabled bg for contrast */
- height: auto; /* Let it size with input */
-  align-self: stretch; /* Make it fill height */
- display: flex;
- align-items: center;
- border-left: 1px solid var(--neutral-300);
- min-width: 65px; /* Slightly wider */
- justify-content: center;
- font-weight: 500;
-}
-
-/* Input Styling - Enhanced with icons and focus states */
-.form-input {
- width: 100%;
- padding: 12px 12px 12px 42px; /* Increased padding, adjusted for icon */
- border: 1px solid var(--neutral-300);
- border-radius: 10px; /* Consistent rounding */
- font-size: 0.9375rem; /* 15px, slightly larger for readability */
- color: var(--neutral-800);
- background-color: white;
- transition: all 0.2s ease;
- box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-}
-
-.form-input::placeholder {
-  color: var(--neutral-400);
-  font-size: 0.9rem;
-}
-
-.form-input:hover {
- border-color: var(--neutral-400);
-}
-
-.form-input:focus {
- border-color: var(--primary-500);
- box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
- outline: none;
-}
-
-/* Selector for icon color change when input is focused (if icon is sibling) or wrapper is focused */
-.form-input:focus + .input-icon, 
-.input-wrapper:focus-within .input-icon {
- color: var(--primary-500);
-}
-
-.form-input.disabled {
- background-color: var(--neutral-100);
- color: var(--neutral-500);
- cursor: not-allowed;
-  border-color: var(--neutral-200);
-}
-
-.input-error { /* This class applies directly to the input field */
- border-color: var(--danger-500) !important;
-  /* The box-shadow might be better on the wrapper if using .input-error-wrapper */
-}
-.input-error:focus {
-  border-color: var(--danger-500) !important; 
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25) !important; 
-}
-
-/* Add this class to the .input-unit-wrapper or .input-wrapper if its child input has an error */
-.input-error-wrapper { 
-  border-color: var(--danger-500) !important;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
-}
-.input-error-wrapper:focus-within { /* Maintain error indication on focus */
-  border-color: var(--danger-500) !important;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25) !important;
-}
-.input-error-wrapper .input-icon { /* Optionally change icon color in error state */
-  color: var(--danger-500) !important;
-}
-
-
-.date-input {
- padding-right: 12px; /* Allow space for date picker icon */
-}
-
-/* HbA1c Input styling - Improved clarity */
-.hba1c-wrapper { /* This is an .input-unit-wrapper, specific styling below applies to its children */
- display: flex;
- align-items: center;
-  /* .input-error-wrapper class should be applied here if errors.hba1c is true */
-}
-
-.hba1c-inputs {
- display: flex;
- align-items: center;
- flex-grow: 1; /* Allow it to take available space */
- padding-left: 42px; /* Consistent with .form-input padding (icon width + space) */
-}
-
-.hba1c-input {
- width: auto; /* Allow flexible width */
-  min-width: 50px; /* Minimum width */
-  flex: 1; /* Distribute space */
- text-align: center;
- padding: 12px 8px !important; /* Match .form-input padding, reduced horizontal for less space */
- border-radius: 0 !important;
- border: none !important;
- box-shadow: none !important;
-  font-size: 0.9375rem; /* Consistent font size */
-  background-color: transparent; /* Ensure no double background from wrapper */
-  color: var(--neutral-800);
-}
-.hba1c-input::placeholder {
-  color: var(--neutral-400);
-  font-size: 0.9rem;
-}
-/* If .hba1c-wrapper has .input-error-wrapper, the individual inputs don't need specific error styles unless desired */
-.input-error-wrapper .hba1c-input {
-  /* color: var(--danger-700); /* Optionally make text red too */
-}
-
-.dot {
- font-weight: bold;
- font-size: 1.2rem; /* Slightly larger dot */
- margin: 0 4px; /* More space around dot */
- color: var(--neutral-600); /* Darker dot for clarity */
-  align-self: center; /* Vertically center the dot */
-  padding-bottom: 2px; /* Fine-tune vertical alignment if needed */
-}
-.input-error-wrapper .dot { /* Optionally color the dot red in error state */
-  /* color: var(--danger-500); */
-}
-
-/* Helper text */
-.helper-text {
- margin-top: 6px; /* More space */
- font-size: 0.8125rem; /* 13px */
- color: var(--neutral-600); /* Slightly darker for readability */
- display: flex;
- align-items: center;
- gap: 6px;
-}
-.helper-text .fas { /* Assuming Font Awesome is used via class */
-  font-size: 0.9em; /* Adjust icon size within helper text */
-}
-
-
-/* Error Message - Improved with icon and animation */
-.error-icon {
-  color: var(--danger-500) !important;
-}
-
-.error-dot {
-  color: var(--danger-500) !important;
-}
-
-.input-error-wrapper {
-  border-color: var(--danger-500) !important;
-  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15) !important;
-  transition: all 0.2s ease;
-}
-
-.input-error {
-  border-color: var(--danger-500) !important;
-  background-color: rgba(254, 242, 242, 0.2) !important;
-}
-
-.error-message {
- margin-top: 6px; /* More space */
- font-size: 0.8125rem; /* 13px */
- color: var(--danger-700); /* Darker red for better contrast */
- font-weight: 500; /* Slightly bolder for emphasis */
- display: flex;
- align-items: center;
- gap: 6px;
- opacity: 1;
- transition: opacity 0.3s ease, transform 0.3s ease;
-}
-.error-message .fas {
-  font-size: 0.9em;
-}
-
-/* Fade transition for error messages (UNCHANGED) */
-.fade-enter-active, .fade-leave-active {
- transition: opacity 0.3s, transform 0.3s;
-}
-.fade-enter-from, .fade-leave-to {
- opacity: 0;
- transform: translateY(-5px);
-}
-
-/* Form Actions - Clearer separation and button styling */
-.form-actions {
- margin-top: 28px; /* More space before actions */
- display: flex;
- justify-content: flex-end;
- gap: 12px; /* More space between buttons */
- padding-top: 20px; /* Increased padding */
- border-top: 1px solid var(--neutral-200);
-}
-
-/* Cancel Button */
-.btn-cancel {
- padding: 10px 20px; /* Increased padding */
- background-color: white;
- border: 1px solid var(--neutral-300);
- border-radius: 8px;
- font-size: 0.9rem; /* 14.4px */
- font-weight: 600; /* Bolder */
- color: var(--neutral-700);
- cursor: pointer;
- transition: all 0.2s ease;
- display: flex;
- align-items: center;
- gap: 8px;
-}
-
-.btn-cancel:hover {
- background-color: var(--neutral-100);
- border-color: var(--neutral-400);
-  color: var(--neutral-800);
-}
-.btn-cancel:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.25); /* Neutral focus ring */
-}
-
-
-/* Save Button */
-.btn-save {
- padding: 10px 20px; /* Increased padding */
- background-color: var(--primary-500);
- border: 1px solid var(--primary-500); /* Added border for consistency */
- border-radius: 8px;
- font-size: 0.9rem; /* 14.4px */
- font-weight: 600; /* Bolder */
- color: white;
- cursor: pointer;
- transition: all 0.2s ease;
- display: flex;
- align-items: center;
- gap: 8px;
- min-width: 130px; /* Slightly wider */
- justify-content: center;
-}
-
-.btn-save:hover {
- background-color: var(--primary-600);
- border-color: var(--primary-600);
- box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.1); /* Softer hover shadow */
-}
-.btn-save:focus {
-  outline: none;
-  background-color: var(--primary-600); /* Darken on focus too */
-  border-color: var(--primary-700);
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3); /* Primary focus ring */
-}
-
-.btn-save:active {
- background-color: var(--primary-700);
-  border-color: var(--primary-700);
- transform: translateY(1px);
-  box-shadow: none; /* Remove shadow on active */
-}
-
-.btn-save:disabled {
- background-color: var(--neutral-300); /* Lighter disabled bg */
-  border-color: var(--neutral-300);
- color: var(--neutral-500); /* Darker disabled text for readability */
- cursor: not-allowed;
- opacity: 1; /* Remove opacity, rely on color changes */
-  box-shadow: none;
-}
-.btn-save:disabled:hover {
-  background-color: var(--neutral-300); /* Keep same on hover when disabled */
-  border-color: var(--neutral-300);
-}
-
-
-/* Style untuk Flatpickr (minor adjustments for cohesion) */
-:deep(.flatpickr-calendar) {
- border-radius: 12px;
- overflow: hidden;
- border: 1px solid var(--neutral-200); /* Lighter border */
- box-shadow: 0 6px 25px rgba(0, 0, 0, 0.12); /* Refined shadow */
-  font-family: var(--font-sans); /* Ensure consistent font */
-}
-
-:deep(.flatpickr-month) {
- background-color: var(--primary-500);
- color: white;
- padding: 14px 0 10px; /* Adjusted padding */
-  height: auto; /* Ensure it wraps content */
-}
-
-:deep(.flatpickr-current-month) {
- padding-top: 0;
-  font-size: 1.1rem; /* Larger month/year text */
-  font-weight: 500;
-}
-
-:deep(.flatpickr-monthDropdown-months) {
- font-weight: 500; /* Adjusted from 600 */
- color: white;
-  font-size: 1.1rem; /* Match */
-}
-
-:deep(.flatpickr-prev-month), 
-:deep(.flatpickr-next-month) {
- top: 10px; /* Adjusted position */
- padding: 8px; /* Larger touch area */
-  width: 38px; /* Consistent size */
-  height: 38px;
-}
-
-:deep(.flatpickr-prev-month svg), 
-:deep(.flatpickr-next-month svg) {
- fill: rgba(255, 255, 255, 0.85); /* Slightly more opaque */
-  width: 18px; /* Larger arrows */
-  height: 18px;
-}
-
-:deep(.flatpickr-prev-month:hover svg), 
-:deep(.flatpickr-next-month:hover svg) {
- fill: white;
-}
-
-:deep(.flatpickr-day) {
- border-radius: 8px;
- margin: 1px; /* Slightly less margin for a tighter grid */
- line-height: 38px; /* Taller days */
- height: 38px;
-  font-weight: 400;
-}
-
-:deep(.flatpickr-day.selected),
-:deep(.flatpickr-day.startRange),
-:deep(.flatpickr-day.endRange) {
- background: var(--primary-500);
- border-color: var(--primary-500);
-  color: white;
-}
-
-:deep(.flatpickr-day.selected:hover),
-:deep(.flatpickr-day.startRange:hover),
-:deep(.flatpickr-day.endRange:hover) {
- background: var(--primary-600);
- border-color: var(--primary-600);
-  color: white;
-}
-
-:deep(.flatpickr-day:hover) {
- background: var(--primary-100);
- border-color: var(--primary-100);
- color: var(--primary-700);
-}
-
-:deep(.flatpickr-day.today) {
- border-color: var(--primary-300); /* Softer border for today */
- color: var(--primary-600);
- font-weight: 500; /* Slightly bolder for today */
-}
-:deep(.flatpickr-day.today:not(.selected):hover) {
-  background: var(--primary-100);
-  border-color: var(--primary-300);
-}
-
-
-:deep(.flatpickr-weekday) {
- color: var(--primary-600); /* Match 'today' color */
- font-weight: 500;
-  font-size: 0.75rem; /* Smaller weekday names */
-  height: 28px; /* Adjust height */
-  line-height: 28px;
-}
-
-/* Hide year input in Flatpickr (UNCHANGED from original intent) */
-:deep(.flatpickr-current-month .numInputWrapper) {
- display: none !important;
-}
-:deep(.flatpickr-current-month .cur-month) {
- padding: 0 !important;
-}
-
-/* Customize SweetAlert (minor adjustments for cohesion) */
-:deep(.swal2-popup) {
- border-radius: 16px; /* Match modal */
- padding: 28px; /* More padding */
-  font-family: var(--font-sans); /* Consistent font */
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1); /* Softer shadow */
-}
-
-:deep(.swal2-title) {
- color: var(--neutral-800);
- font-size: 1.25rem; /* Slightly larger */
-  font-weight: 600;
-  padding-top: 10px; /* Add some space if icon is present */
-  margin-bottom: 0.8em; /* Space between title and content */
-}
-
-:deep(.swal2-html-container) { /* Target this for main text */
- color: var(--neutral-600);
- font-size: 0.95rem; /* 15.2px */
-  line-height: 1.6;
-  margin-top: 0; /* Reset if title provides bottom margin */
-  margin-bottom: 1.2em; /* Space before actions */
-}
-
-:deep(.swal2-confirm) {
- background-color: var(--primary-500) !important;
- border-radius: 8px;
- font-size: 0.9rem; /* Match buttons */
-  font-weight: 600;
- padding: 12px 24px; /* More padding */
-  transition: background-color 0.2s ease;
-}
-:deep(.swal2-confirm:hover) {
-  background-color: var(--primary-600) !important;
-}
-
-:deep(.swal2-confirm:focus) {
- box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3) !important; /* Match button focus */
-}
-
-:deep(.swal2-icon) { /* General icon styling */
-  margin-top: 1em; /* Ensure space from top of popup */
-  margin-bottom: 1.5em; /* More space below icon */
-}
-
-:deep(.swal2-icon.swal2-success) {
- border-color: var(--primary-500) !important;
-}
-
-:deep(.swal2-icon.swal2-success [class^=swal2-success-line]) {
- background-color: var(--primary-500) !important;
-}
-
-:deep(.swal2-icon.swal2-error) {
- border-color: var(--danger-500) !important;
-}
-
-:deep(.swal2-icon.swal2-error [class^=swal2-x-mark-line]) {
- background-color: var(--danger-500) !important;
-}
-
-/* Remove number input spinners (UNCHANGED) */
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
- -webkit-appearance: none;
- margin: 0;
-}
-
-input[type="number"] {
- -moz-appearance: textfield;
-}
-
-/* Responsive Design Improvements (adjustments for new padding/sizing) */
-@media (max-width: 640px) { /* Adjusted breakpoint for more granular control */
- .modal-container {
-  width: 95%;
-  max-height: 95vh;
-    border-radius: 12px; /* Slightly smaller radius on small screens */
- }
- 
+  /* --- STYLE DIKUTIP LENGKAP DARI AddExaminationDataDM.vue UNTUK KONSISTENSI --- */
+
+  /* Pengaturan Variabel untuk DatePicker */
+  :deep(.dp__main) {
+    --dp-border-radius: 10px;
+    --dp-input-padding: 12px 12px 12px 42px;
+    --dp-font-size: 0.9375rem;
+    --dp-border-color: var(--neutral-300);
+    --dp-border-color-hover: var(--neutral-400);
+    --dp-primary-color: var(--primary-500);
+    --dp-primary-text-color: #ffffff;
+    --dp-secondary-color: var(--neutral-100);
+    --dp-text-color: var(--neutral-800);
+    --dp-icon-color: var(--neutral-500);
+    --dp-danger-color: var(--danger-500);
+  }
+  
+  /* Style untuk error state pada DatePicker */
+  :deep(.dp__input_invalid) {
+    border-color: var(--danger-500) !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+  }
+  :deep(.dp__input_invalid:focus) {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25) !important;
+  }
+  
+  :deep(.dp__input) {
+    font-family: inherit;
+  }
+
+  :deep(.dp__input:focus) {
+    border-color: var(--primary-500);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+    outline: none;
+  }
+  .input-unit-wrapper:focus-within {
+   border-color: var(--primary-500);
+   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+  }
+  .unit-input:focus,
+  .hba1c-input:focus {
+    outline: none;
+  }
+  .btn-cancel:focus, .btn-save:focus {
+    outline: none;
+  }
+  
+  .modal-backdrop {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(3px);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 1000; animation: fadeIn 0.25s ease-out;
+  }
+  .modal-container {
+    width: 90%; max-width: 600px; max-height: 90vh;
+    background-color: #ffffff; border-radius: 16px;
+    box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.15), 0 8px 15px -10px rgba(0, 0, 0, 0.1);
+    overflow: hidden; display: flex; flex-direction: column;
+    animation: slideIn 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
   .modal-header {
-    padding: 16px 20px;
+    padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--neutral-200); background-color: var(--primary-50);
   }
   .modal-header h2 {
-  font-size: 1.05rem; /* Adjusted size */
- }
-  .icon-margin {
-    margin-right: 10px;
-    font-size: 1.1em;
+    margin: 0; font-size: 1.15rem; font-weight: 600; color: var(--neutral-800);
+    display: flex; align-items: center;
   }
+  .icon-margin { margin-right: 12px; color: var(--primary-500); font-size: 1.2em; }
   .close-button {
-    width: 32px;
-    height: 32px;
-    font-size: 18px;
+    background: transparent; border: none; font-size: 20px; color: var(--neutral-500);
+    cursor: pointer; width: 36px; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;
   }
-
-  .modal-body {
-    padding: 16px 20px;
-  }
- 
+  .close-button:hover { background-color: var(--neutral-200); color: var(--neutral-900); }
+  .modal-body { padding: 20px 24px; flex-grow: 1; overflow-y: auto; }
   .form-section {
-    padding: 16px;
-    margin-bottom: 20px;
+    background-color: white; border-radius: 12px; border: 1px solid var(--neutral-200);
+    padding: 20px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   }
- .section-header h3 {
-  font-size: 0.95rem; /* Adjusted size */
- }
-  .section-icon {
-    font-size: 1rem;
-    margin-right: 10px;
+  .section-header {
+    display: flex; align-items: center; margin-bottom: 18px; padding-bottom: 12px;
+    border-bottom: 1px solid var(--neutral-200);
   }
- 
- .form-actions {
-  flex-direction: column-reverse; /* Keep this for mobile */
-    gap: 10px; /* Reduced gap for stacked buttons */
-    margin-top: 20px;
-    padding-top: 16px;
- }
- 
- .btn-cancel, .btn-save {
-  width: 100%;
-  justify-content: center;
-    padding: 12px 16px; /* Adjusted padding for full-width buttons */
-    font-size: 0.875rem;
- }
- 
- .input-wrapper { /* Ensure this is not overriding children's width needs */
-  width: 100%;
- }
- 
- .form-input {
- padding-left: 38px; /* Adjusted for icon */
-    font-size: 0.9rem;
- }
-  .form-input::placeholder {
-    font-size: 0.85rem;
+  .section-icon { font-size: 1.1rem; color: var(--primary-500); margin-right: 12px; }
+  .section-header h3 { margin: 0; font-size: 1rem; font-weight: 600; color: var(--neutral-700); }
+  .form-group { margin-bottom: 20px; }
+  .form-group:last-child { margin-bottom: 0; }
+  .form-group label {
+    font-size: 0.875rem; font-weight: 500; margin-bottom: 8px;
+    color: var(--neutral-700); display: block;
   }
- 
-.input-icon {
-left: 12px; /* Adjusted */
-font-size: 0.9rem; /* Adjusted */
-}
-
-.hba1c-inputs {
-padding-left: 38px; /* Adjusted */
-}
-  .hba1c-input {
-    font-size: 0.9rem;
-    min-width: 40px; /* Adjust min-width for smaller screens if needed */
+  .required { color: var(--danger-500); margin-left: 3px; font-weight: 600; }
+  .input-wrapper { position: relative; display: flex; align-items: center; }
+  .input-icon {
+    position: absolute; left: 14px; color: var(--neutral-400); font-size: 1rem;
+    pointer-events: none; transition: color 0.2s ease; z-index: 2;
   }
-  .hba1c-input::placeholder {
-    font-size: 0.85rem;
+  .input-unit-wrapper {
+    display: flex; border: 1px solid var(--neutral-300); border-radius: 10px;
+    overflow: hidden; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    transition: all 0.2s ease;
+    background-color: white;
   }
-
+  .input-wrapper:focus-within .input-icon { color: var(--primary-500); }
+  .input-unit-wrapper.disabled {
+    background-color: var(--neutral-100); cursor: not-allowed; border-color: var(--neutral-200);
+  }
+  .input-unit-wrapper.disabled .input-icon,
+  .input-unit-wrapper.disabled .unit-label { color: var(--neutral-400); }
+  .input-unit-wrapper.disabled .unit-input { background-color: var(--neutral-100); color: var(--neutral-500); }
+  
+  .unit-input {
+    border: none !important; box-shadow: none !important; flex: 1; border-radius: 0; 
+    min-width: 0;
+    background-color: transparent;
+    padding: 12px 12px 12px 42px;
+    color: var(--neutral-800);
+    font-size: 0.9375rem;
+  }
   .unit-label {
-    padding: 0 10px;
-    font-size: 0.8125rem;
-    min-width: 55px;
+    padding: 0 14px; color: var(--neutral-600); font-size: 0.875rem;
+    background-color: var(--neutral-100);
+    align-self: stretch;
+    display: flex; align-items: center;
+    border-left: 1px solid var(--neutral-300);
+    min-width: 65px; justify-content: center; font-weight: 500;
   }
-}
+  .form-input.input-error { border-color: var(--danger-500) !important; }
+  .input-error-wrapper { 
+    border-color: var(--danger-500) !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+  }
+  .input-error-wrapper:focus-within {
+    border-color: var(--danger-500) !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25) !important;
+  }
+  .input-error-wrapper .input-icon { color: var(--danger-500) !important; }
+  .hba1c-wrapper { background-color: white; }
+  .hba1c-inputs {
+    display: flex; align-items: center; flex-grow: 1;
+    padding-left: 42px;
+  }
+  .hba1c-input {
+    width: auto; min-width: 50px; flex: 1; text-align: center;
+    padding: 12px 8px !important; border-radius: 0 !important; border: none !important;
+    box-shadow: none !important; font-size: 0.9375rem;
+    background-color: transparent;
+    color: var(--neutral-800);
+  }
+  .dot {
+    font-weight: bold; font-size: 1.2rem; margin: 0 4px;
+    color: var(--neutral-600); align-self: center; padding-bottom: 2px;
+  }
+  .helper-text {
+    margin-top: 6px; font-size: 0.8125rem; color: var(--neutral-600);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .error-icon { color: var(--danger-500) !important; }
+  .error-dot { color: var(--danger-500) !important; }
+  .error-message {
+    margin-top: 6px; font-size: 0.8125rem; color: var(--danger-700);
+    font-weight: 500; display: flex; align-items: center; gap: 6px;
+  }
+  .fade-enter-active, .fade-leave-active { transition: opacity 0.3s, transform 0.3s; }
+  .fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(-5px); }
+  .form-actions {
+    margin-top: 28px; display: flex; justify-content: flex-end; gap: 12px;
+    padding-top: 20px; border-top: 1px solid var(--neutral-200);
+  }
+  .btn-cancel, .btn-save {
+    padding: 10px 20px; border-radius: 8px; font-size: 0.9rem; font-weight: 600;
+    cursor: pointer; transition: all 0.2s ease;
+    display: flex; align-items: center; gap: 8px; justify-content: center;
+  }
+  .btn-cancel { background-color: white; border: 1px solid var(--neutral-300); color: var(--neutral-700); }
+  .btn-save { background-color: var(--primary-500); border: 1px solid var(--primary-500); color: white; min-width: 130px; }
+  .btn-save:disabled {
+    background-color: var(--neutral-300); border-color: var(--neutral-300);
+    color: var(--neutral-500); cursor: not-allowed; box-shadow: none;
+  }
+  .btn-cancel:focus {
+    box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.25);
+  }
+  .btn-save:focus {
+    background-color: var(--primary-600);
+    border-color: var(--primary-700);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3);
+  }
+  input[type="number"] { -moz-appearance: textfield; }
+  input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none; margin: 0;
+  }
+  @media (max-width: 640px) {
+    .modal-container { width: 95%; max-height: 95vh; }
+    .modal-header, .modal-body { padding: 16px 20px; }
+    .form-actions { flex-direction: column-reverse; gap: 10px; }
+    .btn-cancel, .btn-save { width: 100%; }
+  }
+
 </style>

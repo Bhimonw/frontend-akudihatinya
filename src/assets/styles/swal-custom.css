@@ -1,0 +1,112 @@
+/* src/assets/css/custom-swal.css (Versi Final) */
+
+/* Style untuk container/popup utama */
+.swal-popup-custom {
+  border-radius: 16px !important;
+  font-family: "Inter", sans-serif !important;
+}
+
+/* Style untuk judul */
+.swal-title-custom {
+  font-weight: 600 !important;
+  color: #334155 !important;
+}
+
+/* Base style untuk semua tombol Swal kustom kita */
+.btn-swal-confirm,
+.btn-swal-cancel,
+.btn-swal-deny {
+  padding: 10px 20px !important;
+  border-radius: 8px !important;
+  font-size: 0.9rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  border: 1px solid transparent !important;
+  margin: 0 5px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  justify-content: center !important;
+  min-width: 120px !important;
+}
+
+/* Tombol Konfirmasi (Default: Biru/Hijau) */
+.btn-swal-confirm {
+  background-color: var(--primary-500) !important;
+  border-color: var(--primary-500) !important;
+  color: white !important;
+}
+.btn-swal-confirm:hover {
+  background-color: var(--primary-600) !important;
+  border-color: var(--primary-600) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2) !important;
+}
+.btn-swal-confirm:focus {
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3) !important;
+}
+
+/* Tombol Batal (Putih/Netral) */
+.btn-swal-cancel {
+  background-color: white !important;
+  border: 1px solid var(--neutral-300) !important;
+  color: var(--neutral-700) !important;
+}
+.btn-swal-cancel:hover {
+  background-color: var(--neutral-100) !important;
+  border-color: var(--neutral-400) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+}
+.btn-swal-cancel:focus {
+  box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.25) !important;
+}
+
+/* Tombol Deny (Merah) */
+.btn-swal-deny {
+  background-color: #d33 !important;
+  border-color: #d33 !important;
+  color: white !important;
+}
+.btn-swal-deny:hover {
+  background-color: #c62828 !important;
+  border-color: #c62828 !important;
+}
+
+/* --- ATURAN KHUSUS --- */
+/* Jika ikonnya adalah WARNING (seperti untuk hapus), UBAH tombol konfirmasi menjadi MERAH */
+.swal2-icon.swal2-warning ~ .swal2-actions .btn-swal-confirm {
+  background-color: #d33 !important;
+  border-color: #d33 !important;
+}
+.swal2-icon.swal2-warning ~ .swal2-actions .btn-swal-confirm:hover {
+  background-color: #c62828 !important;
+  border-color: #c62828 !important;
+}
+/* Menambahkan ikon menggunakan ::before untuk pemisahan yang bersih */
+.btn-swal-confirm::before,
+.btn-swal-cancel::before {
+  font-family: "Font Awesome 5 Free"; /* Pastikan nama familinya benar */
+  font-weight: 900; /* Solid icons */
+  display: inline-block;
+}
+
+/* Ikon spesifik untuk setiap tombol */
+.btn-swal-confirm.swal-icon-save::before {
+  content: "\f0c7"; /* Kode unicode untuk ikon 'save' */
+}
+
+.btn-swal-cancel.swal-icon-times::before {
+  content: "\f00d"; /* Kode unicode untuk ikon 'times' */
+}
+
+/* Aturan khusus untuk tombol simpan saat warning (menjadi merah) */
+.swal2-icon.swal2-warning ~ .swal2-actions .btn-swal-confirm {
+  background-color: #d33 !important;
+  border-color: #d33 !important;
+}
+.swal2-icon.swal2-warning ~ .swal2-actions .btn-swal-confirm:hover {
+  background-color: #c62828 !important;
+  border-color: #c62828 !important;
+}

@@ -161,14 +161,15 @@
                 <td>{{ exam.examination_results.gdp || '-' }}</td>
                 <td>{{ exam.examination_results.gd2jpp || '-' }}</td>
                 <td>{{ exam.examination_results.hba1c || '-' }}</td>
-                <td>
+                <td class="action-cell">
                   <div class="action-buttons-container">
                     <button class="action-button edit" @click="openEditExamModal(exam)">
                       <font-awesome-icon :icon="['fas', 'edit']" />
-                      Ubah
+                      <span class="tooltip">Ubah Data</span>
                     </button>
                     <button class="action-button delete" @click="deleteExam(exam.id)">
                       <font-awesome-icon :icon="['fas', 'trash']" />
+                      <span class="tooltip">Hapus Data</span>
                     </button>
                   </div>
                 </td>
@@ -267,21 +268,11 @@
 </template>
 
 <script>
-import Swal from 'sweetalert2';
+import MySwal from "../../utils/swal-custom.js";
 import axios from 'axios';
 import AddExaminationDataDM from "../../components/modals/AddExaminationDataDM.vue";
 import EditPatientDetail from '../../components/modals/EditPatientDetail.vue';
 import EditExaminationModal from '../../components/modals/EditExaminationModal.vue';
-
-// Disarankan untuk mendaftarkan ikon Font Awesome secara global atau di main.js
-// Namun jika hanya untuk komponen ini:
-// import { library } from '@fortawesome/fontawesome-svg-core'
-// import { faUserCircle, faUser, faVenusMars, faIdCard, faShieldAlt, faCalendarAlt, faBirthdayCake, faMapMarkerAlt, faArrowLeft, faTrash, faEdit, faCheckCircle, faTimesCircle, faSearch, faPlus, faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
-// import { faCopy } from '@fortawesome/free-regular-svg-icons'
-// import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-// library.add(faUserCircle, faUser, faVenusMars, faIdCard, faShieldAlt, faCalendarAlt, faBirthdayCake, faMapMarkerAlt, faArrowLeft, faTrash, faEdit, faCheckCircle, faTimesCircle, faSearch, faPlus, faChevronLeft, faChevronRight, faCopy)
-
-
 export default {
   name: "DetailPasienDM",
   components: {
@@ -402,7 +393,7 @@ export default {
       try {
         const token = localStorage.getItem("token");
         if (!token) {
-          Swal.fire('Error', 'Token tidak ditemukan. Silakan login kembali.', 'error');
+          MySwal.fire('Error', 'Token tidak ditemukan. Silakan login kembali.', 'error');
           this.$router.push({ name: 'Login' }); 
           return;
         }
@@ -424,7 +415,7 @@ export default {
         };
       } catch (error) {
         console.error("Error fetching patient details:", error);
-        Swal.fire('Error', 'Terjadi kesalahan saat memuat detail pasien.', 'error');
+        MySwal.fire('Error', 'Terjadi kesalahan saat memuat detail pasien.', 'error');
       } finally {
         this.isLoading = false;
       }
@@ -453,11 +444,11 @@ export default {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
-            Swal.fire('Berhasil', 'Data pasien berhasil dihapus.', 'success');
+            MySwal.fire('Berhasil', 'Data pasien berhasil dihapus.', 'success');
             this.$router.push('/user/diabetes-mellitus');
         } catch (error) {
             console.error("Error deleting patient:", error);
-            Swal.fire('Gagal', error.response?.data?.message || 'Terjadi kesalahan saat menghapus data pasien.', 'error');
+            MySwal.fire('Gagal', error.response?.data?.message || 'Terjadi kesalahan saat menghapus data pasien.', 'error');
         }
     },
     async fetchExaminations() {
@@ -465,7 +456,7 @@ export default {
       try {
         const token = localStorage.getItem("token");
         if (!token) {
-          Swal.fire('Error', 'Token tidak ditemukan. Silakan login kembali.', 'error');
+          MySwal.fire('Error', 'Token tidak ditemukan. Silakan login kembali.', 'error');
           this.$router.push({ name: 'Login' }); 
           return;
         }
@@ -494,15 +485,16 @@ export default {
           this.exams = [];
           this.totalExamsFromAPI = 0;
           this.totalPagesFromAPI = 0;
-          Swal.fire('Error', 'Gagal memuat data pemeriksaan: format data tidak sesuai.', 'error');
+          MySwal.fire('Error', 'Gagal memuat data pemeriksaan: format data tidak sesuai.', 'error');
+
         }
       } catch (error) {
         console.error("Error fetching examinations:", error);
         if (error.response && error.response.status === 401) {
-            Swal.fire('Sesi Berakhir', 'Silakan login kembali.', 'warning')
+            MySwal.fire('Sesi Berakhir', 'Silakan login kembali.', 'warning')
                 .then(() => this.$router.push({ name: 'Login' })); 
         } else {
-            Swal.fire('Error', 'Terjadi kesalahan saat memuat data pemeriksaan.', 'error');
+            MySwal.fire('Error', 'Terjadi kesalahan saat memuat data pemeriksaan.', 'error');
         }
         this.exams = [];
         this.totalExamsFromAPI = 0;
@@ -512,13 +504,11 @@ export default {
       }
     },
     async deleteExam(id) {
-        const confirmation = await Swal.fire({
+        const confirmation = await MySwal.fire({
             title: 'Apakah Anda yakin?',
             text: 'Anda akan menghapus data pemeriksaan ini.',
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
             confirmButtonText: 'Ya, hapus!',
             cancelButtonText: 'Batal',
 
@@ -535,14 +525,14 @@ export default {
             await axios.delete(`http://localhost:8000/api/puskesmas/dm-examinations/${id}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            await Swal.fire('Berhasil', 'Data pemeriksaan berhasil dihapus.', 'success');
+            await MySwal.fire('Berhasil', 'Data pemeriksaan berhasil dihapus.', 'success');
             if (this.paginatedExams.length === 1 && this.currentPage > 1) {
                 this.currentPage--;
             }
             this.fetchExaminations(); 
         } catch (error) {
             console.error("Error deleting examination:", error);
-            Swal.fire('Gagal', error.response?.data?.message || 'Terjadi kesalahan.', 'error');
+            MySwal.fire('Gagal', error.response?.data?.message || 'Terjadi kesalahan.', 'error');
         }
     },
     openEditExamModal(exam) {
@@ -554,8 +544,7 @@ export default {
       this.selectedExam = null;
     },
     handleEditExamSubmit() {
-      this.fetchExaminations(); 
-      this.closeEditExamModal();
+      this.fetchExaminations();
     },
     handleAddExamSubmit() {
         this.fetchExaminations();
@@ -609,7 +598,7 @@ export default {
     async copyToClipboard(text) { // Metode baru untuk copy
       try {
         await navigator.clipboard.writeText(text);
-        Swal.fire({
+        MySwal.fire({
           toast: true,
           position: 'top-end',
           icon: 'success',
@@ -620,7 +609,7 @@ export default {
         });
       } catch (err) {
         console.error('Failed to copy: ', err);
-        Swal.fire({
+        MySwal.fire({
           toast: true,
           position: 'top-end',
           icon: 'error',
@@ -1241,54 +1230,105 @@ export default {
   border-bottom: none; 
 }
 
+/* KODE CSS BARU: Salin dan tempel ini ke dalam <style scoped> di DetailPasienDM.vue */
+
+/* Styling untuk sel yang berisi tombol aksi */
+.data-table .action-cell {
+  padding: 12px 16px;
+}
+
+/* Kontainer untuk mengelompokkan tombol aksi */
 .action-buttons-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 12px;
 }
 
-.action-button {
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-/* Style untuk tombol utama (Ubah), menggunakan class .detail */
-.action-button.edit {
-  border: 1px solid var(--primary-300);
-  background: var(--secondary-100);
-  color: var(--primary-500);
-}
-
-.action-button.edit:hover {
-  background: var(--secondary-300);
-  transform: scale(1.05);
-}
-
-/* Style untuk tombol Hapus */
+/* Refinement pada styling tombol aksi umum di dalam tabel */
+.action-button.edit,
 .action-button.delete {
-  border: 1px solid #e53935;
-  background: white;
-  color: #e53935;
-  height: 36px;
-  width: 36px;
-  padding: 8px 12px; /* Sesuaikan padding jika perlu */
-  display: flex;
+  position: relative; /* Diperlukan untuk positioning tooltip */
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+  border: 1px solid transparent;
+  background: transparent;
 }
 
+/* Styling spesifik untuk tombol Edit */
+.action-button.edit {
+  color: var(--primary-500, #3b82f6);
+  border-color: #dbeafe;
+  background-color: #eff6ff;
+}
+
+/* Hover state untuk tombol Edit */
+.action-button.edit:hover {
+  background-color: #dbeafe;
+  color: var(--primary-700, #1d4ed8);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2);
+}
+
+/* Styling spesifik untuk tombol Delete */
+.action-button.delete {
+  color: #ef4444;
+  border-color: #fee2e2;
+  background-color: #fef2f2;
+}
+
+/* Hover state untuk tombol Delete */
 .action-button.delete:hover {
-  background: #ffebee;
-  color: #c62828;
-  transform: scale(1.05);
+  background-color: #fee2e2;
+  color: #b91c1c;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.2);
+}
+
+/* Styling untuk Tooltip */
+.action-button .tooltip {
+  visibility: hidden;
+  width: max-content;
+  background-color: #334155;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 6px 10px;
+  position: absolute;
+  z-index: 10;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  font-size: 12px;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+/* Arrow untuk Tooltip */
+.action-button .tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #334155 transparent transparent transparent;
+}
+
+/* Tampilkan Tooltip saat tombol di-hover */
+.action-button:hover .tooltip {
+  visibility: visible;
+  opacity: 1;
 }
 
 .table-container::-webkit-scrollbar {
