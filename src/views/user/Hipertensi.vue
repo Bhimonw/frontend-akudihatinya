@@ -1,51 +1,28 @@
 <template>
-  <div class="diabetes-mellitus">
-    <!-- Page Container -->
-    <div class="page-container">
-      <!-- Toolbar -->
+  <div class="diabetes-mellitus"> <div class="page-container">
       <div class="toolbar">
-        <!-- Bagian Kiri -->
         <div class="left-section">
-          <!-- Bagian Dropdown Tahun -->
           <div class="dropdown-container-year">
             <select id="yearPicker" class="dropdown-select" v-model="selectedYear">
               <option v-for="year in years" :key="year" :value="String(year)">{{ year }}</option>
             </select>
           </div>
-          <!-- Tombol Tambah Data Peserta (with click handler to open modal) -->
           <button class="add-data-button" @click="openAddPatientModal">
             <font-awesome-icon :icon="['fas', 'plus']" />
             Tambah Pasien
           </button>
-          <!-- Tombol Download Laporan dengan Dropdown -->
-          <div class="download-dropdown">
-            <button class="download-report-button" @click="toggleDownloadMenu">
-              <font-awesome-icon :icon="['fas', 'download']" />
-              Unduh Data
-              <font-awesome-icon :icon="['fas', 'caret-down']" />
-            </button>
-            <div class="download-menu" v-show="isDownloadMenuOpen">
-              <button class="download-option" @click="downloadExcel">
-                <font-awesome-icon :icon="['fas', 'file-excel']" />
-                Unduh Excel
-              </button>
-              <button class="download-option" @click="downloadPDF">
-                <font-awesome-icon :icon="['fas', 'file-pdf']" />
-                Unduh PDF
-              </button>
-            </div>
-          </div>
+          <button class="download-report-button" @click="downloadExcel" :disabled="isDownloading">
+            <font-awesome-icon :icon="['fas', isDownloading ? 'spinner' : 'download']" :spin="isDownloading" />
+            {{ isDownloading ? 'Mengunduh...' : 'Unduh Excel' }}
+          </button>
         </div>
-        <!-- Bagian Kanan -->
         <div class="right-section">
-          <!-- Search Bar -->
           <div class="search-container">
             <font-awesome-icon :icon="['fas', 'search']" class="search-icon" />
             <input type="text" placeholder="Cari Data..." class="search-input" v-model="searchQuery" />
           </div>
         </div>
       </div>
-      <!-- Tabel Data Pasien -->
       <div class="table-container">
         <table class="data-table">
           <thead>
@@ -53,18 +30,17 @@
               <th>No</th>
               <th>Nama Pasien</th>
               <th>NIK</th>
-              <th>Nomor BPJS</th>
               <th>Jenis Kelamin</th>
               <th>Tanggal Lahir</th>
               <th>Umur</th>
               <th>Alamat</th>
-              <th>Aksi</th>
+              <th>Nomor Telepon</th>
+              <th>Nomor BPJS</th> <th>Aksi</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="isLoading">
-              <td colspan="9">
-                <div class="loading-container">
+              <td colspan="10"> <div class="loading-container">
                   <div class="loading-content">
                     <div class="spinner"></div>
                     <p>Memuat data...</p>
@@ -76,12 +52,12 @@
               <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
               <td>{{ patient.name || '-' }}</td>
               <td>{{ patient.nik || '-'}}</td>
-              <td>{{ patient.bpjs_number || '-' }}</td>
               <td>{{ patient.gender === "male" ? "Laki-laki" : "Perempuan" || '-'}}</td>
               <td>{{ formatDate(patient.birth_date) || '-'}}</td>
               <td>{{ patient.age || '-'}}</td>
-              <td class="action-button-container">{{ patient.address || '-'}}</td>
-              <td>
+              <td>{{ patient.address || '-'}}</td>
+              <td>{{ patient.phone_number || '-' }}</td>
+              <td>{{ patient.bpjs_number || '-' }}</td> <td>
                 <div class="action-buttons-container">
                   <button class="action-button detail" @click="viewPatientDetails(patient.id)">
                     <font-awesome-icon :icon="['fas', 'eye']" />
@@ -94,16 +70,13 @@
               </td>
             </tr>
             <tr v-if="!isLoading && paginatedPatients.length === 0">
-              <td colspan="9" class="no-data">Tidak ada data.</td>
-            </tr>
+              <td colspan="10" class="no-data">Tidak ada data.</td> </tr>
           </tbody>
         </table>
       </div>
-      <!-- Pagination -->
       <div class="pagination-container">
         <div class="flex items-center justify-between bg-white px-4 py-3 sm:px-6">
           <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-            <!-- Showing Text -->
             <div>
               <p class="text-sm text-gray-700 flex items-center gap-2">
                 Baris per halaman:
@@ -117,9 +90,7 @@
                 {{ firstItemIndex + 1 }}-{{ lastItemIndex }} dari {{ totalPatients }} item
               </p>
             </div>
-            <!-- Pagination Buttons -->
             <nav class="isolate inline-flex -space-x-px rounded-md shadow-xs" aria-label="Pagination">
-              <!-- Tombol Previous -->
               <button
                 class="pagination-button prev"
                 @click="prevPage"
@@ -128,7 +99,6 @@
                 <font-awesome-icon :icon="['fas', 'chevron-left']" />
               </button>
 
-              <!-- Page numbers and ellipsis -->
               <template v-for="(item, index) in paginationItems">
                 <button
                   v-if="item !== 'ellipsis'"
@@ -150,7 +120,6 @@
                 </div>
               </template>
 
-              <!-- Tombol Next -->
               <button
                 class="pagination-button next"
                 @click="nextPage"
@@ -163,7 +132,6 @@
         </div>
       </div>
     </div>
-    <!-- Import the modal from separate file but don't define its content here -->
     <AddPatientModal 
       :show="showAddPatientModal" 
       @close="closeAddPatientModal"
@@ -178,6 +146,11 @@
 import Swal from 'sweetalert2';
 import apiClient from "../../api.js";
 import AddPatientModal from "../../components/modals/AddPatientModal.vue";
+// Pastikan untuk menambahkan faSpinner jika belum ada
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { faSpinner } from '@fortawesome/free-solid-svg-icons';
+
+library.add(faSpinner);
 
 export default {
   name: "Hipertensi",
@@ -189,13 +162,13 @@ export default {
     const startYear = 2000;
     const years = Array.from({ length: currentYear - startYear + 1 }, (_, i) => startYear + i).reverse();
     return {
-      patients: [], // Data pasien dari API
+      patients: [],
       currentPage: 1,
       pageSize: 10,
       searchQuery: "",
       selectedYear: String(currentYear),
       years: years,
-      isDownloadMenuOpen: false,
+      isDownloading: false, // State untuk loading download
       showAddPatientModal: false,
       totalPatients: 0,
       totalPages: 0,
@@ -216,14 +189,13 @@ export default {
     },
     lastItemIndex() {
       const currentLast = this.currentPage * this.pageSize;
-      return Math.min(currentLast, this.totalPatients);
+      return Math.min(currentLast, this.totalPatients);
     },
     paginationItems() {
       const result = [];
       const totalPages = this.totalPages;
       const currentPage = this.currentPage;
       
-      // For 7 or fewer pages, show all
       if (totalPages <= 7) {
         for (let i = 1; i <= totalPages; i++) {
           result.push(i);
@@ -231,10 +203,8 @@ export default {
         return result;
       }
       
-      // Always show first page
       result.push(1);
       
-      // Case 1: Current page is near the beginning
       if (currentPage <= 4) {
         for (let i = 2; i <= 5; i++) {
           result.push(i);
@@ -244,7 +214,6 @@ export default {
         return result;
       }
       
-      // Case 2: Current page is near the end
       if (currentPage >= totalPages - 3) {
         result.push('ellipsis');
         for (let i = totalPages - 4; i < totalPages; i++) {
@@ -253,7 +222,6 @@ export default {
         return result;
       }
       
-      // Case 3: Current page is in the middle
       result.push('ellipsis');
       result.push(currentPage - 1);
       result.push(currentPage);
@@ -265,37 +233,33 @@ export default {
     },
   },
   methods: {
-        formatDate(dateString) {
-    // Jika tanggal kosong atau tidak valid, kembalikan strip (-)
-      if (!dateString) {
-        return '-';
-      }
+      formatDate(dateString) {
+        if (!dateString) {
+          return '-';
+        }
 
-      const date = new Date(dateString);
-      // Cek apakah tanggal yang dihasilkan valid
-      if (isNaN(date.getTime())) {
-          return dateString; // Kembalikan string asli jika formatnya tidak dikenali
-      }
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) {
+            return dateString;
+        }
 
-      // Daftar nama bulan dalam Bahasa Indonesia
-      const monthNames = [
-        "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
-      ];
+        const monthNames = [
+          "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+          "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+        ];
 
-      const day = date.getDate();
-      const monthIndex = date.getMonth();
-      const year = date.getFullYear();
+        const day = date.getDate();
+        const monthIndex = date.getMonth();
+        const year = date.getFullYear();
 
-      return `${day} ${monthNames[monthIndex]} ${year}`;
+        return `${day} ${monthNames[monthIndex]} ${year}`;
     },
     async fetchPatients() {
       this.isLoading = true;
       try {
-        // Gunakan apiClient, hapus header manual
         const response = await apiClient.get("/puskesmas/patients", {
           params: {
-            disease_type: "ht", // Bedanya di sini
+            disease_type: "ht", // Sesuai untuk Hipertensi
             year: this.selectedYear,
             search: this.searchQuery || undefined,
             per_page: this.pageSize,
@@ -317,7 +281,6 @@ export default {
         this.links = meta.links || {};
 
       } catch (error) {
-        // Penanganan error konsisten dengan ListPasien.vue
         if (error.response?.status === 401) {
           Swal.fire({
             title: "Session Expired!",
@@ -352,9 +315,8 @@ export default {
       try {
         const payload = {
           year: this.selectedYear,
-          examination_type: "ht", // Bedanya di sini
+          examination_type: "ht", // Sesuai untuk Hipertensi
         };
-        // Gunakan apiClient, hapus header manual
         await apiClient.put(
           `/puskesmas/patients/${patientId}/examination-year`,
           payload
@@ -381,9 +343,8 @@ export default {
     },
     handlePatientSubmit(patientData) {
       console.log("Data yang disimpan:", patientData);
-      alert("Data berhasil disimpan!");
       this.closeAddPatientModal();
-      this.fetchPatients(); // Muat ulang data setelah menambahkan pasien
+      this.fetchPatients();
     },
     prevPage() {
       if (this.currentPage > 1) {
@@ -405,75 +366,86 @@ export default {
       this.currentPage = 1;
       this.fetchPatients();
     },
-    
     viewPatientDetails(id) {
       this.$router.push({
-        name: "DetailPasienHT",
+        name: "DetailPasienHT", // Sesuai untuk Hipertensi
         params: { id },
-        query: { year: this.selectedYear } // Kirim tahun sebagai query parameter
+        query: { year: this.selectedYear }
       });
     },
-    toggleDownloadMenu() {
-      this.isDownloadMenuOpen = !this.isDownloadMenuOpen;
-      if (this.isDownloadMenuOpen) {
-        setTimeout(() => {
-          document.addEventListener('click', this.closeDownloadMenu);
-        }, 0);
+    async downloadExcel() {
+      if (this.isDownloading) return;
+      this.isDownloading = true;
+
+      try {
+        const response = await apiClient.get('/puskesmas/patients-export-excel', {
+          params: {
+            disease_type: 'ht', // Sesuai untuk Hipertensi
+            year: this.selectedYear,
+            search: this.searchQuery || undefined,
+          },
+          responseType: 'blob',
+        });
+
+        const blob = new Blob([response.data], { type: response.headers['content-type'] });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        
+        const fileName = `data_pasien_ht_${this.selectedYear}.xlsx`;
+        
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+        Swal.fire('Berhasil!', 'Data pasien berhasil diunduh.', 'success');
+
+      } catch (error) {
+        console.error("Error downloading excel file:", error);
+        Swal.fire('Gagal!', 'Terjadi kesalahan saat mengunduh data.', 'error');
+      } finally {
+        this.isDownloading = false;
       }
     },
-    closeDownloadMenu(event) {
-      const downloadContainer = document.querySelector('.download-dropdown');
-      if (downloadContainer && !downloadContainer.contains(event.target)) {
-        this.isDownloadMenuOpen = false;
-        document.removeEventListener('click', this.closeDownloadMenu);
-      }
-    },
-    downloadExcel() {
-      console.log("Mengunduh data dalam format Excel...");
-      alert("Mengunduh data dalam format Excel");
-      this.isDownloadMenuOpen = false;
-    },
-    downloadPDF() {
-      console.log("Mengunduh data dalam format PDF...");
-      alert("Mengunduh data dalam format PDF");
-      this.isDownloadMenuOpen = false;
-    }
   },
   watch: {
     currentPage() {
       this.fetchPatients();
     },
     selectedYear() {
-      if (this.currentPage !== 1) {
-        this.currentPage = 1;
-      } else {
-        this.fetchPatients();
-      }
-    },
+      if (this.currentPage !== 1) {
+        this.currentPage = 1;
+      } else {
+        this.fetchPatients();
+      }
+    },
     pageSize() {
-      if (this.currentPage !== 1) {
-        this.currentPage = 1;
-      } else {
-        this.fetchPatients();
-      }
-    },
+      if (this.currentPage !== 1) {
+        this.currentPage = 1;
+      } else {
+        this.fetchPatients();
+      }
+    },
     searchQuery() {
-      clearTimeout(this.searchTimeout);
-      this.searchTimeout = setTimeout(() => {
-        if (this.currentPage !== 1) {
-          this.currentPage = 1;
-        } else {
-          this.fetchPatients();
-        }
-      }, 500); // Penundaan 500 milidetik
-    },
+      clearTimeout(this.searchTimeout);
+      this.searchTimeout = setTimeout(() => {
+        if (this.currentPage !== 1) {
+          this.currentPage = 1;
+        } else {
+          this.fetchPatients();
+        }
+      }, 500);
+    },
   },
   created() {
-    this.fetchPatients(); // Muat data pasien saat komponen dibuat
+    this.fetchPatients();
   },
   beforeUnmount() {
-    clearTimeout(this.searchTimeout);
-  },
+    clearTimeout(this.searchTimeout);
+  },
 };
 </script>
 
@@ -581,11 +553,6 @@ export default {
   background: var(--primary-700);
 }
 
-/* Dropdown untuk tombol download/unduh */
-.download-dropdown {
-  position: relative;
-}
-
 /* Tombol download Laporan */
 .download-report-button {
   display: flex;
@@ -607,45 +574,9 @@ export default {
   background: var(--primary-700);
 }
 
-/* Menu dropdown untuk download */
-.download-menu {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  background: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
-  margin-top: 5px;
-  z-index: 100;
-  min-width: 180px;
-  overflow: hidden;
-}
-
-/* Opsi download */
-.download-option {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  width: 100%;
-  border: none;
-  background: transparent;
-  text-align: left;
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  color: #4f5867;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.download-option:hover {
-  background-color: #f3f4f6;
-  color: var(--primary-500);
-}
-
-/* Separator antara opsi */
-.download-option:not(:last-child) {
-  border-bottom: 1px solid #eaeaea;
+.download-report-button:disabled {
+  background-color: #9aa0a8;
+  cursor: not-allowed;
 }
 
 /* Kolom Pencarian */
@@ -706,10 +637,6 @@ export default {
     width: 100%;
     text-align: center;
     justify-content: center;
-  }
-  
-  .download-menu {
-    width: 100%;
   }
 }
 

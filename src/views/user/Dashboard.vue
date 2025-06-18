@@ -201,7 +201,7 @@
                 <tr>
                   <th rowspan="2" class="th-month">Bulan</th>
                   <th colspan="3" class="th-group">Jumlah</th>
-                  <th colspan="2" class="th-group">Jenis Kelamin</th>
+                  <th colspan="2" class="th-group">Jumlah Standar Berdasarkan Jenis Kelamin</th>
                 </tr>
                 <tr>
                   <th class="th-sub">S</th>

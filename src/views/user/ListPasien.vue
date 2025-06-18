@@ -1,11 +1,16 @@
 <template>
-  <div class="diabetes-mellitus">
+  <div class="diabetes-mellitus"> <!-- Nama kelas bisa diubah agar lebih generik jika perlu -->
     <div class="page-container">
       <div class="toolbar">
         <div class="left-section">
           <button class="add-data-button" @click="openAddPatientModal">
             <font-awesome-icon :icon="['fas', 'plus']" />
             Tambah Pasien Baru
+          </button>
+          <!-- Tombol Unduh Ditambahkan Di Sini -->
+          <button class="download-report-button" @click="downloadExcel" :disabled="isDownloading">
+            <font-awesome-icon :icon="['fas', isDownloading ? 'spinner' : 'download']" :spin="isDownloading" />
+            {{ isDownloading ? 'Mengunduh...' : 'Unduh Excel' }}
           </button>
         </div>
         <div class="right-section">
@@ -28,17 +33,18 @@
               <th>No</th>
               <th>Nama Pasien</th>
               <th>NIK</th>
-              <th>Nomor BPJS</th>
               <th>Jenis Kelamin</th>
               <th>Tanggal Lahir</th>
               <th>Umur</th>
               <th>Alamat</th>
+              <th>Nomor Telepon</th>
+              <th>Nomor BPJS</th>
               <th>Aksi</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="isLoading">
-              <td colspan="9">
+              <td colspan="10"> <!-- Colspan diubah menjadi 10 -->
                 <div class="loading-container">
                   <div class="loading-content">
                     <div class="spinner"></div>
@@ -51,11 +57,12 @@
               <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
               <td>{{ patient.name || '-'}}</td>
               <td>{{ patient.nik || '-'}}</td>
-              <td>{{ patient.bpjs_number || '-'}}</td>
               <td>{{ patient.gender === "male" ? "Laki-laki" : "Perempuan" || '-'}}</td>
               <td>{{ formatDate(patient.birth_date) || '-'}}</td>
               <td>{{ patient.age || '-'}}</td>
               <td>{{ patient.address || '-'}}</td>
+              <td>{{ patient.phone_number || '-' }}</td>
+              <td>{{ patient.bpjs_number || '-'}}</td>
               <td>
                 <button
                   class="action-button detail"
@@ -66,7 +73,7 @@
               </td>
             </tr>
             <tr v-if="!isLoading && patients.length === 0">
-              <td colspan="9" class="no-data">Tidak ada data pasien.</td>
+              <td colspan="10" class="no-data">Tidak ada data pasien.</td> <!-- Colspan diubah menjadi 10 -->
             </tr>
           </tbody>
         </table>
@@ -145,6 +152,10 @@
 import apiClient from "../../api.js"; 
 import Swal from "sweetalert2";
 import AddPatientModal from "../../components/modals/AddNewPatient.vue";
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { faSpinner } from '@fortawesome/free-solid-svg-icons';
+
+library.add(faSpinner);
 
 export default {
   name: "ListPasien",
@@ -162,11 +173,11 @@ export default {
       totalPages: 0,
       links: {},
       isLoading: false,
-      searchTImeout: null,
+      isDownloading: false, // State untuk loading unduh
+      searchTimeout: null,
     };
   },
   computed: {
-    // ... (computed properties remain the same as previous version) ...
     firstItemIndex() {
       return (this.currentPage - 1) * this.pageSize;
     },
@@ -215,48 +226,35 @@ export default {
       if(lastPushed < totalPages) result.push(totalPages);
       
       return result.filter((item, index, self) => { 
-            if (item === 'ellipsis' && self[index -1] === 'ellipsis') return false;
-            return true;
+          if (item === 'ellipsis' && self[index -1] === 'ellipsis') return false;
+          return true;
       });
     },
   },
   methods: {
     formatDate(dateString) {
-      // Jika tanggal kosong atau tidak valid, kembalikan strip (-)
       if (!dateString) {
         return '-';
       }
-
       const date = new Date(dateString);
-      // Cek apakah tanggal yang dihasilkan valid
       if (isNaN(date.getTime())) {
-          return dateString; // Kembalikan string asli jika formatnya tidak dikenali
+        return dateString;
       }
-
-      // Daftar nama bulan dalam Bahasa Indonesia
       const monthNames = [
         "Januari", "Februari", "Maret", "April", "Mei", "Juni",
         "Juli", "Agustus", "September", "Oktober", "November", "Desember"
       ];
-
       const day = date.getDate();
       const monthIndex = date.getMonth();
       const year = date.getFullYear();
-
       return `${day} ${monthNames[monthIndex]} ${year}`;
     },
     async fetchPatients() {
-      // ... (fetchPatients logic remains the same as previous version) ...
       this.isLoading = true;
       try {
-        const token = localStorage.getItem("token"); 
-        if (!token) {
-          Swal.fire("Error", "Sesi tidak valid. Silakan login kembali.", "error");
-          this.isLoading = false;
-          return;
-        }
         const response = await apiClient.get("/puskesmas/patients", {
           params: {
+            disease_type: "all", // Mengambil semua data pasien
             search: this.searchQuery || undefined,
             per_page: this.pageSize,
             page: this.currentPage,
@@ -265,7 +263,6 @@ export default {
 
         if (!response.data || !response.data.meta) {
           Swal.fire("Error", "Terjadi kesalahan: Struktur respons API tidak sesuai.", "error");
-          this.isLoading = false;
           return;
         }
         
@@ -281,10 +278,10 @@ export default {
         if (error.response?.status === 401) {
           Swal.fire({
             title: "Session Expired!",
-            text: "Your Session has Expired. Please login again.",
+            text: "Sesi Anda telah berakhir. Silakan login kembali.",
             icon: "warning",
           }).then(() => {
-            this.$router.push('/login'); 
+            // Logika logout atau redirect
           });
         } else {
           Swal.fire("Error!", "Gagal memuat data pasien. Silakan coba lagi.", "error");
@@ -293,22 +290,51 @@ export default {
         this.isLoading = false;
       }
     },
+    async downloadExcel() {
+      if (this.isDownloading) return;
+      this.isDownloading = true;
+
+      try {
+        const response = await apiClient.get('/puskesmas/patients-export-excel', {
+          params: {
+            disease_type: 'all', // Sesuai permintaan
+            search: this.searchQuery || undefined,
+          },
+          responseType: 'blob',
+        });
+
+        const blob = new Blob([response.data], { type: response.headers['content-type'] });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        
+        const fileName = `data_semua_pasien.xlsx`;
+        
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+        Swal.fire('Berhasil!', 'Data pasien berhasil diunduh.', 'success');
+
+      } catch (error) {
+        console.error("Error downloading excel file:", error);
+        Swal.fire('Gagal!', 'Terjadi kesalahan saat mengunduh data.', 'error');
+      } finally {
+        this.isDownloading = false;
+      }
+    },
     openAddPatientModal() {
       this.showAddPatientModal = true;
     },
     closeAddPatientModal() {
       this.showAddPatientModal = false;
     },
-    handlePatientCreated(newPatientData) {
-      // This method is called when AddNewPatientModal successfully creates a patient
-      // newPatientData contains the response from the API (the created patient object)
-      console.log("Patient created:", newPatientData);
-      // The modal closes itself on success.
-      // Parent ensures its state for modal visibility is also updated if needed,
-      // though AddNewPatientModal emitting 'close' already handles this.
-      this.fetchPatients(); // Refresh the patient list
+    handlePatientCreated() {
+      this.fetchPatients();
     },
-    // The old handlePatientSubmit method is removed as its logic is now in AddNewPatientModal.vue
     prevPage() {
       if (this.currentPage > 1) this.currentPage--;
     },
@@ -336,21 +362,14 @@ export default {
       else this.fetchPatients();
     },
     searchQuery() {
-      // 1. Hapus timeout sebelumnya untuk me-reset timer setiap kali ada ketukan baru
       clearTimeout(this.searchTimeout);
-
-      // 2. Atur timeout baru. Kode di dalamnya hanya akan berjalan setelah 500ms
-      //    jika tidak ada ketukan tombol baru dalam rentang waktu tersebut.
       this.searchTimeout = setTimeout(() => {
-        // 3. Logika asli dipindahkan ke dalam callback setTimeout
         if (this.currentPage !== 1) {
-          // Mereset ke halaman 1 akan otomatis memicu watcher `currentPage` untuk memanggil API
           this.currentPage = 1;
         } else {
-          // Jika sudah di halaman 1, panggil API secara langsung
           this.fetchPatients();
         }
-      }, 1000); // Penundaan 500 milidetik
+      }, 500);
     },
   },
   created() {
@@ -408,12 +427,6 @@ export default {
   flex-wrap: wrap;
 }
 
-/* Dropdown Tahun */
-.dropdown-container-year {
-  position: relative;
-  width: 147px;
-}
-
 .dropdown-select {
   width: 100%;
   height: 42px;
@@ -431,20 +444,8 @@ export default {
   outline: none;
 }
 
-/* Dropdown Icon (Chevron Down) */
-.dropdown-container-year::after {
-  content: "▼";
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 12px;
-  color: #9aa0a8;
-  pointer-events: none;
-}
-
 /* Tombol Tambah Data Peserta */
-.add-data-button {
+.add-data-button, .download-report-button {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -460,75 +461,13 @@ export default {
   transition: background-color 0.3s ease;
 }
 
-.add-data-button:hover {
+.add-data-button:hover, .download-report-button:hover {
   background: var(--primary-700);
 }
 
-/* Dropdown untuk tombol download/unduh */
-.download-dropdown {
-  position: relative;
-}
-
-/* Tombol download Laporan */
-.download-report-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: var(--primary-500);
-  color: #ffffff;
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.download-report-button:hover {
-  background: var(--primary-700);
-}
-
-/* Menu dropdown untuk download */
-.download-menu {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  background: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
-  margin-top: 5px;
-  z-index: 100;
-  min-width: 180px;
-  overflow: hidden;
-}
-
-/* Opsi download */
-.download-option {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  width: 100%;
-  border: none;
-  background: transparent;
-  text-align: left;
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  color: #4f5867;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.download-option:hover {
-  background-color: #f3f4f6;
-  color: var(--primary-500);
-}
-
-/* Separator antara opsi */
-.download-option:not(:last-child) {
-  border-bottom: 1px solid #eaeaea;
+.download-report-button:disabled {
+  background-color: #9aa0a8;
+  cursor: not-allowed;
 }
 
 /* Kolom Pencarian */
@@ -571,9 +510,9 @@ export default {
 
   .left-section,
   .right-section {
+    width: 100%;
     flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
+    align-items: stretch; /* Ubah agar tombol memenuhi lebar */
   }
 
   .search-container {
@@ -589,10 +528,6 @@ export default {
     width: 100%;
     text-align: center;
     justify-content: center;
-  }
-  
-  .download-menu {
-    width: 100%;
   }
 }
 
@@ -617,7 +552,6 @@ export default {
   overflow: hidden;
 }
 
-/* Header */
 .data-table thead th {
   background: #f3f4f6;
   color: #333333;
@@ -627,17 +561,20 @@ export default {
   border-bottom: 1px solid #e5e7eb;
 }
 
-/* Data Rows */
 .data-table tbody tr:hover {
   background: #f9fafb;
   transition: background-color 0.3s ease;
 }
 
-/* Data Cell */
 .data-table td {
   text-align: center;
   padding: 20px;
+  border-bottom: 1px solid #e5e7eb;
 }
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
 
 .data-table tr {
   height: 60px;
@@ -659,7 +596,6 @@ export default {
   justify-content: center;
 }
 
-/* Spinner Style */
 .spinner {
   border: 4px solid #f3f3f3;
   border-top: 4px solid var(--primary-500);
@@ -671,15 +607,10 @@ export default {
 }
 
 @keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-/* Loading Text Style */
 .loading-content p {
   margin: 0;
   color: #4f5867;
@@ -694,13 +625,14 @@ export default {
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  background: var(--secondary-100); /* Make sure --secondary-100 is defined in your global styles or :root */
+  background: var(--secondary-100);
   color: var(--primary-500);
   transition: background-color 0.3s ease, transform 0.3s ease;
 }
 
 .action-button.detail:hover {
-  background: var(--secondary-300); /* Make sure --secondary-300 is defined */
+  background: var(--secondary-300);
+  transform: scale(1.05);
 }
 
 /* Scrollbar Styling */
@@ -717,7 +649,6 @@ export default {
   background: #f3f4f6;
 }
 
-/* No Data Display */
 .no-data {
   text-align: center;
   padding: 40px 20px;
@@ -731,7 +662,6 @@ export default {
   border-radius: 8px;
 }
 
-/* Pagination Buttons */
 .pagination-button {
   display: flex;
   align-items: center;
@@ -764,13 +694,11 @@ export default {
   color: var(--primary-500);
 }
 
-/* Halaman Aktif */
 .pagination-button.active {
   color: var(--primary-500);
   font-weight: 600;
 }
 
-/* Tombol Previous dan Next */
 .pagination-button.prev,
 .pagination-button.next {
   background-color: var(--primary-500);
@@ -785,14 +713,12 @@ export default {
   background-color: var(--primary-700);
 }
 
-/* Tombol Disabled */
 .pagination-button:disabled {
   background-color: #9aa0a8;
   color: #ffffff;
   cursor: not-allowed;
 }
 
-/* Dropdown Container */
 .dropdown-container {
   position: relative;
   width: 80px;

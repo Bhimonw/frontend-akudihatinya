@@ -15,54 +15,100 @@
           <h2>Informasi Pasien</h2>
         </div>
 
-        <div v-if="isLoading" class="loading-container">
-          <div class="spinner"></div>
-          <p>Memuat data...</p>
+        <div v-if="isLoading" class="patient-cards">
+          <div class="info-card skeleton-card" v-for="n in 3" :key="n">
+            <div class="card-header">
+              <div class="skeleton-icon"></div>
+              <div class="skeleton-text skeleton-title"></div>
+            </div>
+            <div class="card-content">
+              <div class="skeleton-row" v-for="i in 3" :key="i">
+                <div class="skeleton-text skeleton-label"></div>
+                <div class="skeleton-text skeleton-value"></div>
+              </div>
+            </div>
+          </div>
         </div>
-
+        
         <div v-else class="profile-info-container">
-          <div class="profile-info">
-            <div class="info-item">
-              <span class="label"><font-awesome-icon :icon="['fas', 'user']" class="info-icon" /> Nama Lengkap :</span>
-              <span class="value">{{ patient.name }}</span>
+          <div class="patient-cards">
+            <div class="info-card primary-card">
+              <div class="card-header">
+                <font-awesome-icon :icon="['fas', 'user-circle']" class="card-icon" />
+                <h3>Identitas Utama</h3>
+              </div>
+              <div class="card-content">
+                <div class="info-row">
+                  <span class="label">Nama Lengkap</span>
+                  <span class="value">{{ patient.name }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">NIK</span>
+                  <span class="value">
+                    <span>{{ patient.nik || '-' }}</span>
+                    <button v-if="patient.nik && patient.nik !== '-'" @click="copyToClipboard(patient.nik)" class="copy-button">
+                      <font-awesome-icon :icon="['far', 'copy']" />
+                    </button>
+                  </span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Jenis Kelamin</span>
+                  <span class="value">
+                    <span class="gender-badge" :class="patient.gender === 'Laki-Laki' ? 'male' : 'female'">
+                      {{ patient.gender || '-' }}
+                    </span>
+                  </span>
+                </div>
+              </div>
             </div>
-            <div class="info-item">
-              <span class="label"><font-awesome-icon :icon="['fas', 'venus-mars']" class="info-icon" /> Jenis Kelamin :</span>
-              <span class="value">{{ patient.gender || '-' }}</span>
-            </div>
-            <div class="info-item">
-              <span class="label"><font-awesome-icon :icon="['fas', 'id-card']" class="info-icon" /> NIK :</span>
-              <span class="value">
-                <span>{{ patient.nik || '-' }}</span>
-                <button v-if="patient.nik && patient.nik !== '-'" @click="copyToClipboard(patient.nik)" class="copy-button" title="Salin NIK">
-                  <font-awesome-icon :icon="['far', 'copy']" />
-                </button>
-              </span>
-            </div>
-            <div class="info-item">
-              <span class="label"><font-awesome-icon :icon="['fas', 'shield-alt']" class="info-icon" /> Nomor BPJS :</span>
-              <span class="value">
-                <span>{{ patient.bpjs_number || '-' }}</span>
-                <button v-if="patient.bpjs_number && patient.bpjs_number !== '-'" @click="copyToClipboard(patient.bpjs_number)" class="copy-button" title="Salin No. BPJS">
-                  <font-awesome-icon :icon="['far', 'copy']" />
-                </button>
-              </span>
-            </div>
-            <div class="info-item">
-              <span class="label"><font-awesome-icon :icon="['fas', 'calendar-alt']" class="info-icon" /> Tanggal Lahir :</span>
-              <span class="value">{{ patient.birth_date || '-' }}</span>
-            </div>
-            <div class="info-item">
-              <span class="label"><font-awesome-icon :icon="['fas', 'birthday-cake']" class="info-icon" /> Umur :</span>
-              <span class="value">{{ patient.age ? patient.age + ' Tahun' : '-' }}</span>
-            </div>
-          </div>
 
-          <div class="address-info">
-            <span class="label"><font-awesome-icon :icon="['fas', 'map-marker-alt']" class="info-icon" /> Alamat :</span>
-            <span class="value">{{ patient.address || '-' }}</span>
+            <div class="info-card">
+              <div class="card-header">
+                <font-awesome-icon :icon="['fas', 'calendar-alt']" class="card-icon" />
+                <h3>Informasi Demografi</h3>
+              </div>
+              <div class="card-content">
+                <div class="info-row">
+                  <span class="label">Tanggal Lahir</span>
+                  <span class="value">{{ formatDate(patient.birth_date) || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Umur</span>
+                  <span class="value">
+                    <span class="age-badge">{{ patient.age ? patient.age + ' Tahun' : '-' }}</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="info-card">
+              <div class="card-header">
+                <font-awesome-icon :icon="['fas', 'address-card']" class="card-icon" />
+                <h3>Kontak & Asuransi</h3>
+              </div>
+              <div class="card-content">
+                <div class="info-row">
+                  <span class="label">No. BPJS</span>
+                  <span class="value">
+                    <span>{{ patient.bpjs_number || '-' }}</span>
+                    <button v-if="patient.bpjs_number && patient.bpjs_number !== '-'" @click="copyToClipboard(patient.bpjs_number)" class="copy-button">
+                      <font-awesome-icon :icon="['far', 'copy']" />
+                    </button>
+                  </span>
+                </div>
+                <div class="info-row">
+                  <span class="label">No. Telepon</span>
+                  <span class="value">{{ patient.phone_number || '-' }}</span>
+                </div>
+                <div class="info-row full-width">
+                  <span class="label">Alamat</span>
+                  <span class="value address-text">{{ patient.address || '-' }}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
+
         <div class="profile-actions">
           <button class="action-button delete-patient" @click="deletePatient">
             <font-awesome-icon :icon="['fas', 'trash']" />
@@ -266,9 +312,9 @@
 <script>
 import Swal from 'sweetalert2';
 import axios from 'axios';
-import AddExaminationDataHT from "../../components/modals/AddExaminationDataHT.vue"; // Changed
+import AddExaminationDataHT from "../../components/modals/AddExaminationDataHT.vue";
 import EditPatientDetail from '../../components/modals/EditPatientDetail.vue';
-import EditExaminationDataHT from '../../components/modals/EditExaminationDataHT.vue'; // Changed
+import EditExaminationDataHT from '../../components/modals/EditExaminationDataHT.vue';
 
 export default {
   name: "DetailPasienHT",
@@ -305,11 +351,11 @@ export default {
       return (this.currentPage - 1) * parseInt(this.pageSize);
     },
     lastItemIndex() {
-      const itemsOnCurrentPage = this.exams.length; // exams from API are already for the current page
+      const itemsOnCurrentPage = this.exams.length;
       return this.firstItemIndex + itemsOnCurrentPage;
     },
     paginatedExams() {
-      return this.exams; // API now handles pagination
+      return this.exams;
     },
     paginationItems() {
       const result = [];
@@ -367,21 +413,16 @@ export default {
   methods: {
     formatDate(dateString) {
       if (!dateString) {
-        return '-'; // Kembalikan strip jika tanggal tidak ada
+        return '-';
       }
-
-      // Daftar nama bulan dalam Bahasa Indonesia
       const months = [
         "Januari", "Februari", "Maret", "April", "Mei", "Juni",
         "Juli", "Agustus", "September", "Oktober", "November", "Desember"
       ];
-
       const date = new Date(dateString);
       const day = date.getDate();
       const monthName = months[date.getMonth()];
       const year = date.getFullYear();
-
-      // Gabungkan menjadi format yang diinginkan
       return `${day} ${monthName} ${year}`;
     },
     async fetchPatientDetails() {
@@ -400,13 +441,15 @@ export default {
         });
         const apiPatient = response.data.patient;
         this.patient = {
+          id: apiPatient.id,
           name: apiPatient.name,
           nik: apiPatient.nik || '-',
           bpjs_number: apiPatient.bpjs_number || '-',
           birth_date: apiPatient.birth_date || '-',
-          age: apiPatient.age ? `${apiPatient.age}` : '-', // Store as string
+          age: apiPatient.age || '-',
           gender: apiPatient.gender === 'female' ? 'Perempuan' : (apiPatient.gender === 'male' ? 'Laki-Laki' : '-'),
           address: apiPatient.address || '-',
+          phone_number: apiPatient.phone_number || '-',
         };
       } catch (error) {
         console.error("Error fetching patient details:", error);
@@ -440,7 +483,7 @@ export default {
             });
 
             Swal.fire('Berhasil', 'Data pasien berhasil dihapus.', 'success');
-            this.$router.push('/user/hipertensi'); // Adjusted redirect
+            this.$router.push('/user/hipertensi');
         } catch (error) {
             console.error("Error deleting patient:", error);
             Swal.fire('Gagal', error.response?.data?.message || 'Terjadi kesalahan saat menghapus data pasien.', 'error');
@@ -455,7 +498,7 @@ export default {
           this.$router.push({ name: 'Login' }); 
           return;
         }
-        const response = await axios.get("http://localhost:8000/api/puskesmas/ht-examinations", { // Changed endpoint
+        const response = await axios.get("http://localhost:8000/api/puskesmas/ht-examinations", {
           params: {
             patient_id: this.patientId,
             year: this.selectedYear,
@@ -516,7 +559,7 @@ export default {
             const token = localStorage.getItem("token");
             if (!token) throw new Error("Token tidak ditemukan");
 
-            await axios.delete(`http://localhost:8000/api/puskesmas/ht-examinations/${id}`, { // Changed endpoint
+            await axios.delete(`http://localhost:8000/api/puskesmas/ht-examinations/${id}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             Swal.fire('Berhasil', 'Data pemeriksaan berhasil dihapus.', 'success');
@@ -538,8 +581,9 @@ export default {
       this.fetchExaminations(); 
       this.closeEditExamModal();
     },
-    handleAddExamSubmit() { // Renamed from handleModalSubmit
+    handleAddExamSubmit() {
         this.fetchExaminations();
+        this.closeModal();
     },
     handleEditPatientSubmit(updatedPatient) {
         this.patient = { ...this.patient, ...updatedPatient }; 
@@ -571,10 +615,10 @@ export default {
     editPatient() {
       this.isEditModalOpen = true;
     },
-    closeModal() { // For AddExaminationDataHT
+    closeModal() {
       this.isModalOpen = false;
     },
-    closeEditModal() { // For EditPatientDetail
+    closeEditModal() {
       this.isEditModalOpen = false;
     },
     hasVisitInMonth(month) {
@@ -642,7 +686,6 @@ export default {
         const yearToUse = newYear || new Date().getFullYear().toString();
         if (yearToUse !== this.selectedYear) {
             this.selectedYear = yearToUse;
-            // fetchExaminations will be called by selectedYear watcher if it changes
         }
     }
   },
@@ -662,863 +705,661 @@ export default {
 </script>
 
 <style scoped>
-/* Gaya CSS dari DetailPasienDM.vue - disalin sepenuhnya */
+/* GAYA CSS BARU (Disalin dari versi DM yang sudah diperbaiki) */
 .patient-details {
-  display: flex;
-  background-color: #f7f8f9;
-  min-height: 100vh;
-  font-family: var(--font-family-primary);
-  color: var(--text-secondary);
+display: flex;
+background-color: #f7f8f9;
+min-height: 100vh;
+font-family: var(--font-family-primary);
+color: var(--text-secondary);
 }
-
 .main-content {
-  flex: 1;
-  overflow-x: auto;
-  padding: 0 16px;
-  padding: var(--spacing-lg);
+flex: 1;
+overflow-x: auto;
+padding: 0 16px;
+padding: var(--spacing-lg);
 }
-
 .breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-lg);
-  font-size: 14px;
-  color: var(--text-tertiary);
+display: flex;
+align-items: center;
+gap: var(--spacing-sm);
+margin-bottom: var(--spacing-lg);
+font-size: 14px;
+color: var(--text-tertiary);
 }
-
 .breadcrumb a {
-  color: var(--primary-500);
-  text-decoration: none;
-  transition: color 0.3s ease;
+color: var(--primary-500);
+text-decoration: none;
+transition: color 0.3s ease;
 }
-
 .breadcrumb a:hover {
-  color: var(--primary-700);
-  text-decoration: underline;
+color: var(--primary-700);
+text-decoration: underline;
 }
-
 .action-button.back {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border: 1px solid var(--primary-300);
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  background: var(--secondary-100);
-  color: var(--primary-500);
-  transition: all 0.3s ease;
-  margin-bottom: 16px;
+display: flex;
+align-items: center;
+gap: 8px;
+padding: 8px 16px;
+border: 1px solid var(--primary-300);
+border-radius: 8px;
+cursor: pointer;
+font-size: 14px;
+font-weight: 500;
+background: var(--secondary-100);
+color: var(--primary-500);
+transition: all 0.3s ease;
+margin-bottom: 16px;
 }
-
 .action-button.back:hover {
-  background: var(--secondary-300);
-  transform: translateX(-2px);
+background: var(--secondary-300);
+transform: translateX(-2px);
 }
-
-/* Enhanced Profile Section - MODIFIED AND NEW STYLES */
 .profile-section {
-  background: #ffffff;
-  border-radius: 12px; /* Sedikit lebih besar radiusnya */
-  padding: 24px;
-  box-shadow: 0px 6px 20px rgba(0, 0, 0, 0.08); /* Shadow lebih lembut */
-  position: relative;
-  margin-bottom: 24px;
+background: #ffffff;
+border-radius: 12px;
+padding: 24px;
+box-shadow: 0px 6px 20px rgba(0, 0, 0, 0.08);
+position: relative;
+margin-bottom: 24px;
 }
-
 .profile-header {
-  margin-bottom: 16px; /* Tambah margin */
-  border-bottom: 1px solid #e2e8f0; /* Warna border lebih lembut */
-  padding-bottom: 8px; /* Tambah padding */
-  display: flex; /* Untuk ikon di header */
-  align-items: center; /* Untuk ikon di header */
+margin-bottom: 16px;
+border-bottom: 1px solid #e2e8f0;
+padding-bottom: 8px;
+display: flex;
+align-items: center;
 }
-
 .profile-header h2 {
-  font-size: 1.65rem; /* Sedikit lebih besar */
-  font-weight: 600; /* Lebih tebal */
-  color: var(--primary-600, #334155); /* Warna yang lebih gelap dan profesional, sesuaikan dengan tema */
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
+font-size: 1.65rem;
+font-weight: 600;
+color: var(--primary-600, #334155);
+margin: 0;
+display: flex;
+align-items: center;
+gap: var(--spacing-sm);
 }
-
-.header-icon {
-  color: var(--primary-500); /* Warna ikon sesuai tema */
-  font-size: 1.5rem; /* Sesuaikan ukuran ikon header */
-}
-
 .profile-info-container {
-  background: var(--bg-white);
-  border-radius: 12px;
-  padding: var(--spacing-sm);
-  margin-bottom: var(--spacing-lg);
+background: var(--bg-white);
+border-radius: 12px;
+padding-top: var(--spacing-sm);
 }
-
-.profile-info {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr); /* Tetap 3 kolom */
-  gap: 24px; /* Perbesar sedikit jarak vertikal dan horizontal */
-  margin-bottom: 28px; /* Perbesar margin bawah */
+.patient-cards {
+display: grid;
+grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+gap: 20px;
+margin-top: 16px;
 }
-
-.info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 6px; /* Sedikit perbesar jarak label dan value */
-  position: relative; /* Untuk tombol copy */
+.info-card {
+background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+border: 1px solid #e2e8f0;
+border-radius: 16px;
+padding: 0;
+transition: all 0.3s ease;
+box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+overflow: hidden;
 }
-
-.label {
-  font-weight: 600; /* Lebih tebal agar menonjol */
-  color: #4A5568; /* Warna abu-abu yang lebih gelap dan modern (Tailwind's gray-700) */
-  font-size: 0.9rem; /* Sedikit lebih kecil dari value untuk hierarki */
-  display: flex; /* Untuk ikon di label */
-  align-items: center; /* Untuk ikon di label */
+.info-card:hover {
+transform: translateY(-2px);
+box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+border-color: var(--primary-200);
 }
-
-.info-icon {
-  margin-right: 8px;
-  color: var(--primary-500); /* Warna ikon sesuai tema */
-  font-size: 0.9rem; /* Sesuaikan dengan ukuran teks label */
-  width: 16px; /* Pastikan ikon punya lebar tetap agar rapi */
-  text-align: center;
+.primary-card {
+border-left: 4px solid var(--primary-500);
 }
-
-.value {
-  font-weight: 500; /* Standar untuk nilai */
-  color: #1A202C; /* Warna hitam yang lebih lembut (Tailwind's gray-900) */
-  font-size: 1rem; /* Ukuran standar */
-  padding: 4px 0;
-  line-height: 1.5;
-  display: flex; /* Untuk tombol copy */
-  align-items: center; /* Untuk tombol copy */
-  justify-content: space-between; /* Untuk tombol copy */
+.card-header {
+background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+padding: 16px 20px;
+border-bottom: 1px solid #e2e8f0;
+display: flex;
+align-items: center;
+gap: 12px;
 }
-
-.value > span:first-child { /* Target teks utama jika ada tombol copy */
-  flex-grow: 1;
-  word-break: break-word;
+.card-header h3 {
+margin: 0;
+font-size: 1rem;
+font-weight: 600;
+color: #334155;
 }
-
+.card-icon {
+color: var(--primary-500);
+font-size: 1.2rem;
+}
+.card-content {
+padding: 20px;
+}
+.info-row {
+display: flex;
+align-items: flex-start;
+padding: 12px 0;
+border-bottom: 1px solid #f1f5f9;
+gap: 16px;
+}
+.info-row:last-child {
+border-bottom: none;
+padding-bottom: 0;
+}
+.info-row.full-width {
+flex-direction: column;
+gap: 8px;
+}
+.info-row .label {
+font-weight: 500;
+color: #64748b;
+font-size: 0.875rem;
+min-width: 110px;
+flex-shrink: 0;
+}
+.info-row .value {
+font-weight: 600;
+color: #1e293b;
+font-size: 0.95rem;
+text-align: left;
+display: flex;
+align-items: center;
+justify-content: space-between;
+flex-grow: 1;
+word-break: break-word;
+}
+.info-row .value > span:only-child {
+justify-self: flex-start;
+}
+.full-width .value {
+text-align: left;
+}
+.address-text {
+line-height: 1.5;
+font-weight: 600; /* Disesuaikan agar bold konsisten */
+color: #475569;
+}
+.gender-badge {
+padding: 4px 12px;
+border-radius: 20px;
+font-size: 0.8rem;
+font-weight: 600;
+text-transform: uppercase;
+letter-spacing: 0.5px;
+}
+.gender-badge.male {
+background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+color: #1d4ed8;
+}
+.gender-badge.female {
+background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+color: #be185d;
+}
+.age-badge {
+background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+color: #065f46;
+padding: 4px 12px;
+border-radius: 20px;
+font-size: 0.8rem;
+font-weight: 600;
+}
 .copy-button {
-  background: none;
-  border: none;
-  color: var(--primary-400, #60a5fa);
-  cursor: pointer;
-  padding: 4px;
-  margin-left: 8px;
-  border-radius: 4px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.2s ease, color 0.2s ease;
+background: none;
+border: none;
+color: var(--primary-400, #60a5fa);
+cursor: pointer;
+padding: 4px;
+margin-left: 8px;
+border-radius: 4px;
+display: inline-flex;
+align-items: center;
+justify-content: center;
+transition: background-color 0.2s ease, color 0.2s ease;
 }
-
 .copy-button:hover {
-  color: var(--primary-600, #2563eb);
-  background-color: var(--secondary-100, #eff6ff);
+color: var(--primary-600, #2563eb);
+background-color: var(--secondary-100, #eff6ff);
 }
-
-.copy-button .svg-inline--fa { /* Target Font Awesome icon */
-  font-size: 0.85rem;
-}
-
-/* Address Info (Full Width) */
-.address-info {
-  display: flex;
-  flex-direction: column;
-  gap: 6px; /* Sesuaikan dengan info-item */
-  margin-bottom: 24px; /* Sesuaikan dengan profile-info */
-  background-color: #f8fafc; /* Latar belakang sedikit berbeda untuk alamat */
-  padding: 16px;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0; /* Border lembut */
-}
-
-.address-info .label {
-  font-weight: 600; /* Sama seperti info-item label */
-  color: #4A5568; /* Sama seperti info-item label */
-  font-size: 14px; /* Sama seperti info-item label */
-  display: flex; /* Untuk ikon */
-  align-items: center; /* Untuk ikon */
-}
-
-.address-info .value {
-  font-weight: 500; /* Sama seperti info-item value */
-  color: #1A202C; /* Sama seperti info-item value */
-  font-size: 1rem; /* Sama seperti info-item value */
-  word-wrap: break-word; 
-  line-height: 1.6; /* Perbaiki line-height untuk teks panjang */
-}
-
-/* Profile Action Buttons */
 .profile-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 16px;
-  margin-top: 24px; /* Tambah margin atas */
-  padding-top: 20px; /* Tambah padding atas */
-  border-top: 1px solid #e2e8f0; /* Garis pemisah */
+display: flex;
+justify-content: flex-end;
+gap: 16px;
+margin-top: 24px;
+padding-top: 20px;
+border-top: 1px solid #e2e8f0;
 }
-
 .action-button.edit-patient {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: var(--primary-500);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600; /* Sedikit lebih tegas */
-  transition: background-color 0.3s ease, transform 0.3s ease;
+display: flex;
+align-items: center;
+gap: 8px;
+padding: 10px 20px;
+background: var(--primary-500);
+color: white;
+border: none;
+border-radius: 10px;
+cursor: pointer;
+font-size: 14px;
+font-weight: 600;
+transition: background-color 0.3s ease, transform 0.3s ease;
 }
-
 .action-button.edit-patient:hover {
-  background: var(--primary-700);
-  transform: scale(1.02); /* Sedikit lebih halus transformnya */
+background: var(--primary-700);
+transform: scale(1.02);
 }
-
 .action-button.delete-patient {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: white;
-  color: #e53935;
-  border: 1px solid #e53935;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600; /* Sedikit lebih tegas */
-  transition: background-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
+display: flex;
+align-items: center;
+gap: 8px;
+padding: 10px 20px;
+background: white;
+color: #e53935;
+border: 1px solid #e53935;
+border-radius: 10px;
+cursor: pointer;
+font-size: 14px;
+font-weight: 600;
+transition: background-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
 }
-
 .action-button.delete-patient:hover {
-  background: #ffebee;
-  color: #c62828;
-  transform: scale(1.02); /* Sedikit lebih halus transformnya */
+background: #ffebee;
+color: #c62828;
+transform: scale(1.02);
 }
-
-/* NEW: Monthly Attendance Container */
 .attendance-container {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  margin-bottom: 24px;
+background: #ffffff;
+border-radius: 12px;
+padding: 24px;
+box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+margin-bottom: 24px;
 }
-
-.attendance-container h3 { /* Style this if you use <h3> tag again */
-  font-family: var(--font-family-heading);
-  font-weight: 600;
-  font-size: 1.25rem;
-  color: var(--text-primary);
-  margin-bottom: var(--spacing-md);
-}
-
 .attendance-table-container {
-  overflow-x: auto;
+overflow-x: auto;
 }
-
 .attendance-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  font-size: 14px;
-  color: #333;
-  border-radius: 8px;
-  overflow: hidden;
+width: 100%;
+border-collapse: separate;
+border-spacing: 0;
+font-size: 14px;
+color: #333;
+border-radius: 8px;
+overflow: hidden;
 }
-
 .attendance-table th,
 .attendance-table td {
-  text-align: center;
-  padding: 12px;
-  border: 1px solid #eaeaea;
+text-align: center;
+padding: 12px;
+border: 1px solid #eaeaea;
 }
-
 .attendance-table th {
-  background-color: #f5f7fa;
-  font-weight: 600;
+background-color: #f5f7fa;
+font-weight: 600;
 }
-
 .attendance-table th:first-child,
 .attendance-table td:first-child {
-  text-align: left;
-  font-weight: 600;
-  background-color: #f5f7fa;
-  min-width: 140px;
+text-align: left;
+font-weight: 600;
+background-color: #f5f7fa;
+min-width: 140px;
 }
-
 .visit-icon {
-  color: #4CAF50;
-  font-size: 18px;
+color: #4CAF50;
+font-size: 18px;
 }
-
 .no-visit-icon {
-  color: #F44336;
-  font-size: 18px;
+color: #F44336;
+font-size: 18px;
 }
-
 .visited {
-  background-color: #E8F5E9;
+background-color: #E8F5E9;
 }
-
-/* Page Container */
 .page-container {
-  width: 100%;
-  max-width: 1400px; 
-  background: #ffffff;
-  border-radius: 10px;
-  padding: 26px;
-  box-shadow: 0px 4px 16px rgba(0, 0, 0, 0.1);
-  overflow-x: auto; 
-  margin-bottom: 24px;
+width: 100%;
+max-width: 1400px;
+background: #ffffff;
+border-radius: 10px;
+padding: 26px;
+box-shadow: 0px 4px 16px rgba(0, 0, 0, 0.1);
+overflow-x: auto;
+margin-bottom: 24px;
 }
-
-/* Page Container's Profile Header (untuk Data Pemeriksaan Pasien) akan menggunakan styling dari .profile-header di atas */
-
-/* Toolbar */
 .toolbar {
-  display: flex;
-  justify-content: space-between; 
-  align-items: center; 
-  margin-bottom: 20px;
-  flex-wrap: wrap;
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 20px;
+flex-wrap: wrap;
 }
-
 .left-section {
-  display: flex;
-  align-items: center; 
-  flex-wrap: wrap;
+display: flex;
+align-items: center;
+flex-wrap: wrap;
 }
-
 .right-section {
-  display: flex;
-  align-items: center; 
-  flex-wrap: wrap;
+display: flex;
+align-items: center;
+flex-wrap: wrap;
 }
-
-.dropdown-container-year { /* If you use a specific year dropdown with this class */
-  position: relative;
-  width: 147px; 
+.dropdown-select {
+width: 100%;
+height: 38px;
+padding: 0 8px;
+border: 1px solid #e5e7eb;
+border-radius: 6px;
+font-family: "Inter", sans-serif;
+font-size: 14px;
+color: #374151;
+background: #ffffff;
+cursor: pointer;
+appearance: none;
+-webkit-appearance: none;
+-moz-appearance: none;
+outline: none;
+transition: border-color 0.3s ease;
+background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%239CA3AF'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3E%3C/svg%3E");
+background-repeat: no-repeat;
+background-position: right 0.5rem center;
+background-size: 1.25em 1.25em;
+padding-right: 2rem;
 }
-
-.dropdown-select { /* This class is used for both year and rowsPerPage */
-  width: 100%;
-  height: 38px; 
-  padding: 0 8px;
-  border: 1px solid #e5e7eb; 
-  border-radius: 6px; 
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  color: #374151; 
-  background: #ffffff;
-  cursor: pointer;
-  appearance: none; 
-  -webkit-appearance: none; 
-  -moz-appearance: none; 
-  outline: none; 
-  transition: border-color 0.3s ease; 
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%239CA3AF'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.5rem center;
-  background-size: 1.25em 1.25em;
-  padding-right: 2rem; 
-}
-
 .dropdown-select:hover {
-  border-color: var(--primary-300); 
+border-color: var(--primary-300);
 }
-
-
 .add-data-button {
-  margin-left: 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: var(--primary-500);
-  color: #ffffff;
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  font-weight: 600;
-  transition: background-color 0.3s ease, transform 0.3s ease;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
+margin-left: 16px;
+display: flex;
+align-items: center;
+gap: 8px;
+padding: 10px 20px;
+background: var(--primary-500);
+color: #ffffff;
+font-family: "Inter", sans-serif;
+font-size: 14px;
+font-weight: 600;
+transition: background-color 0.3s ease, transform 0.3s ease;
+border: none;
+border-radius: 10px;
+cursor: pointer;
 }
-
 .add-data-button:hover {
-  background: var(--primary-700);
-  transform: scale(1.02);
+background: var(--primary-700);
+transform: scale(1.02);
 }
-
-.print-report-button { /* Style if you add this button */
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: var(--primary-500);
-  color: #ffffff;
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.print-report-button:hover {
-  background: var(--primary-700);
-}
-
 .search-container {
-  display: flex;
-  align-items: center;
-  position: relative;
+display: flex;
+align-items: center;
+position: relative;
 }
-
 .search-icon {
-  position: absolute;
-  left: 10px;
-  color: #9aa0a8;
-  font-size: 16px;
-  pointer-events: none; 
+position: absolute;
+left: 10px;
+color: #9aa0a8;
+font-size: 16px;
+pointer-events: none;
 }
-
 .search-input {
-  width: 251px;
-  height: 42px;
-  padding: 10px 40px 10px 40px; 
-  border: 1px solid #cdcfD4;
-  border-radius: 10px;
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  color: #4f5867;
-  outline: none;
+width: 251px;
+height: 42px;
+padding: 10px 40px 10px 40px;
+border: 1px solid #cdcfD4;
+border-radius: 10px;
+font-family: "Inter", sans-serif;
+font-size: 14px;
+color: #4f5867;
+outline: none;
 }
-
 .search-input:hover {
-  border-color: var(--primary-500); 
+border-color: var(--primary-500);
 }
-
-@media (max-width: 992px) {
-  .profile-info {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 24px 20px; /* Sesuaikan gap untuk 2 kolom */
-  }
-  
-  .toolbar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-  }
-
-  .left-section,
-  .right-section {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-    width: 100%; 
-  }
-    .add-data-button {
-    margin-left: 0; 
-  }
-
-  .search-container {
-    width: 100%;
-  }
-
-  .search-input {
-    width: 100%; 
-  }
-
-  .add-data-button,
-  .print-report-button {
-    width: 100%;
-    text-align: center;
-    justify-content: center;
-  }
-}
-
-@media (max-width: 768px) {
-  .profile-header h2 {
-    font-size: 1.4rem; /* Kecilkan font header di mobile */
-  }
-  .header-icon {
-    font-size: 1.3rem;
-  }
-  .profile-info {
-    grid-template-columns: 1fr;
-    gap: 20px; /* Sesuaikan gap untuk 1 kolom */
-  }
-  .value {
-    font-size: 0.95rem; /* Sedikit kecilkan value di mobile agar tidak terlalu penuh */
-  }
-  .label {
-    font-size: 0.85rem;
-  }
-  .address-info {
-    padding: 12px;
-  }
-  
-  .profile-actions {
-    flex-direction: column;
-  }
-  /* Toolbar, left-section, right-section, search, add-data-button are already handled by 992px breakpoint */
-}
-
 .table-container {
-  overflow-x: auto;
-  margin-bottom: 20px;
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-  border-radius: 10px;
+overflow-x: auto;
+margin-bottom: 20px;
+box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+border-radius: 10px;
 }
-
 .data-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  color: #333333;
-  background: #ffffff;
-  border-radius: 10px;
-  overflow: hidden;
+width: 100%;
+border-collapse: separate;
+border-spacing: 0;
+font-family: "Inter", sans-serif;
+font-size: 14px;
+color: #333333;
+background: #ffffff;
+border-radius: 10px;
+overflow: hidden;
 }
-
 .data-table thead th {
-  background: #f3f4f6;
-  color: #333333;
-  font-weight: 600;
-  text-align: center;
-  padding: 16px;
-  border-bottom: 1px solid #e5e7eb;
+background: #f3f4f6;
+color: #333333;
+font-weight: 600;
+text-align: center;
+padding: 16px;
+border-bottom: 1px solid #e5e7eb;
 }
-
 .data-table tbody tr:hover {
-  background: #f9fafb;
-  transition: background-color 0.3s ease;
+background: #f9fafb;
+transition: background-color 0.3s ease;
 }
-
 .data-table td {
-  text-align: center; 
-  padding: 20px; 
-  border-bottom: 1px solid #e5e7eb; 
+text-align: center;
+padding: 20px;
+border-bottom: 1px solid #e5e7eb;
 }
 .data-table tbody tr:last-child td {
-  border-bottom: none; 
+border-bottom: none;
 }
-
-.action-button {
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-/* Style untuk tombol utama (Ubah), menggunakan class .detail */
-/* KODE CSS BARU: Salin dan tempel ini ke dalam <style scoped> di DetailPasienHT.vue */
-
-/* Styling untuk sel yang berisi tombol aksi */
 .data-table .action-cell {
-  padding: 12px 16px;
+padding: 12px 16px;
 }
-
-/* Kontainer untuk mengelompokkan tombol aksi */
 .action-buttons-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 12px;
 }
-
-/* Refinement pada styling tombol aksi umum di dalam tabel */
 .action-button.edit,
 .action-button.delete {
-  position: relative; /* Diperlukan untuk positioning tooltip */
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  padding: 8px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
-  border: 1px solid transparent;
-  background: transparent;
+position: relative;
+display: inline-flex;
+align-items: center;
+justify-content: center;
+width: 36px;
+height: 36px;
+padding: 8px;
+border-radius: 8px;
+cursor: pointer;
+transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+border: 1px solid transparent;
+background: transparent;
 }
-
-/* Styling spesifik untuk tombol Edit */
 .action-button.edit {
-  color: var(--primary-500, #3b82f6);
-  border-color: #dbeafe;
-  background-color: #eff6ff;
+color: var(--primary-500, #3b82f6);
+border-color: #dbeafe;
+background-color: #eff6ff;
 }
-
-/* Hover state untuk tombol Edit */
 .action-button.edit:hover {
-  background-color: #dbeafe;
-  color: var(--primary-700, #1d4ed8);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2);
+background-color: #dbeafe;
+color: var(--primary-700, #1d4ed8);
+transform: translateY(-2px);
+box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2);
 }
-
-/* Styling spesifik untuk tombol Delete */
 .action-button.delete {
-  color: #ef4444;
-  border-color: #fee2e2;
-  background-color: #fef2f2;
+color: #ef4444;
+border-color: #fee2e2;
+background-color: #fef2f2;
 }
-
-/* Hover state untuk tombol Delete */
 .action-button.delete:hover {
-  background-color: #fee2e2;
-  color: #b91c1c;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.2);
+background-color: #fee2e2;
+color: #b91c1c;
+transform: translateY(-2px);
+box-shadow: 0 4px 8px rgba(239, 68, 68, 0.2);
 }
-
-/* Styling untuk Tooltip */
 .action-button .tooltip {
-  visibility: hidden;
-  width: max-content;
-  background-color: #334155;
-  color: #fff;
-  text-align: center;
-  border-radius: 6px;
-  padding: 6px 10px;
-  position: absolute;
-  z-index: 10;
-  bottom: 125%;
-  left: 50%;
-  transform: translateX(-50%);
-  opacity: 0;
-  transition: opacity 0.3s ease, visibility 0.3s ease;
-  font-size: 12px;
-  font-weight: 500;
-  pointer-events: none;
+visibility: hidden;
+width: max-content;
+background-color: #334155;
+color: #fff;
+text-align: center;
+border-radius: 6px;
+padding: 6px 10px;
+position: absolute;
+z-index: 10;
+bottom: 125%;
+left: 50%;
+transform: translateX(-50%);
+opacity: 0;
+transition: opacity 0.3s ease, visibility 0.3s ease;
+font-size: 12px;
+font-weight: 500;
+pointer-events: none;
 }
-
-/* Arrow untuk Tooltip */
 .action-button .tooltip::after {
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  margin-left: -5px;
-  border-width: 5px;
-  border-style: solid;
-  border-color: #334155 transparent transparent transparent;
+content: "";
+position: absolute;
+top: 100%;
+left: 50%;
+margin-left: -5px;
+border-width: 5px;
+border-style: solid;
+border-color: #334155 transparent transparent transparent;
 }
-
-/* Tampilkan Tooltip saat tombol di-hover */
 .action-button:hover .tooltip {
-  visibility: visible;
-  opacity: 1;
+visibility: visible;
+opacity: 1;
 }
-.table-container::-webkit-scrollbar {
-  height: 8px;
-}
-
-.table-container::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 4px;
-}
-
-.table-container::-webkit-scrollbar-track {
-  background: #f3f4f6;
-}
-
-/* Column Width Adjustments for Hipertensi Table (5 columns) */
-.data-table th:nth-child(1), 
-.data-table td:nth-child(1) { /* No */
-  width: 5%;
-  min-width: 50px;
-}
-
-.data-table th:nth-child(2), 
-.data-table td:nth-child(2) { /* Tanggal Pemeriksaan */
-  width: 25%;
-  min-width: 200px;
-}
-
-.data-table th:nth-child(3), 
-.data-table td:nth-child(3) { /* Systolic */
-  width: 25%;
-  min-width: 150px;
-}
-
-.data-table th:nth-child(4), 
-.data-table td:nth-child(4) { /* Diastolic */
-  width: 25%;
-  min-width: 150px;
-}
-
-.data-table th:nth-child(5), 
-.data-table td:nth-child(5) { /* Aksi */
-  width: 20%; 
-  min-width: 120px;
-}
-
-
-/* Pagination */
 .pagination-container {
-  background-color: #ffffff;
-  border-radius: 8px;
+background-color: #ffffff;
+border-radius: 8px;
 }
-
 .pagination-ellipsis {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  color: #9aa0a8;
+display: flex;
+align-items: center;
+justify-content: center;
+width: 40px;
+height: 40px;
+font-family: "Inter", sans-serif;
+font-size: 14px;
+color: #9aa0a8;
 }
-
-/* Pagination Buttons */
 .pagination-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  color: #9aa0a8;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: color 0.3s ease;
+display: flex;
+align-items: center;
+justify-content: center;
+width: 40px;
+height: 40px;
+padding: 0;
+font-family: "Inter", sans-serif;
+font-size: 14px;
+font-weight: 500;
+color: #9aa0a8;
+border: none;
+border-radius: 8px;
+cursor: pointer;
+transition: color 0.3s ease;
 }
-
 .pagination-button:hover {
-  color: var(--primary-500);
+color: var(--primary-500);
 }
-
-/* Halaman Aktif */
 .pagination-button.active {
-  color: var(--primary-500);
-  font-weight: 600;
+color: var(--primary-500);
+font-weight: 600;
 }
-
-/* Tombol Previous dan Next */
 .pagination-button.prev,
 .pagination-button.next {
-  background-color: var(--primary-500);
-  color: #ffffff;
-  width: auto;
-  padding: 10px 16px;
-  font-size: 16px;
+background-color: var(--primary-500);
+color: #ffffff;
+width: auto;
+padding: 10px 16px;
+font-size: 16px;
 }
-
 .pagination-button.prev:hover,
 .pagination-button.next:hover {
-  background-color: var(--primary-700);
+background-color: var(--primary-700);
 }
-
-/* Tombol Disabled */
 .pagination-button:disabled {
-  background-color: #9aa0a8;
-  color: #ffffff;
-  cursor: not-allowed;
+background-color: #9aa0a8;
+color: #ffffff;
+cursor: not-allowed;
 }
-
-.dropdown-container { /* Container for pageSize dropdown */
-  position: relative;
-  width: 80px; 
+.dropdown-container {
+position: relative;
+width: 80px;
 }
-
-.loading-row {
-  text-align: center;
-}
-
 .loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 150px; 
-  padding: 20px;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+min-height: 150px;
+padding: 20px;
 }
-
 .spinner {
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid var(--primary-500);
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-  margin-bottom: 16px;
+border: 4px solid #f3f3f3;
+border-top: 4px solid var(--primary-500);
+border-radius: 50%;
+width: 40px;
+height: 40px;
+animation: spin 1s linear infinite;
+margin-bottom: 16px;
 }
-
 @keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+0% { transform: rotate(0deg); }
+100% { transform: rotate(360deg); }
 }
 .loading-container p {
-    color: #5f5f5f;
-    font-weight: 500;
+color: #5f5f5f;
+font-weight: 500;
 }
-
 .no-data {
-  text-align: center;
-  color: #9aa0a8;
-  font-size: 16px;
-  font-weight: 500;
-  padding: 40px 0; 
+text-align: center;
+color: #9aa0a8;
+font-size: 16px;
+font-weight: 500;
+padding: 40px 0;
 }
-
 .flex { display: flex; }
 .items-center { align-items: center; }
 .justify-between { justify-content: space-between; }
-.gap-2 { gap: 0.5rem; } 
+.gap-2 { gap: 0.5rem; }
 .bg-white { background-color: #ffffff; }
-.px-4 { padding-left: 1rem; padding-right: 1rem; } 
-.py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; } 
-
-@media (min-width: 640px) {
-  .sm\:px-6 { padding-left: 1.5rem; padding-right: 1.5rem; } 
-  .hidden.sm\:flex { display: flex; }
-  .sm\:flex-1 { flex: 1 1 0%; }
-  .sm\:items-center { align-items: center; }
-  .sm\:justify-between { justify-content: space-between; }
-}
-.text-sm { font-size: 0.875rem; } 
+.px-4 { padding-left: 1rem; padding-right: 1rem; }
+.py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+.text-sm { font-size: 0.875rem; }
 .text-gray-700 { color: #374151; }
 .isolate { isolation: isolate; }
 .-space-x-px > :not([hidden]) ~ :not([hidden]) {
-  --tw-space-x-reverse: 0;
-  margin-right: calc(-1px * var(--tw-space-x-reverse));
-  margin-left: calc(-1px * calc(1 - var(--tw-space-x-reverse)));
+--tw-space-x-reverse: 0;
+margin-right: calc(-1px * var(--tw-space-x-reverse));
+margin-left: calc(-1px * calc(1 - var(--tw-space-x-reverse)));
 }
-.rounded-md { border-radius: 0.375rem; } 
-.shadow-xs { 
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+.rounded-md { border-radius: 0.375rem; }
+.shadow-xs {
+box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+@media (max-width: 768px) {
+.profile-header h2 {
+font-size: 1.4rem;
+}
+.patient-cards {
+grid-template-columns: 1fr;
+gap: 16px;
+}
+.info-row {
+flex-direction: column;
+align-items: flex-start;
+gap: 6px;
+}
+.info-row .value {
+text-align: left;
+width: 100%;
+}
+.card-header {
+padding: 14px 16px;
+}
+.card-content {
+padding: 16px;
+}
+.profile-actions {
+flex-direction: column;
+}
+}
+@media (min-width: 640px) {
+.sm\:px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+.hidden.sm\:flex { display: flex; }
+.sm\:flex-1 { flex: 1 1 0%; }
+.sm\:items-center { align-items: center; }
+.sm\:justify-between { justify-content: space-between; }
 }
 </style>
