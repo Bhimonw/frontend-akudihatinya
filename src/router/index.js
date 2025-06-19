@@ -25,6 +25,8 @@ import TambahDataPeserta from '../views/user/TambahDataPeserta.vue';
 import DetailPasienDM from '../views/user/DetailPasienDM.vue';
 import DetailPasienHT from '../views/user/DetailPasienHT.vue';
 
+import NotFound from '../views/NotFound.vue';
+
 const routes = [
   {
     path: '/',
@@ -71,9 +73,9 @@ const routes = [
         meta: { requiresAuth: true, isAdmin: true, title: 'Manajemen User' },
       },
       {
-        path: 'manajemen-target-puskesmas',
+        path: 'sasaran-puskesmas',
         component: ManagePuskesmasTarget,
-        meta: { requiresAuth: true, isAdmin: true, title: 'Manajemen User' },
+        meta: { requiresAuth: true, isAdmin: true, title: 'Sasaran Tahunan' },
       },
     ],
   },
@@ -129,6 +131,12 @@ const routes = [
       },
     ],
   },
+  { 
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound', 
+    component: NotFound,
+    meta: { title: '404 - Halaman Tidak Ditemukan' }
+  }
 ];
 
 const router = createRouter({
@@ -168,6 +176,10 @@ router.beforeEach(async (to, from, next) => {
 
     const isAuthenticated = authStore.isAuthenticated;
     const isAdminUser = authStore.isAdmin;
+
+    if (to.name === 'NotFound') {
+      return next();
+    }
 
     // Halaman login
     if (to.meta.requiresGuest && isAuthenticated) {

@@ -3,12 +3,7 @@
     <div class="top-bar">
       <div class="profile-placeholder">
         <div class="circle">
-          <img
-            v-if="profileImage"
-            :src="profileImage"
-            alt="Profile Picture"
-            class="profile-image"
-          />
+          <img v-if="profileImage" :src="profileImage" alt="Profile Picture" class="profile-image" />
           <div v-else class="placeholder"></div>
         </div>
       </div>
@@ -24,7 +19,7 @@
         <font-awesome-icon :icon="['fas', 'chart-line']" class="menu-icon" />
         <span v-if="isSidebarOpen" class="menu-text">Dashboard</span>
       </li>
-      
+
       <li
         class="menu-item"
         :class="{ active: activeMenu === 'manajemen-user' }"
@@ -36,11 +31,11 @@
 
       <li
         class="menu-item"
-        :class="{ active: activeMenu === 'manajemen-target-puskesmas' }"
+        :class="{ active: activeMenu === 'sasaran-puskesmas' }"
         @click="navigate(menuItems[2])"
       >
         <font-awesome-icon :icon="['fas', 'bullseye']" class="menu-icon" />
-        <span v-if="isSidebarOpen" class="menu-text">Target Tahunan</span>
+        <span v-if="isSidebarOpen" class="menu-text">Sasaran Tahunan</span>
       </li>
     </ul>
   </div>
@@ -54,8 +49,8 @@ export default {
       required: true,
     },
     profileImage: { // Ditambahkan properti untuk gambar profil jika diperlukan
-        type: String,
-        default: null, // atau path ke gambar default placeholder jika ada
+      type: String,
+      default: null, // atau path ke gambar default placeholder jika ada
     }
   },
   data() {
@@ -64,7 +59,7 @@ export default {
       menuItems: [
         { key: 'dashboard', label: 'Dashboard', icon: 'chart-line' },
         { key: 'manajemen-user', label: 'Manajemen User', icon: 'users' },
-        { key: 'manajemen-target-puskesmas', label: 'Target Tahunan', icon: 'bullseye' }, // Menu baru ditambahkan di sini
+        { key: 'sasaran-puskesmas', label: 'Sasaran Tahunan', icon: 'bullseye' }, // Menu baru ditambahkan di sini
       ],
     };
   },
@@ -109,8 +104,10 @@ export default {
   width: 270px; /* Open width */
   height: 100vh;
   background: #ffffff;
-  box-shadow: 0px 306px 122px rgba(163, 163, 163, 0.01), 0px 172px 103px rgba(163, 163, 163, 0.05),
-    0px 77px 77px rgba(163, 163, 163, 0.09), 0px 19px 42px rgba(163, 163, 163, 0.1);
+  box-shadow: 0px 306px 122px rgba(163, 163, 163, 0.01),
+    0px 172px 103px rgba(163, 163, 163, 0.05),
+    0px 77px 77px rgba(163, 163, 163, 0.09),
+    0px 19px 42px rgba(163, 163, 163, 0.1);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -177,11 +174,11 @@ export default {
   background: #f0f0f0; /* Placeholder background */
 }
 .app-name {
-  font-family: 'Poppins', sans-serif;
+  font-family: "Poppins", sans-serif;
   font-weight: 700;
   font-size: 20px;
   line-height: 30px;
-  color:  var(--primary-500);
+  color: var(--primary-500);
   white-space: nowrap; /* Prevent text wrapping */
 }
 
@@ -232,7 +229,7 @@ export default {
 }
 
 .menu-text {
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   font-weight: 500;
   font-size: 16px;
   line-height: 24px;
@@ -251,7 +248,7 @@ export default {
 }
 
 .section-label span {
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   font-weight: 400;
   font-size: 16px;
   line-height: 24px;
