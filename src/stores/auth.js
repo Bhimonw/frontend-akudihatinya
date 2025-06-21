@@ -133,7 +133,7 @@ class AuthService {
       console.log("Attempting to refresh token...");
       
       // Gunakan fetch API yang lebih ringan daripada axios untuk refresh token
-      const response = await fetch('http://localhost:8000/api/refresh', {
+      const response = await fetch('http://localhost:8000/api/auth/refresh', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

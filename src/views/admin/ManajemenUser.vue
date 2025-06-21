@@ -101,7 +101,7 @@
               <td>{{ user.address }}</td>
               <td class="action-cell">
                 <div class="action-buttons-container">
-                  <button class="action-button edit" @click="editUser(user)" title="Edit User">
+                  <button class="action-button edit" @click="openEditUserModal(user)" title="Edit User">
                     <font-awesome-icon :icon="['fas', 'edit']" />
                     <span>Edit</span>
                   </button>
@@ -194,8 +194,17 @@
     <AddNewUserModal
       v-if="showAddUserModal"
       @close="closeAddUserModal"
-      @submit="handleUserSubmit"
-      :isSubmitting="isSubmitting"
+      @user-added="handleUserAddedSuccess"
+      @user-add-failed="handleUserAddFailed"
+    />
+
+    <EditUserModal
+        v-if="showEditUserModal"
+        :userId="selectedUserIdForEdit"
+        :visible="showEditUserModal"
+        @close="closeEditUserModal"
+        @user-updated="handleUserUpdatedSuccess"
+        @user-update-failed="handleUserUpdateFailed"
     />
 
     <ConfirmModal
@@ -208,26 +217,28 @@
 
     <UserDetailModal v-if="showDetailModal" :user="selectedUser" @close="closeDetailModal" />
 
-    <div v-if="isOverallLoading" class="top-loading-bar">
-      <div class="loading-bar-progress"></div>
-    </div>
   </div>
 </template>
 
 <script>
 import axios from "axios";
+import Swal from "sweetalert2";
+
 import AddNewUserModal from "../../components/modals/AddNewUser.vue";
+import EditUserModal from "../../components/modals/EditUserModal.vue"; // Import the new modal
 import ConfirmModal from "../../components/modals/ConfirmModal.vue";
 import UserDetailModal from "../../components/modals/UserDetailModal.vue";
 import { library } from '@fortawesome/fontawesome-svg-core';
 import {
   faUsers, faPlus, faSearch, faTimes, faSpinner, faUsersSlash,
-  faEdit, faEye, faTrash, faChevronLeft, faChevronRight, faUserTag
+  faEdit, faEye, faTrash, faChevronLeft, faChevronRight, faUserTag,
+  faUserPlus, faAt, faKey, faHospital, faUser, faExclamationCircle, faEyeSlash
 } from '@fortawesome/free-solid-svg-icons';
 
 library.add(
   faUsers, faPlus, faSearch, faTimes, faSpinner, faUsersSlash,
-  faEdit, faEye, faTrash, faChevronLeft, faChevronRight, faUserTag
+  faEdit, faEye, faTrash, faChevronLeft, faChevronRight, faUserTag,
+  faUserPlus, faAt, faKey, faHospital, faUser, faExclamationCircle, faEyeSlash
 );
 
 
@@ -235,6 +246,7 @@ export default {
   name: "ManajemenUser",
   components: {
     AddNewUserModal,
+    EditUserModal, // Register the new modal
     ConfirmModal,
     UserDetailModal,
   },
@@ -246,14 +258,14 @@ export default {
       searchQuery: "",
       filterRole: "",
       showAddUserModal: false,
+      showEditUserModal: false, // State for edit modal visibility
+      selectedUserIdForEdit: null, // To pass the user ID to the edit modal
       showConfirmModal: false,
       userToDelete: null,
       selectedUser: null,
       showDetailModal: false,
-      isLoading: false, // For table loading
-      isSubmitting: false, // For form submission loading
-      isOverallLoading: false, // For top loading bar
-      searchTimeout: null, // For debouncing search
+      isLoading: false,
+      searchTimeout: null,
     };
   },
   computed: {
@@ -274,8 +286,6 @@ export default {
       return Math.min(calculatedLastIndex, this.totalUsers);
     },
     filteredUsers() {
-      // Apply filter and search here directly as we're handling pagination on client-side based on this filtered data
-      // If you switch to server-side pagination/filtering, this method will change
       return this.users.filter((user) => {
         const searchLower = this.searchQuery.toLowerCase();
         const roleMatch = this.filterRole
@@ -316,18 +326,24 @@ export default {
   },
   methods: {
     async fetchUsers() {
-      this.isLoading = true; // Start table loading
-      this.isOverallLoading = true; // Start top loading bar
+      this.isLoading = true;
       try {
         const token = localStorage.getItem("token");
         if (!token) {
-          this.$toast.error("Sesi Anda berakhir, silakan login kembali.");
+          Swal.fire({
+            title: "Sesi Berakhir!",
+            text: "Sesi Anda telah berakhir. Silakan login kembali.",
+            icon: "warning",
+          }).then(() => {
+            // Optional: Redirect to login page
+            // this.$router.push({ name: 'Login' });
+          });
           return;
         }
         const response = await axios.get("http://localhost:8000/api/admin/users", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        this.users = response.data.users.map((user) => ({
+        this.users = response.data.data.map((user) => ({
           id: user.id,
           username: user.username,
           name: user.name,
@@ -345,25 +361,30 @@ export default {
       } catch (error) {
         console.error("Gagal mengambil data pengguna:", error.response || error);
         if (error.response && error.response.status === 401) {
-          this.$toast.error("Sesi tidak valid. Silakan login ulang.");
+          Swal.fire({
+            title: "Sesi Tidak Valid",
+            text: "Sesi Anda tidak valid. Silakan login ulang.",
+            icon: "error",
+          }).then(() => {
+            // this.$router.push({ name: 'Login' });
+          });
         } else {
-          this.$toast.error("Gagal memuat data pengguna.");
+          Swal.fire("Error!", "Gagal memuat data pengguna.", "error");
         }
       } finally {
-        this.isLoading = false; // End table loading
-        this.isOverallLoading = false; // End top loading bar
+        this.isLoading = false;
       }
     },
     handleSearchInput() {
       clearTimeout(this.searchTimeout);
       this.searchTimeout = setTimeout(() => {
-        this.resetPagination(); // Reset pagination when search query changes
-      }, 500); // Debounce search for 500ms
+        this.resetPagination();
+      }, 500);
     },
     getRoleBadgeClass(role) {
       const roleLower = role ? role.toLowerCase() : "";
       if (roleLower === "admin") return "role-admin";
-      if (roleLower === "puskesmas") return "role-petugas";
+      if (roleLower === "puskesmas") return "role-petugas"; // Keep as 'petugas' for consistency with current style
       return "role-user";
     },
     clearSearch() {
@@ -376,86 +397,47 @@ export default {
     closeAddUserModal() {
       this.showAddUserModal = false;
     },
-    async handleUserSubmit(formDataFromModal) {
-      console.log("ManajemenUser.vue - handleUserSubmit dipanggil dengan data:", formDataFromModal);
-      this.isSubmitting = true; // Start submission loading
-      this.isOverallLoading = true; // Start top loading bar
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          this.$toast.error("Token tidak ditemukan. Silakan login kembali.");
-          this.isSubmitting = false;
-          this.isOverallLoading = false;
-          return;
-        }
-
-        let apiPayload;
-        let configHeaders = {
-          Authorization: `Bearer ${token}`,
-        };
-
-        if (formDataFromModal.profilePicture instanceof File) {
-          apiPayload = new FormData();
-          apiPayload.append("username", formDataFromModal.username);
-          apiPayload.append("password", formDataFromModal.password);
-          apiPayload.append("name", formDataFromModal.name);
-          apiPayload.append("role", formDataFromModal.role);
-          apiPayload.append(
-            "profile_picture",
-            formDataFromModal.profilePicture,
-            formDataFromModal.profilePicture.name
-          );
-        } else {
-          apiPayload = {
-            username: formDataFromModal.username,
-            password: formDataFromModal.password,
-            name: formDataFromModal.name,
-            role: formDataFromModal.role,
-            profile_picture: null,
-          };
-          configHeaders["Content-Type"] = "application/json";
-        }
-
-        const response = await axios.post(
-          "http://localhost:8000/api/admin/users",
-          apiPayload,
-          {
-            headers: configHeaders,
-          }
-        );
-
-        this.$toast.success(response.data.message || "User berhasil ditambahkan!");
-        this.closeAddUserModal();
-        await this.fetchUsers(); // Re-fetch all users to update the table
-        this.resetPagination(); // Reset pagination to first page after add
-      } catch (error) {
-        console.error("Gagal menambahkan user:", error.response ? error.response.data : error.message);
-        let errorMessage = "Gagal menambahkan user.";
-        if (error.response && error.response.data) {
-          if (error.response.data.message) {
-            errorMessage = error.response.data.message;
-          } else if (error.response.data.errors) {
-            const errors = error.response.data.errors;
-            const firstErrorKey = Object.keys(errors)[0];
-            if (firstErrorKey && errors[firstErrorKey].length > 0) {
-              errorMessage = errors[firstErrorKey][0];
-            } else {
-              errorMessage = `Terjadi kesalahan validasi. (${error.response.status})`;
-            }
-          } else {
-            errorMessage = `Terjadi kesalahan server. (${error.response.status})`;
-          }
-        } else if (error.request) {
-          errorMessage = "Tidak ada respons dari server. Periksa koneksi Anda.";
-        } else {
-          errorMessage = error.message || "Terjadi kesalahan tidak diketahui.";
-        }
-        this.$toast.error(errorMessage);
-      } finally {
-        this.isSubmitting = false; // End submission loading
-        this.isOverallLoading = false; // End top loading bar
-      }
+    // Handler for successful user addition from the modal
+    async handleUserAddedSuccess(message) {
+      this.closeAddUserModal();
+      await Swal.fire({
+          icon: 'success',
+          title: 'Berhasil!',
+          text: message || "User berhasil ditambahkan!",
+          confirmButtonColor: '#047d78'
+      });
+      await this.fetchUsers();
+      this.resetPagination();
     },
+    // Handler for failed user addition from the modal
+    handleUserAddFailed(errorMessage) {
+      Swal.fire('Gagal!', errorMessage, 'error');
+    },
+
+    // New methods for Edit User Modal
+    openEditUserModal(user) {
+        this.selectedUserIdForEdit = user.id;
+        this.showEditUserModal = true;
+    },
+    closeEditUserModal() {
+        this.showEditUserModal = false;
+        this.selectedUserIdForEdit = null;
+    },
+    async handleUserUpdatedSuccess(updatedUser) {
+        this.closeEditUserModal();
+        await Swal.fire({
+            icon: 'success',
+            title: 'Berhasil!',
+            text: 'Data user berhasil diperbarui.',
+            confirmButtonColor: '#047d78'
+        });
+        await this.fetchUsers(); // Re-fetch all users
+        // Optionally, update the specific user in the current `users` array if not re-fetching all
+    },
+    handleUserUpdateFailed(errorMessage) {
+        Swal.fire('Gagal!', errorMessage, 'error');
+    },
+
     prevPage() {
       if (this.currentPage > 1) {
         this.currentPage--;
@@ -482,55 +464,51 @@ export default {
       this.showDetailModal = false;
       this.selectedUser = null;
     },
-    editUser(user) {
-      this.$toast.info(`Fitur edit untuk user ${user.name} sedang dalam pengembangan.`);
-      console.log("Edit user data:", user);
-    },
-    confirmDelete(id) {
-      this.userToDelete = id;
-      this.showConfirmModal = true;
-    },
-    closeConfirmModal() {
-      this.showConfirmModal = false;
-      this.userToDelete = null;
-    },
-    async deleteUser() {
-      if (this.userToDelete) {
-        this.isOverallLoading = true; // Start top loading bar for delete
-        try {
-          const token = localStorage.getItem("token");
-          if (!token) {
-            this.$toast.error("Token tidak ditemukan. Silakan login kembali.");
-            this.closeConfirmModal();
-            this.isOverallLoading = false;
-            return;
-          }
-          // AKTIFKAN JIKA API DELETE SUDAH ADA
-          // await axios.delete(`http://localhost:8000/api/admin/users/${this.userToDelete}`, {
-          //   headers: { Authorization: `Bearer ${token}` },
-          // });
-          // this.$toast.success("User berhasil dihapus!");
+    // Updated confirmDelete to use Swal
+    async confirmDelete(id) {
+        const result = await Swal.fire({
+            title: 'Apakah Anda yakin?',
+            text: 'Anda akan menghapus user ini! Tindakan ini tidak dapat dibatalkan.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33', // Red for delete
+            cancelButtonColor: '#6c757d', // Grey for cancel
+            confirmButtonText: 'Ya, hapus!',
+            cancelButtonText: 'Batal',
+            showLoaderOnConfirm: true, // Show loading spinner
+            preConfirm: async () => {
+                try {
+                    const token = localStorage.getItem("token");
+                    if (!token) {
+                        return Swal.showValidationMessage("Token tidak ditemukan. Silakan login kembali.");
+                    }
+                    await axios.delete(`http://localhost:8000/api/admin/users/${id}`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                    });
+                    return true; // Indicate success
+                } catch (error) {
+                    let errorMessage = error.response?.data?.message || error.message || "Terjadi kesalahan saat menghapus data.";
+                    // Use Swal.showValidationMessage to display error within the dialog itself
+                    Swal.showValidationMessage(errorMessage);
+                    return false; // Indicate failure
+                }
+            },
+            allowOutsideClick: () => !Swal.isLoading() // Prevent closing while loading
+        });
 
-          // SIMULASI (hapus jika API delete diaktifkan)
-          this.users = this.users.filter((user) => user.id !== this.userToDelete);
-          this.$toast.success("User berhasil dihapus (simulasi)!");
-          // END SIMULASI
-
-          await this.fetchUsers(); // Re-fetch all users to update the table
-
-          if (this.paginatedUsers.length === 0 && this.currentPage > 1) {
-            this.currentPage = Math.max(1, this.totalPages);
-          } else if (this.currentPage > this.totalPages && this.totalPages > 0) {
-            this.currentPage = this.totalPages;
-          }
-        } catch (error) {
-          console.error("Gagal menghapus user:", error.response?.data || error.message);
-          this.$toast.error(error.response?.data?.message || "Gagal menghapus user.");
-        } finally {
-          this.closeConfirmModal();
-          this.isOverallLoading = false; // End top loading bar for delete
+        if (result.isConfirmed) {
+            if (result.value === true) { // Check if preConfirm returned true
+                Swal.fire('Berhasil!', 'User berhasil dihapus.', 'success');
+                await this.fetchUsers(); // Re-fetch data
+                // Adjust pagination if current page becomes empty
+                if (this.paginatedUsers.length === 0 && this.currentPage > 1) {
+                    this.currentPage = Math.max(1, this.totalPages);
+                } else if (this.currentPage > this.totalPages && this.totalPages > 0) {
+                    this.currentPage = this.totalPages;
+                }
+            }
+            // If result.value is false, preConfirm already showed an error message.
         }
-      }
     },
   },
   created() {
@@ -1119,31 +1097,6 @@ export default {
   cursor: not-allowed;
   background-color: var(--gray-50);
 }
-
-/* Top Loading Bar */
-.top-loading-bar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 3px;
-  background-color: var(--primary-100);
-  z-index: 9999;
-  overflow: hidden;
-}
-.loading-bar-progress {
-  width: 100%;
-  height: 100%;
-  background: var(--primary-500);
-  animation: indeterminate-progress-targets 2s infinite linear;
-  transform-origin: left;
-}
-@keyframes indeterminate-progress-targets {
-  0% { transform: translateX(-100%) scaleX(0.5); }
-  50% { transform: translateX(0%) scaleX(0.75); }
-  100% { transform: translateX(100%) scaleX(0.5); }
-}
-
 
 @media (min-width: 768px) {
   .pagination-wrapper {

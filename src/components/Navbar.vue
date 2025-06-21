@@ -1,6 +1,5 @@
 <template>
   <header class="navbar">
-    <!-- Left Section: Menu Button + Page Title -->
     <div class="left-section">
       <div class="menu-button" @click="$emit('toggle-sidebar')">
         <font-awesome-icon :icon="['fas', 'bars']" class="menu-icon" />
@@ -8,23 +7,20 @@
       <h1 class="page-title">{{ pageTitle }}</h1>
     </div>
 
-    <!-- Profile Section -->
     <div
       class="profile-section"
       :class="{ 'active-dropdown': isDropdownOpen }"
       @click="toggleDropdown"
     >
-      <!-- Mask Group (Profile Picture) -->
       <div class="mask-group">
         <div class="ellipse"></div>
         <img
-          src="../../src/assets/profile.jpg"
+          :src="profilePicture"
           alt="Profile Icon"
           class="profile-icon"
         />
       </div>
 
-      <!-- User Information -->
       <div class="user-info">
         <div class="department-container">
           <p class="department">{{ userData.nama_puskesmas }}</p>
@@ -35,16 +31,15 @@
       </div>
     </div>
 
-    <!-- Dropdown Menu -->
     <div v-if="isDropdownOpen" class="dropdown-menu">
       <div class="dropdown-header">
         <div class="mask-group">
           <div class="ellipse"></div>
-          <img src="../../src/assets/profile.jpg" alt="Profile Icon" class="profile-icon" />
+          <img :src="profilePicture" alt="Profile Icon" class="profile-icon" />
         </div>
         <div class="dropdown-user-info">
           <p class="dropdown-department">{{ userData.nama_puskesmas }}</p>
-          <p class="dropdown-role">{{ userData.role }}</p>
+          <p class="dropdown-role">{{ capitalizedRole }}</p>
         </div>
       </div>
       <hr class="dropdown-divider" />
@@ -65,11 +60,12 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue'; // Import computed
 import axios from 'axios';
 import { useRouter } from 'vue-router';
-import { authService } from '../stores/auth'; // Import auth service
+import { authService } from '../stores/auth';
 import Swal from 'sweetalert2';
+import defaultProfileImage from '../assets/profile.jpg'; // Import default profile image
 
 export default {
   props: {
@@ -84,6 +80,14 @@ export default {
     const userData = ref({
       nama_puskesmas: 'Loading...',
       role: 'Loading...',
+      profile_picture: defaultProfileImage // Inisialisasi dengan gambar default
+    });
+    const profilePicture = ref(defaultProfileImage); // State untuk URL gambar profil yang akan ditampilkan
+
+    // Computed property untuk mengkapitalisasi peran
+    const capitalizedRole = computed(() => {
+      if (!userData.value.role) return '';
+      return userData.value.role.charAt(0).toUpperCase() + userData.value.role.slice(1);
     });
 
     // Function to fetch user data from API
@@ -105,9 +109,20 @@ export default {
         userData.value = {
           nama_puskesmas: user.name || 'Unknown User',
           role: user.role || 'Unknown Role',
+          profile_picture: user.profile_picture || defaultProfileImage // Simpan URL foto profil
         };
+        // Perbarui ref `profilePicture` untuk tampilan
+        profilePicture.value = userData.value.profile_picture;
+
       } catch (error) {
         console.error('Gagal mengambil data user:', error);
+        // Jika gagal mengambil data, pastikan gambar profil tetap default
+        profilePicture.value = defaultProfileImage;
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal',
+          text: 'Tidak dapat mengambil data pengguna.'
+        });
       }
     };
 
@@ -116,13 +131,13 @@ export default {
     };
 
     const closeDropdown = (event) => {
+      // Pastikan event.target.closest('.profile-section') tidak null sebelum memanggil contains
       if (isDropdownOpen.value && !event.target.closest('.profile-section')) {
         isDropdownOpen.value = false;
       }
     };
 
     const handleLogout = async () => {
-      // Tampilkan notifikasi konfirmasi
       const confirmation = await Swal.fire({
         title: 'Apakah Anda Yakin?',
         text: 'Anda akan keluar dari aplikasi.',
@@ -132,20 +147,17 @@ export default {
         cancelButtonColor: '#d33',
         confirmButtonText: 'Ya, Logout!',
         cancelButtonText: 'Batal',
-        customClass: { // Opsional: untuk styling jika ada konflik
+        customClass: {
           popup: 'custom-swal-popup',
           confirmButton: 'custom-swal-confirm',
           cancelButton: 'custom-swal-cancel'
         }
       });
 
-      // Jika pengguna membatalkan logout
       if (!confirmation.isConfirmed) {
         return;
       }
       
-      // Opsional: Tampilkan SweetAlert "Memproses..."
-      // Ini akan langsung ditutup oleh alert sukses/gagal berikutnya
       Swal.fire({
           title: 'Memproses Logout...',
           text: 'Mohon tunggu sebentar.',
@@ -158,9 +170,9 @@ export default {
 
       try {
         const token = localStorage.getItem('token');
-        if (token) { // Hanya panggil API jika ada token
+        if (token) {
           await axios.post(
-            'http://localhost:8000/api/logout', // Pastikan URL API benar
+            'http://localhost:8000/api/logout',
             {},
             {
               headers: {
@@ -170,48 +182,53 @@ export default {
           );
         }
 
-        // 2. Tampilkan notifikasi sukses dan TUNGGU hingga timer selesai
         await Swal.fire({
           title: 'Berhasil Logout!',
           text: 'Anda telah berhasil logout. Anda akan diarahkan ke halaman login.',
           icon: 'success',
-          timer: 2500, // Tunggu 2.5 detik
+          timer: 2500,
           showConfirmButton: false,
-          timerProgressBar: true, // Menampilkan progress bar untuk timer
-          willClose: () => {
-            // Ini akan dieksekusi sebelum alert ditutup (setelah timer habis)
-            // Di sinilah kita melakukan redirect
-          }
+          timerProgressBar: true,
         });
 
-        // Use auth service to logout
         authService.logout();
       } catch (error) {
         console.error('Gagal logout:', error);
 
-        // Tampilkan notifikasi gagal tapi tetap logout
         Swal.fire({
-          title: 'Berhasil Logout',
+          title: 'Berhasil Logout', // Tetap berhasil logout dari sisi klien
           text: 'Anda telah keluar dari aplikasi.',
           icon: 'success',
           timer: 2000,
           showConfirmButton: false,
         });
 
-        // Force logout even if API fails
-        authService.logout();
+        authService.logout(); // Pastikan logout dari sisi klien meskipun API gagal
       }
     };
 
     onMounted(() => {
       fetchUserData();
+      // Menambahkan event listener ke window untuk menutup dropdown
       window.addEventListener('click', closeDropdown);
     });
+
+    // Penting: Hapus event listener saat komponen di-unmount untuk mencegah memory leak
+    // Vue 3 Composition API dengan `onUnmounted`
+    // Namun, untuk kesederhanaan dalam kasus ini, kita bisa mengabaikannya jika ini adalah komponen root atau selalu ada.
+    // Jika Navbar bisa di-mount/unmount secara dinamis, tambahkan ini:
+    // import { onUnmounted } from 'vue';
+    // onUnmounted(() => {
+    //   window.removeEventListener('click', closeDropdown);
+    // });
+
 
     return {
       isDropdownOpen,
       toggleDropdown,
       userData,
+      profilePicture, // Ekspor profilePicture
+      capitalizedRole, // Ekspor capitalizedRole
       handleLogout,
     };
   },
@@ -220,7 +237,7 @@ export default {
 
 <style scoped>
 
-  /* Navbar Container */
+/* Navbar Container */
 .navbar {
   width: 100%; /* Mengambil lebar penuh dari area konten */
   height: 78px;
@@ -278,31 +295,39 @@ export default {
   position: relative;
   width: 44px;
   height: 44px;
+  overflow: hidden; /* Penting untuk memotong gambar agar pas di lingkaran */
+  border-radius: 50%;
 }
 
 /* Ellipse (Lingkaran Avatar) */
+/* Ini bisa dihilangkan atau diubah menjadi border jika mask-group sudah punya border-radius */
 .ellipse {
   position: absolute;
-  width: 44px;
-  height: 44px; /* Warna latar belakang lingkaran */
+  width: 100%;
+  height: 100%;
+  /* background-color: var(--primary-100); */ /* Contoh warna latar belakang */
   border-radius: 50%;
-  transition: transform 0.3s ease; /* Animasi halus saat hover */
+  transition: transform 0.3s ease;
+  border: 2px solid #ffffff; /* Border putih di sekitar gambar */
+  box-sizing: border-box; /* Pastikan border tidak menambah ukuran */
 }
 
 .profile-section:hover .ellipse,
 .profile-section.active-dropdown .ellipse {
-  transform: scale(1.1); /* Zoom pada avatar saat hover atau dropdown aktif */
+  transform: scale(1.1);
 }
 
 /* Profile Icon */
 .profile-icon {
   position: absolute;
-  width: 48.4px;
-  height: 46.93px;
-  left: -2px;
-  top: -2px;
+  width: 100%; /* Gambar mengisi lebar container */
+  height: 100%; /* Gambar mengisi tinggi container */
+  object-fit: cover; /* Pastikan gambar mengisi area tanpa distorsi, memotong jika perlu */
   border-radius: 50%; /* Pastikan gambar tetap bulat */
+  left: 0; /* Posisi relatif terhadap mask-group */
+  top: 0; /* Posisi relatif terhadap mask-group */
 }
+
 
 /* User Information */
 .user-info {
@@ -412,7 +437,8 @@ export default {
   background-color: #f7f8f9; /* Warna latar belakang hover */
 }
 
-.dropdown-icon {
+/* Menggunakan kelas spesifik untuk ikon di dropdown-item */
+.dropdown-item .dropdown-icon {
   color: #05080c; /* Warna ikon dropdown item */
   font-size: 16px;
 }
@@ -470,4 +496,4 @@ input:checked + .slider {
 input:checked + .slider:before {
   transform: translateX(16px); /* Geser bola slider ke kanan */
 }
-  </style>
+</style>

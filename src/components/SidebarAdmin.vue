@@ -3,8 +3,11 @@
     <div class="top-bar">
       <div class="profile-placeholder">
         <div class="circle">
-          <img v-if="profileImage" :src="profileImage" alt="Profile Picture" class="profile-image" />
-          <div v-else class="placeholder"></div>
+          <img
+            :src="profileImageSrc"
+            alt="Profile Picture"
+            class="profile-image"
+          />
         </div>
       </div>
       <h3 v-if="isSidebarOpen" class="app-name">Akudihatinya</h3>
@@ -12,88 +15,71 @@
 
     <ul class="menu-list">
       <li
+        v-for="item in menuItems"
+        :key="item.key"
         class="menu-item"
-        :class="{ active: activeMenu === 'dashboard' }"
-        @click="navigate(menuItems[0])"
+        :class="{ active: activeMenu === item.key }"
+        @click="navigate(item)"
       >
-        <font-awesome-icon :icon="['fas', 'chart-line']" class="menu-icon" />
-        <span v-if="isSidebarOpen" class="menu-text">Dashboard</span>
-      </li>
-
-      <li
-        class="menu-item"
-        :class="{ active: activeMenu === 'manajemen-user' }"
-        @click="navigate(menuItems[1])"
-      >
-        <font-awesome-icon :icon="['fas', 'users']" class="menu-icon" />
-        <span v-if="isSidebarOpen" class="menu-text">Manajemen User</span>
-      </li>
-
-      <li
-        class="menu-item"
-        :class="{ active: activeMenu === 'sasaran-puskesmas' }"
-        @click="navigate(menuItems[2])"
-      >
-        <font-awesome-icon :icon="['fas', 'bullseye']" class="menu-icon" />
-        <span v-if="isSidebarOpen" class="menu-text">Sasaran Tahunan</span>
+        <font-awesome-icon :icon="['fas', item.icon]" class="menu-icon" />
+        <span v-if="isSidebarOpen" class="menu-text">{{ item.label }}</span>
       </li>
     </ul>
   </div>
 </template>
 
 <script>
+import defaultProfileImage from '../assets/ptm-icon.jpg';
+
 export default {
   props: {
     isSidebarOpen: {
       type: Boolean,
       required: true,
     },
-    profileImage: { // Ditambahkan properti untuk gambar profil jika diperlukan
-      type: String,
-      default: null, // atau path ke gambar default placeholder jika ada
-    }
   },
   data() {
     return {
-      activeMenu: 'dashboard', // Atau bisa diatur berdasarkan route saat ini
+      profileImageSrc: defaultProfileImage,
+      activeMenu: 'dashboard', // Akan diinisialisasi ulang di created()
       menuItems: [
         { key: 'dashboard', label: 'Dashboard', icon: 'chart-line' },
         { key: 'manajemen-user', label: 'Manajemen User', icon: 'users' },
-        { key: 'sasaran-puskesmas', label: 'Sasaran Tahunan', icon: 'bullseye' }, // Menu baru ditambahkan di sini
+        { key: 'sasaran-puskesmas', label: 'Sasaran Tahunan', icon: 'bullseye' },
       ],
     };
   },
   methods: {
-    navigate(item) {
-      this.activeMenu = item.key;
-      this.$router.push(`/admin/${item.key}`);
-    },
-  },
-  // Untuk inisialisasi activeMenu berdasarkan route saat komponen dibuat (opsional tapi baik)
-  created() {
-    const currentPath = this.$route.path;
-    const adminPathSegment = '/admin/';
-    if (currentPath.startsWith(adminPathSegment)) {
-      const currentKey = currentPath.substring(adminPathSegment.length);
-      const foundItem = this.menuItems.find(item => item.key === currentKey);
-      if (foundItem) {
-        this.activeMenu = foundItem.key;
-      }
-    }
-  },
-  watch: {
-    // Untuk update activeMenu jika route berubah karena navigasi lain (misalnya, tombol back/forward browser)
-    '$route'(to, from) {
-      const currentPath = to.path;
-      const adminPathSegment = '/admin/';
-      if (currentPath.startsWith(adminPathSegment)) {
-        const currentKey = currentPath.substring(adminPathSegment.length);
+    // Fungsi untuk memperbarui activeMenu berdasarkan path saat ini
+    updateActiveMenu() {
+      const currentPath = this.$route.path;
+      // Memastikan bahwa hanya rute yang diawali dengan '/admin/' yang diproses
+      if (currentPath.startsWith('/admin/')) {
+        const currentKey = currentPath.substring('/admin/'.length);
         const foundItem = this.menuItems.find(item => item.key === currentKey);
         if (foundItem) {
           this.activeMenu = foundItem.key;
+        } else {
+          // Fallback jika tidak ada item yang cocok, bisa diatur ke default atau tidak ada yang aktif
+          this.activeMenu = ''; // Atau 'dashboard' jika Anda ingin default
         }
+      } else {
+        // Jika rute bukan di bawah '/admin/', mungkin tidak ada menu yang aktif
+        this.activeMenu = ''; // Atau 'dashboard' jika Anda ingin default
       }
-    }
+    },
+    navigate(item) {
+      // Tidak perlu set activeMenu di sini karena akan di-handle oleh watcher $route
+      this.$router.push(`/admin/${item.key}`);
+    },
+  },
+  created() {
+    // Panggil updateActiveMenu saat komponen dibuat
+    this.updateActiveMenu();
+  },
+  watch: {
+    // Panggil updateActiveMenu setiap kali route berubah
+    '$route': 'updateActiveMenu'
   }
 };
 </script>

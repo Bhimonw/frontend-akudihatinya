@@ -3,8 +3,8 @@
     <div class="modal-container">
       <div class="modal-header">
         <h2>
-          <font-awesome-icon :icon="['fas', 'user-plus']" class="icon-margin" />
-          Tambah User Baru
+          <font-awesome-icon :icon="['fas', 'user-edit']" class="icon-margin" />
+          Edit User
         </h2>
         <button class="close-button" @click="closeModal" aria-label="Close">
           <font-awesome-icon :icon="['fas', 'times']" />
@@ -12,8 +12,12 @@
       </div>
 
       <div class="modal-body">
-        <div class="new-user-form">
-          <form>
+        <div v-if="isLoading" class="loading-state-container">
+            <div class="spinner"></div>
+            <p>Memuat data user...</p>
+        </div>
+        <div v-else class="edit-user-form">
+          <form @submit.prevent="submitForm">
             <div class="form-section">
               <div class="section-header">
                 <font-awesome-icon :icon="['fas', 'user-shield']" class="section-icon" />
@@ -28,7 +32,7 @@
                     <input
                       type="text"
                       id="username"
-                      v-model="formData.username"
+                      v-model="editedFormData.username"
                       class="form-input"
                       :class="{ 'input-error': errors.username }"
                       placeholder="Masukkan username"
@@ -44,72 +48,12 @@
                 </div>
 
                 <div class="form-group">
-                  <label for="password">Password <span class="required">*</span></label>
-                  <div class="input-wrapper password-input-container-custom">
-                    <font-awesome-icon :icon="['fas', 'key']" class="input-icon" />
-                    <input
-                      :type="showPassword ? 'text' : 'password'"
-                      id="password"
-                      v-model="formData.password"
-                      class="form-input"
-                      :class="{ 'input-error': errors.password }"
-                      placeholder="Masukkan password"
-                      required
-                    />
-                    <button
-                      type="button"
-                      class="password-toggle-custom"
-                      @click="togglePasswordVisibility"
-                    >
-                      <font-awesome-icon :icon="['fas', showPassword ? 'eye-slash' : 'eye']" />
-                    </button>
-                  </div>
-                  <transition name="fade">
-                    <p v-if="errors.password" class="error-message">
-                      <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
-                      {{ errors.password }}
-                    </p>
-                  </transition>
-                </div>
-              </div>
-            </div>
-
-            <div class="form-section">
-              <div class="section-header">
-                <font-awesome-icon :icon="['fas', 'id-card']" class="section-icon" />
-                <h3>Detail User/Instansi</h3>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="name">{{ nameLabel }} <span class="required">*</span></label>
-                  <div class="input-wrapper">
-                     <font-awesome-icon :icon="formData.role === 'puskesmas' ? ['fas', 'hospital'] : ['fas', 'user']" class="input-icon" />
-                    <input
-                      type="text"
-                      id="name"
-                      v-model="formData.name"
-                      class="form-input"
-                      :class="{ 'input-error': errors.name }"
-                      :placeholder="namePlaceholder"
-                      required
-                    />
-                  </div>
-                  <transition name="fade">
-                    <p v-if="errors.name" class="error-message">
-                      <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
-                      {{ errors.name }}
-                    </p>
-                  </transition>
-                </div>
-
-                <div class="form-group">
                   <label for="role">Role <span class="required">*</span></label>
                   <div class="input-wrapper">
                     <font-awesome-icon :icon="['fas', 'user-tag']" class="input-icon" />
                     <select
                       id="role"
-                      v-model="formData.role"
+                      v-model="editedFormData.role"
                       class="form-select"
                       :class="{ 'input-error': errors.role }"
                       required
@@ -129,7 +73,67 @@
               </div>
 
               <div class="form-group full-width">
-                <label for="profilePicture">Foto Profil <span class="optional-text">(Opsional)</span></label>
+                  <label for="password">Password (Biarkan kosong jika tidak ingin diubah)</label>
+                  <div class="input-wrapper password-input-container-custom">
+                      <font-awesome-icon :icon="['fas', 'key']" class="input-icon" />
+                      <input
+                          :type="showPassword ? 'text' : 'password'"
+                          id="password"
+                          v-model="editedFormData.password"
+                          class="form-input"
+                          :class="{ 'input-error': errors.password }"
+                          placeholder="Password baru"
+                      />
+                      <button
+                          type="button"
+                          class="password-toggle-custom"
+                          @click="togglePasswordVisibility"
+                      >
+                          <font-awesome-icon :icon="['fas', showPassword ? 'eye-slash' : 'eye']" />
+                      </button>
+                  </div>
+                  <transition name="fade">
+                      <p v-if="errors.password" class="error-message">
+                          <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
+                          {{ errors.password }}
+                      </p>
+                  </transition>
+              </div>
+
+            </div>
+
+            <div class="form-section">
+              <div class="section-header">
+                <font-awesome-icon :icon="['fas', 'id-card']" class="section-icon" />
+                <h3>Detail User/Instansi</h3>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="name">{{ nameLabel }} <span class="required">*</span></label>
+                  <div class="input-wrapper">
+                     <font-awesome-icon :icon="editedFormData.role === 'puskesmas' ? ['fas', 'hospital'] : ['fas', 'user']" class="input-icon" />
+                    <input
+                      type="text"
+                      id="name"
+                      v-model="editedFormData.name"
+                      class="form-input"
+                      :class="{ 'input-error': errors.name }"
+                      :placeholder="namePlaceholder"
+                      required
+                    />
+                  </div>
+                  <transition name="fade">
+                    <p v-if="errors.name" class="error-message">
+                      <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
+                      {{ errors.name }}
+                    </p>
+                  </transition>
+                </div>
+              </div>
+
+              <div class="form-group full-width">
+                <label for="profilePicture">Foto Profil (Biarkan kosong jika tidak ingin diubah)</label>
                 <div class="input-wrapper file-input-wrapper">
                   <input
                     type="file"
@@ -145,6 +149,13 @@
                         <font-awesome-icon :icon="['fas', 'times']" />
                     </button>
                 </div>
+                <div v-else-if="currentProfilePictureUrl" class="image-preview-container-custom">
+                    <img :src="currentProfilePictureUrl" alt="Foto Profil Saat Ini" class="image-preview-custom" />
+                    <button type="button" @click="removeCurrentPicture" class="remove-image-button-custom" title="Hapus gambar saat ini">
+                        <font-awesome-icon :icon="['fas', 'times']" />
+                    </button>
+                    <small class="current-photo-label">Foto Saat Ini</small>
+                </div>
                 <transition name="fade">
                   <p v-if="errors.profilePicture" class="error-message">
                     <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
@@ -155,20 +166,19 @@
             </div>
 
             <div class="form-actions">
-              <button type="button" class="btn-cancel" @click="closeModal">
+              <button type="button" class="btn-cancel" @click="closeModal" :disabled="isSubmitting">
                 <font-awesome-icon :icon="['fas', 'times']" /> Batal
               </button>
               <button
-                type="button"
+                type="submit"
                 class="btn-save"
-                @click="submitForm"
                 :disabled="isSubmitting"
               >
                 <span v-if="isSubmitting">
                   <font-awesome-icon :icon="['fas', 'spinner']" spin /> Menyimpan...
                 </span>
                 <span v-else>
-                  <font-awesome-icon :icon="['fas', 'plus']" /> Tambah User
+                  <font-awesome-icon :icon="['fas', 'save']" /> Simpan Perubahan
                 </span>
               </button>
             </div>
@@ -181,32 +191,42 @@
 
 <script>
 import axios from "axios";
-// IMPOR SWEETALERT LANGSUNG SEPERTI AddNewPatient.vue
 import Swal from 'sweetalert2';
-
 import { library } from '@fortawesome/fontawesome-svg-core';
 import {
-  faUserPlus, faAt, faKey, faHospital, faUser, faUserTag,
-  faExclamationCircle, faEye, faEyeSlash, faTimes, faSpinner
+  faUserEdit, faAt, faKey, faHospital, faUser, faUserTag, faEye, faEyeSlash,
+  faExclamationCircle, faTimes, faSpinner, faIdCard, faUserShield, faSave
 } from '@fortawesome/free-solid-svg-icons';
 
 library.add(
-  faUserPlus, faAt, faKey, faHospital, faUser, faUserTag,
-  faExclamationCircle, faEye, faEyeSlash, faTimes, faSpinner
+  faUserEdit, faAt, faKey, faHospital, faUser, faUserTag, faEye, faEyeSlash,
+  faExclamationCircle, faTimes, faSpinner, faIdCard, faUserShield, faSave
 );
 
 export default {
-  name: "AddNewUserModal",
-  emits: ['close', 'user-added', 'user-add-failed'],
+  name: "EditUserModal",
+  props: {
+    visible: { // For controlling modal visibility
+        type: Boolean,
+        default: false
+    },
+    userId: { // The ID of the user to edit
+        type: [Number, String],
+        required: true
+    }
+  },
+  emits: ['close', 'user-updated', 'user-update-failed'],
   data() {
     return {
-      formData: {
+      originalUserData: null, // To store original data for comparison
+      editedFormData: {
         username: "",
-        password: "",
+        password: "", // Only set if user changes it
         name: "",
         role: "",
-        profilePicture: null,
+        profilePicture: null, // File object for new picture
       },
+      currentProfilePictureUrl: null, // URL of currently existing profile picture
       errors: {
         username: "",
         password: "",
@@ -215,23 +235,33 @@ export default {
         profilePicture: "",
       },
       showPassword: false,
-      previewUrl: null,
+      previewUrl: null, // For new profile picture preview
       isSubmitting: false,
+      isLoading: false, // For loading user data into the form
     };
   },
   computed: {
     nameLabel() {
-      if (this.formData.role === 'puskesmas') {
-        return 'Nama Puskesmas';
-      }
-      return 'Nama Lengkap User';
+      return this.editedFormData.role === 'puskesmas' ? 'Nama Puskesmas' : 'Nama Lengkap User';
     },
     namePlaceholder() {
-      if (this.formData.role === 'puskesmas') {
-        return 'Contoh: Puskesmas Martapura Timur';
+      return this.editedFormData.role === 'puskesmas' ? 'Contoh: Puskesmas Martapura Timur' : 'Masukkan nama lengkap user';
+    }
+  },
+  watch: {
+    userId: {
+      immediate: true, // Fetch data immediately when component is mounted with a userId
+      handler(newId) {
+        if (newId) {
+          this.fetchUserData();
+        }
       }
-      return 'Masukkan nama lengkap user';
     },
+    visible(newValue) {
+        if (!newValue) { // When modal is hidden
+            this.resetForm();
+        }
+    }
   },
   methods: {
     togglePasswordVisibility() {
@@ -239,16 +269,18 @@ export default {
     },
     closeModal() {
       this.$emit('close');
-      this.resetForm();
+      // No need to call resetForm here, it's handled by watch(visible)
     },
     resetForm() {
-        this.formData = {
+        this.originalUserData = null;
+        this.editedFormData = {
             username: "",
             password: "",
             name: "",
             role: "",
             profilePicture: null,
         };
+        this.currentProfilePictureUrl = null;
         this.errors = {
             username: "",
             password: "",
@@ -262,35 +294,97 @@ export default {
             fileInput.value = "";
         }
         this.showPassword = false;
+        this.isSubmitting = false;
+        this.isLoading = false;
+    },
+    async fetchUserData() {
+        this.isLoading = true;
+        this.resetForm(); // Reset form before fetching new data
+
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                Swal.fire({
+                    title: "Sesi Berakhir!",
+                    text: "Sesi Anda telah berakhir. Silakan login kembali.",
+                    icon: "warning",
+                });
+                this.closeModal();
+                return;
+            }
+
+            const response = await axios.get(`http://localhost:8000/api/admin/users/${this.userId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            this.originalUserData = response.data.user; // Store original data
+            this.editedFormData = {
+                username: this.originalUserData.username,
+                name: this.originalUserData.name,
+                role: this.originalUserData.role,
+                password: "", // Password is never pre-filled for security
+                profilePicture: null,
+            };
+            this.currentProfilePictureUrl = this.originalUserData.profile_picture;
+
+        } catch (error) {
+            console.error("Error fetching user data for edit:", error.response || error);
+            let errorMessage = "Gagal memuat data user untuk diedit.";
+            if (error.response && error.response.data && error.response.data.message) {
+                errorMessage = error.response.data.message;
+            }
+            Swal.fire('Error!', errorMessage, 'error');
+            this.closeModal();
+        } finally {
+            this.isLoading = false;
+        }
     },
     handleFileUpload(event) {
       const file = event.target.files[0];
       if (file) {
-        if (file.size > 2 * 1024 * 1024) {
+        if (file.size > 2 * 1024 * 1024) { // Max 2MB
             this.errors.profilePicture = "Ukuran file maksimal 2MB.";
-            this.formData.profilePicture = null;
+            this.editedFormData.profilePicture = null;
             this.previewUrl = null;
-            event.target.value = "";
+            event.target.value = ""; // Clear the file input to allow re-selection
             return;
         }
         const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
         if (!allowedTypes.includes(file.type)) {
             this.errors.profilePicture = "Format file harus PNG, JPG, atau JPEG.";
-            this.formData.profilePicture = null;
+            this.editedFormData.profilePicture = null;
             this.previewUrl = null;
-            event.target.value = "";
+            event.target.value = ""; // Clear the file input
             return;
         }
-        this.errors.profilePicture = "";
-        this.formData.profilePicture = file;
+        this.errors.profilePicture = ""; // Clear previous error
+        this.editedFormData.profilePicture = file;
         this.previewUrl = URL.createObjectURL(file);
+        this.currentProfilePictureUrl = null; // Clear current picture if new one is selected
       } else {
-        this.formData.profilePicture = null;
+        this.editedFormData.profilePicture = null;
         this.previewUrl = null;
+        // If file input is cleared without new selection, revert to currentProfilePictureUrl if it existed
+        if (this.originalUserData && this.originalUserData.profile_picture) {
+            this.currentProfilePictureUrl = this.originalUserData.profile_picture;
+        }
       }
     },
-    removeImage() {
-        this.formData.profilePicture = null;
+    removeImage() { // For removing selected new image preview
+        this.editedFormData.profilePicture = null;
+        this.previewUrl = null;
+        const fileInput = document.getElementById('profilePicture');
+        if (fileInput) {
+            fileInput.value = "";
+        }
+        // If original picture exists, show it again
+        if (this.originalUserData && this.originalUserData.profile_picture) {
+            this.currentProfilePictureUrl = this.originalUserData.profile_picture;
+        }
+    },
+    removeCurrentPicture() { // For explicitly removing the current profile picture from database
+        this.currentProfilePictureUrl = null;
+        this.editedFormData.profilePicture = 'REMOVE_EXISTING'; // Special flag to indicate removal
         this.previewUrl = null;
         const fileInput = document.getElementById('profilePicture');
         if (fileInput) {
@@ -301,31 +395,29 @@ export default {
       let isValid = true;
       this.errors = { username: "", password: "", name: "", role: "", profilePicture: "" };
 
-      if (!this.formData.username) {
+      if (!this.editedFormData.username) {
         this.errors.username = "Username tidak boleh kosong.";
         isValid = false;
-      } else if (this.formData.username.length < 4) {
+      } else if (this.editedFormData.username.length < 4) {
         this.errors.username = "Username minimal 4 karakter.";
         isValid = false;
-      } else if (/\s/.test(this.formData.username)) {
+      } else if (/\s/.test(this.editedFormData.username)) {
         this.errors.username = "Username tidak boleh mengandung spasi.";
         isValid = false;
       }
 
-      if (!this.formData.password) {
-        this.errors.password = "Password tidak boleh kosong.";
-        isValid = false;
-      } else if (this.formData.password.length < 6) {
+      // Password validation only if it's being changed
+      if (this.editedFormData.password && this.editedFormData.password.length < 6) {
         this.errors.password = "Password minimal 6 karakter.";
         isValid = false;
       }
 
-      if (!this.formData.name) {
-        this.errors.name = this.formData.role === 'puskesmas' ? "Nama Puskesmas tidak boleh kosong." : "Nama Lengkap tidak boleh kosong.";
+      if (!this.editedFormData.name) {
+        this.errors.name = this.editedFormData.role === 'puskesmas' ? "Nama Puskesmas tidak boleh kosong." : "Nama Lengkap tidak boleh kosong.";
         isValid = false;
       }
 
-      if (!this.formData.role) {
+      if (!this.editedFormData.role) {
         this.errors.role = "Role harus dipilih.";
         isValid = false;
       }
@@ -341,67 +433,84 @@ export default {
         return;
       }
 
-      // Show SweetAlert confirmation using direct Swal import
+      // Show SweetAlert confirmation
       const result = await Swal.fire({
-        title: 'Konfirmasi Penambahan User',
-        text: `Apakah Anda yakin ingin menambahkan user dengan username "${this.formData.username}"?`,
+        title: 'Konfirmasi Perubahan User',
+        text: `Apakah Anda yakin ingin menyimpan perubahan untuk user "${this.editedFormData.username}"?`,
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#047d78',
         cancelButtonColor: '#ef4444',
-        confirmButtonText: 'Ya, Tambahkan!',
+        confirmButtonText: 'Ya, Simpan!',
         cancelButtonText: 'Batal',
-        showLoaderOnConfirm: true, // Show loading spinner on confirm
-        preConfirm: async () => { // Make preConfirm async
+        showLoaderOnConfirm: true,
+        preConfirm: async () => {
           try {
             const token = localStorage.getItem("token");
             if (!token) {
-                // Return a rejected promise to stop Swal and handle error
                 return Swal.showValidationMessage("Token tidak ditemukan. Silakan login kembali.");
             }
 
             const apiPayload = new FormData();
-            apiPayload.append("username", this.formData.username);
-            apiPayload.append("password", this.formData.password);
-            apiPayload.append("name", this.formData.name);
-            apiPayload.append("role", this.formData.role);
+            apiPayload.append("username", this.editedFormData.username);
+            apiPayload.append("name", this.editedFormData.name);
+            apiPayload.append("role", this.editedFormData.role);
 
-            if (this.formData.profilePicture instanceof File) {
-                apiPayload.append("profile_picture", this.formData.profilePicture);
+            // Only append password if it's not empty
+            if (this.editedFormData.password) {
+                apiPayload.append("password", this.editedFormData.password);
             }
 
-            this.isSubmitting = true; // Set internal submitting state here
+            // Handle profile picture
+            if (this.editedFormData.profilePicture instanceof File) {
+                apiPayload.append("profile_picture", this.editedFormData.profilePicture);
+            } else if (this.editedFormData.profilePicture === 'REMOVE_EXISTING') {
+                apiPayload.append("profile_picture", ''); // Send empty string to remove
+            } else {
+                // If no new picture selected and not explicitly removed, don't send anything
+                // API should handle existing picture remaining if this field is absent
+            }
 
-            const response = await axios.post(
-                "http://localhost:8000/api/admin/users",
+            // Crucially for PATCH/PUT with FormData, specify _method=PUT or _method=PATCH
+            apiPayload.append("_method", "PUT"); // Or "PATCH" depending on your API route definition
+
+            this.isSubmitting = true;
+
+            const response = await axios.post( // Use POST for _method spoofing
+                `http://localhost:8000/api/admin/users/${this.userId}`,
                 apiPayload,
                 {
                     headers: { Authorization: `Bearer ${token}` },
                 }
             );
-            return response.data; // Return data for result.value
+            return response.data;
           } catch (error) {
-              this.handleSubmissionError(error); // This will emit to parent and show toast
-              // Re-throw or return rejected promise so Swal knows it failed
+              this.handleSubmissionError(error);
               return Swal.showValidationMessage(
-                error.response?.data?.message || error.message || "Terjadi kesalahan saat menyimpan data."
+                error.response?.data?.message || error.message || "Terjadi kesalahan saat menyimpan perubahan."
               );
           } finally {
-              this.isSubmitting = false; // Reset internal submitting state
+              this.isSubmitting = false;
           }
         }
       });
 
-      if (result.isConfirmed && result.value) { // Ensure confirmation AND successful preConfirm
-        this.$emit('user-added', result.value.message || "User berhasil ditambahkan!");
-        // The parent will handle closing the modal and re-fetching data
+      if (result.isConfirmed && result.value) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Berhasil!',
+          text: result.value.message || "Perubahan user berhasil disimpan!",
+          confirmButtonColor: '#047d78'
+        });
+        this.$emit('user-updated', result.value.user); // Emit updated user data if API returns it
+        this.closeModal();
       } else if (result.dismiss === Swal.DismissReason.cancel) {
-        // User clicked cancel, no action needed
+        // User clicked cancel
       }
     },
     handleSubmissionError(error) {
-      console.error("Gagal menambahkan user:", error.response ? error.response.data : error.message);
-      let errorMessage = "Gagal menambahkan user.";
+      console.error("Gagal menyimpan perubahan user:", error.response ? error.response.data : error.message);
+      let errorMessage = "Gagal menyimpan perubahan user.";
       if (error.response && error.response.data) {
           if (error.response.data.message) {
               errorMessage = error.response.data.message;
@@ -421,18 +530,18 @@ export default {
       } else {
           errorMessage = error.message || "Terjadi kesalahan tidak diketahui.";
       }
-      this.$emit('user-add-failed', errorMessage);
+      this.$emit('user-update-failed', errorMessage);
     }
   },
   mounted() {
-    this.resetForm();
+    // Initial fetch handled by watcher
   }
 };
 </script>
 
 <style scoped>
-/* CSS Variables (diambil dari AddNewPatient.vue) */
-.modal-backdrop {
+/* Common CSS Variables, ensure they are defined or imported globally */
+:root {
   --primary-50: #ECFDF5;
   --primary-100: #D1FAE5;
   --primary-500: #10B981;
@@ -446,9 +555,10 @@ export default {
   --neutral-500: #6B7280;
   --neutral-700: #374151;
   --neutral-800: #1F2937;
+  --danger-50: #FEF2F2;
   --danger-500: #EF4444;
   --danger-700: #B91C1C;
-  font-family: 'Inter', sans-serif;
+  --font-sans: 'Inter', sans-serif;
 }
 
 /* Modal Backdrop */
@@ -556,6 +666,32 @@ export default {
   border-radius: 10px;
 }
 
+/* Loading State */
+.loading-state-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  gap: 16px;
+  color: var(--primary-500);
+  font-weight: 600;
+}
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid var(--primary-500);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 /* Form Sections */
 .form-section {
   background-color: white;
@@ -587,7 +723,7 @@ export default {
   color: var(--neutral-700);
 }
 
-.new-user-form {
+.edit-user-form {
   width: 100%;
 }
 
@@ -745,6 +881,7 @@ export default {
     align-items: center;
     justify-content: center;
     background-color: var(--neutral-50, #F9FAFB);
+    flex-shrink: 0;
 }
 .image-preview-custom {
     max-width: 100%;
@@ -772,6 +909,20 @@ export default {
 .remove-image-button-custom:hover {
     background-color: var(--danger-700, #B91C1C);
 }
+.current-photo-label {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    font-size: 10px;
+    text-align: center;
+    padding: 2px 0;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
 
 .form-actions {
   margin-top: 32px;
