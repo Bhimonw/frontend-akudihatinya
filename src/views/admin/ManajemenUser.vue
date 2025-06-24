@@ -207,14 +207,6 @@
         @user-update-failed="handleUserUpdateFailed"
     />
 
-    <ConfirmModal
-      v-if="showConfirmModal"
-      :title="'Konfirmasi Hapus User'"
-      :message="'Apakah Anda yakin ingin menghapus user ini?'"
-      @confirm="deleteUser"
-      @cancel="closeConfirmModal"
-    />
-
     <UserDetailModal v-if="showDetailModal" :user="selectedUser" @close="closeDetailModal" />
 
   </div>

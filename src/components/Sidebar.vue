@@ -1,22 +1,19 @@
 <template>
   <div class="sidebar" :class="{ collapsed: !isSidebarOpen }">
-    <!-- Top Bar (Profile Placeholder) -->
     <div class="top-bar">
       <div class="profile-placeholder">
-  <div class="circle">
-    <img
-      :src="profileImageSrc"
-      alt="Profile Picture"
-      class="profile-image"
-    />
-  </div>
-</div>
+        <div class="circle">
+          <img
+            :src="profileImageSrc"
+            alt="Profile Picture"
+            class="profile-image"
+          />
+        </div>
+      </div>
       <h3 v-if="isSidebarOpen" class="app-name">Akudihatinya</h3>
     </div>
 
-    <!-- Menu Items -->
     <ul class="menu-list">
-      <!-- Dashboard Menu Item -->
       <li
         class="menu-item"
         :class="{ active: activeMenu === 'dashboard' }"
@@ -25,8 +22,7 @@
         <font-awesome-icon :icon="['fas', 'chart-line']" class="menu-icon" />
         <span v-if="isSidebarOpen" class="menu-text">Dashboard</span>
       </li>
-      
-      <!-- Patient List Menu Item -->
+
       <li
         class="menu-item"
         :class="{ active: activeMenu === 'list-pasien' }"
@@ -35,13 +31,11 @@
         <font-awesome-icon :icon="['fas', 'users']" class="menu-icon" />
         <span v-if="isSidebarOpen" class="menu-text">Daftar Pasien</span>
       </li>
-      
-      <!-- Section Label -->
+
       <li v-if="isSidebarOpen" class="section-label">
         <span>Laporan Pemantauan</span>
       </li>
-      
-      <!-- Disease Menu Items -->
+
       <li
         v-for="(item, index) in diseaseItems"
         :key="index"
@@ -68,7 +62,7 @@ export default {
   data() {
     return {
       profileImageSrc: defaultProfileImage,
-      activeMenu: 'dashboard',
+      activeMenu: 'dashboard', // Akan diinisialisasi ulang di created()
       menuItems: [
         { key: 'dashboard', label: 'Dashboard', icon: 'chart-line' },
         { key: 'list-pasien', label: 'List Pasien', icon: 'users' },
@@ -80,15 +74,48 @@ export default {
     };
   },
   methods: {
+    // Fungsi baru untuk memperbarui activeMenu berdasarkan path saat ini
+    updateActiveMenu() {
+      const currentPath = this.$route.path;
+      // Combine all menu items for easier searching
+      const allMenuItems = [...this.menuItems, ...this.diseaseItems];
+
+      // Memastikan bahwa hanya rute yang diawali dengan '/user/' yang diproses
+      if (currentPath.startsWith('/user/')) {
+        const currentKey = currentPath.substring('/user/'.length);
+        const foundItem = allMenuItems.find(item => item.key === currentKey);
+        if (foundItem) {
+          this.activeMenu = foundItem.key;
+        } else {
+          // Fallback if no matching item, can be set to default or nothing active
+          this.activeMenu = ''; // Or 'dashboard' if you want a default
+        }
+      } else if (currentPath === '/user' || currentPath === '/user/') {
+        // Handle the base '/user' route to activate dashboard
+        this.activeMenu = 'dashboard';
+      } else {
+        // If the route is not under '/user/', no menu might be active
+        this.activeMenu = ''; // Or 'dashboard' if you want a default
+      }
+    },
     navigate(item) {
-      this.activeMenu = item.key;
+      // Tidak perlu set activeMenu di sini karena akan di-handle oleh watcher $route
       this.$router.push(`/user/${item.key}`);
     },
   },
+  created() {
+    // Panggil updateActiveMenu saat komponen dibuat
+    this.updateActiveMenu();
+  },
+  watch: {
+    // Panggil updateActiveMenu setiap kali route berubah
+    '$route': 'updateActiveMenu'
+  }
 };
 </script>
 
 <style scoped>
+/* Your existing styles remain unchanged */
 /* Sidebar Container */
 .sidebar {
   width: 270px; /* Open width */

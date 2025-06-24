@@ -1,5 +1,6 @@
 <template>
   <div class="sidebar" :class="{ collapsed: !isSidebarOpen }">
+    <!-- Top Bar (Profile Placeholder) -->
     <div class="top-bar">
       <div class="profile-placeholder">
         <div class="circle">

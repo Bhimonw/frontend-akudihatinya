@@ -1,9 +1,10 @@
+admin/Dashboard.vue
 <template>
   <div v-if="apiStatus === 'loading'" class="top-loading-bar">
     <div class="loading-bar-progress"></div>
   </div>
 
-  <div v-show="!(isLoading && !isDownloading)" class="dashboard-content">
+  <div class="dashboard-content">
     <div class="toolbar-card">
       <div class="toolbar-content">
         <div class="controls-section">
@@ -53,7 +54,7 @@
       </div>
     </div>
 
-    <div v-if="error && !isLoading" class="error-message">
+    <div v-if="error && apiStatus === 'error'" class="error-message">
       <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
       {{ error }}
       <button @click="fetchData" class="retry-button">
@@ -156,8 +157,11 @@
                 <span class="item-value">{{ item.achievement_percentage !== null && item.achievement_percentage !== undefined ? item.achievement_percentage.toFixed(2) : '-' }}%</span>
               </div>
             </div>
-              <div v-if="!puskesmasRanking.length" class="overview-item-empty">
+              <div v-if="!puskesmasRanking.length && !isLoading" class="overview-item-empty">
                 Tidak ada data ranking untuk ditampilkan.
+              </div>
+              <div v-if="isLoading" class="overview-item-empty">
+                Memuat data ranking...
               </div>
           </div>
         </div>
@@ -269,6 +273,9 @@
                             <tr v-if="!paginatedData.length && !isLoading">
                                 <td :colspan="55" class="no-data-cell">Tidak ada data untuk ditampilkan.</td>
                             </tr>
+                             <tr v-if="isLoading">
+                                <td :colspan="55" class="no-data-cell">Memuat data tabel...</td>
+                            </tr>
                         </tbody>
                     </template>
                      <template v-if="tableViewMode === 'monthly'">
@@ -317,6 +324,9 @@
                             </tr>
                             <tr v-if="!paginatedData.length && !isLoading">
                                 <td :colspan="3 + (12*3) + 3 + 1" class="no-data-cell">Tidak ada data untuk ditampilkan.</td>
+                            </tr>
+                             <tr v-if="isLoading">
+                                <td :colspan="3 + (12*3) + 3 + 1" class="no-data-cell">Memuat data tabel...</td>
                             </tr>
                         </tbody>
                     </template>
@@ -369,6 +379,9 @@
                             </tr>
                              <tr v-if="!paginatedData.length && !isLoading">
                                 <td :colspan="3 + (4*3) + 3 + 1" class="no-data-cell">Tidak ada data untuk ditampilkan.</td>
+                            </tr>
+                             <tr v-if="isLoading">
+                                <td :colspan="3 + (4*3) + 3 + 1" class="no-data-cell">Memuat data tabel...</td>
                             </tr>
                         </tbody>
                     </template>
@@ -434,7 +447,7 @@ export default {
       processedTableData: [],
       puskesmasRanking: [],
       chartData: { lakiLaki: [], perempuan: [] },
-      isLoading: true,
+      isLoading: false, // Changed to false to show UI immediately
       isDownloading: false,
       showDownloadOptions: false,
       apiStatus: 'idle',
@@ -496,12 +509,8 @@ export default {
     this.fetchData();
   },
   methods: {
-    onLoadingComplete() {
-      // isLoading will be set to false in fetchData -> finally block
-    },
-    onLoadingError() {
-      // Error is handled, isLoading also set to false in fetchData -> finally
-    },
+    // onLoadingComplete() { /* No longer needed as UI shows immediately */ },
+    // onLoadingError() { /* Error handled within fetchData */ },
     updateData() {
       this.currentPage = 1; // Reset to first page on data change
       this.sortKey = ''; // Reset sort
@@ -510,7 +519,18 @@ export default {
     async fetchData() {
       this.error = null;
       this.apiStatus = 'loading';
-      this.isLoading = true;
+      this.isLoading = true; // Still use isLoading for internal states like 'Memuat data ranking...'
+
+      // Reset data to empty/default state immediately to show "loading" or empty states in UI
+      this.summaryCards = { jumlahPuskesmas: 0, sasaran: 0, capaianStandar: 0, capaianTidakStandar: 0, totalPelayanan: 0, persenCapaianPelayanan: '0%'};
+      this.processedTableData = [];
+      this.puskesmasRanking = [];
+      this.chartData = { lakiLaki: Array(12).fill(0), perempuan: Array(12).fill(0) }; // Fill with 0 for chart
+      if (this.chartInstance) {
+          this.chartInstance.data.datasets[0].data = this.chartData.lakiLaki;
+          this.chartInstance.data.datasets[1].data = this.chartData.perempuan;
+          this.chartInstance.update();
+      }
 
       try {
         const type = this.selectedProgram === "Hipertensi" ? "ht" : "dm";
@@ -531,26 +551,28 @@ export default {
         console.error("Error fetching data:", error);
         this.error = `Gagal memuat data: ${error.message || "Silakan coba lagi nanti."}`;
         this.apiStatus = 'error';
+        // Ensure data is cleared if error occurs
+        this.summaryCards = { jumlahPuskesmas: 0, sasaran: 0, capaianStandar: 0, capaianTidakStandar: 0, totalPelayanan: 0, persenCapaianPelayanan: '0%'};
         this.processedTableData = [];
         this.puskesmasRanking = [];
-        this.summaryCards = { jumlahPuskesmas: 0, sasaran: 0, capaianStandar: 0, capaianTidakStandar: 0, totalPelayanan: 0, persenCapaianPelayanan: '0%'};
-        this.chartData = { lakiLaki: [], perempuan: [] };
+        this.chartData = { lakiLaki: Array(12).fill(0), perempuan: Array(12).fill(0) };
         if (this.chartInstance) {
-          this.chartInstance.destroy();
+          this.chartInstance.destroy(); // Destroy chart on error
           this.chartInstance = null;
         }
       } finally {
-        setTimeout(() => {
-          this.isLoading = false;
-          if (this.apiStatus === 'success') {
-            this.$nextTick(() => {
-              const chartElement = document.getElementById("chart");
-              if (chartElement) {
-                this.renderChart();
-              }
-            });
-          }
-        }, 300);
+        // isLoading set to false after data processing (or error)
+        // No artificial timeout needed, allow UI to update naturally
+        this.isLoading = false;
+        // Render chart only if status is success after data is processed
+        if (this.apiStatus === 'success') {
+          this.$nextTick(() => {
+            const chartElement = document.getElementById("chart");
+            if (chartElement) {
+              this.renderChart();
+            }
+          });
+        }
       }
     },
 
@@ -1685,11 +1707,6 @@ body {
 
 .download-option:not(:last-child) {
   border-bottom: 1px solid var(--gray-100, #f3f4f6); /* Garis pemisah antar item */
-}
-
-/* Update print button untuk mengakomodasi ikon spinner */
-.print-button .button-icon .svg-inline--fa.fa-spinner {
-    /* Jika perlu style khusus untuk spinner */
 }
 
 .print-button:disabled {

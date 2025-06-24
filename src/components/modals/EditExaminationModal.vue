@@ -262,20 +262,20 @@ export default {
     validateGdsp() {
       const val = this.formData.gdsp;
       if (val === null || val === '') { this.errors.gdsp = ""; return; }
-      if (val < 20 || val > 600) { this.errors.gdsp = "Nilai GDS harus antara 20 dan 600."; } 
+      if (val < 40 || val > 650) { this.errors.gdsp = "Nilai GDS harus antara 40 dan 650."; } 
       else { this.errors.gdsp = ""; }
     },
     validateGdp() {
       const val = this.formData.gdp;
       if (val === null || val === '') { this.errors.gdp = ""; this.formData.gd2jpp = null; this.errors.gd2jpp = ""; return; }
-      if (val < 20 || val > 600) { this.errors.gdp = "Nilai GDP harus antara 20 dan 600."; } 
+      if (val < 40 || val > 650) { this.errors.gdp = "Nilai GDP harus antara 40 dan 650."; } 
       else { this.errors.gdp = ""; }
     },
     validateGd2jpp() {
       if (this.formData.gdp === null || this.formData.gdp === '') { this.errors.gd2jpp = ""; return; }
       const val = this.formData.gd2jpp;
       if (val === null || val === '') { this.errors.gd2jpp = ""; return; }
-      if (val < 20 || val > 600) { this.errors.gd2jpp = "Nilai GD2JPP harus antara 20 dan 600."; } 
+      if (val < 40 || val > 650) { this.errors.gd2jpp = "Nilai GD2JPP harus antara 40 dan 650."; } 
       else { this.errors.gd2jpp = ""; }
     },
     validateHba1c() {

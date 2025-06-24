@@ -16,8 +16,7 @@
             <div class="spinner"></div>
             <p>Memuat data user...</p>
         </div>
-        <div v-else class="edit-user-form">
-          <form @submit.prevent="submitForm">
+        <div v-else class="edit-user-form"> <form @submit.prevent="submitForm">
             <div class="form-section">
               <div class="section-header">
                 <font-awesome-icon :icon="['fas', 'user-shield']" class="section-icon" />
@@ -73,31 +72,71 @@
               </div>
 
               <div class="form-group full-width">
-                  <label for="password">Password (Biarkan kosong jika tidak ingin diubah)</label>
-                  <div class="input-wrapper password-input-container-custom">
-                      <font-awesome-icon :icon="['fas', 'key']" class="input-icon" />
-                      <input
-                          :type="showPassword ? 'text' : 'password'"
-                          id="password"
-                          v-model="editedFormData.password"
-                          class="form-input"
-                          :class="{ 'input-error': errors.password }"
-                          placeholder="Password baru"
-                      />
-                      <button
-                          type="button"
-                          class="password-toggle-custom"
-                          @click="togglePasswordVisibility"
-                      >
-                          <font-awesome-icon :icon="['fas', showPassword ? 'eye-slash' : 'eye']" />
-                      </button>
-                  </div>
-                  <transition name="fade">
-                      <p v-if="errors.password" class="error-message">
-                          <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
-                          {{ errors.password }}
-                      </p>
-                  </transition>
+                <div v-if="!isChangingPassword">
+                    <button type="button" class="btn-change-password-action" @click="startChangingPassword">
+                        <font-awesome-icon :icon="['fas', 'key']" /> Ganti Password
+                    </button>
+                </div>
+                <div v-else>
+                    <label for="password">Password Baru <span class="required">*</span></label>
+                    <div class="input-wrapper password-input-container-custom">
+                        <font-awesome-icon :icon="['fas', 'key']" class="input-icon" />
+                        <input
+                            :type="showPassword ? 'text' : 'password'"
+                            id="password"
+                            v-model="editedFormData.password"
+                            class="form-input"
+                            :class="{ 'input-error': errors.password }"
+                            placeholder="Masukkan password baru"
+                            required
+                        />
+                        <button
+                            type="button"
+                            class="password-toggle-custom"
+                            @click="togglePasswordVisibility"
+                        >
+                            <font-awesome-icon :icon="['fas', showPassword ? 'eye-slash' : 'eye']" />
+                        </button>
+                    </div>
+                    <transition name="fade">
+                        <p v-if="errors.password" class="error-message">
+                            <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
+                            {{ errors.password }}
+                        </p>
+                    </transition>
+
+                    <label for="password_confirmation" class="mt-3">Konfirmasi Password Baru <span class="required">*</span></label>
+                    <div class="input-wrapper password-input-container-custom">
+                        <font-awesome-icon :icon="['fas', 'key']" class="input-icon" />
+                        <input
+                            :type="showConfirmPassword ? 'text' : 'password'"
+                            id="password_confirmation"
+                            v-model="editedFormData.password_confirmation"
+                            class="form-input"
+                            :class="{ 'input-error': errors.password_confirmation }"
+                            placeholder="Konfirmasi password baru"
+                            required
+                        />
+                        <button
+                            type="button"
+                            class="password-toggle-custom"
+                            @click="toggleConfirmPasswordVisibility"
+                        >
+                            <font-awesome-icon :icon="['fas', showConfirmPassword ? 'eye-slash' : 'eye']" />
+                        </button>
+                    </div>
+                    <transition name="fade">
+                        <p v-if="errors.password_confirmation" class="error-message">
+                            <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
+                            {{ errors.password_confirmation }}
+                        </p>
+                    </transition>
+                    <div class="d-flex justify-content-end mt-3">
+                        <button type="button" class="btn-cancel-password-change" @click="cancelChangingPassword">
+                            Batal Ganti Password
+                        </button>
+                    </div>
+                </div>
               </div>
 
             </div>
@@ -206,11 +245,11 @@ library.add(
 export default {
   name: "EditUserModal",
   props: {
-    visible: { // For controlling modal visibility
+    visible: {
         type: Boolean,
         default: false
     },
-    userId: { // The ID of the user to edit
+    userId: {
         type: [Number, String],
         required: true
     }
@@ -218,26 +257,30 @@ export default {
   emits: ['close', 'user-updated', 'user-update-failed'],
   data() {
     return {
-      originalUserData: null, // To store original data for comparison
+      originalUserData: null,
       editedFormData: {
         username: "",
-        password: "", // Only set if user changes it
+        password: "",
+        password_confirmation: "",
         name: "",
         role: "",
-        profilePicture: null, // File object for new picture
+        profilePicture: null,
       },
-      currentProfilePictureUrl: null, // URL of currently existing profile picture
+      currentProfilePictureUrl: null,
       errors: {
         username: "",
         password: "",
+        password_confirmation: "",
         name: "",
         role: "",
         profilePicture: "",
       },
       showPassword: false,
-      previewUrl: null, // For new profile picture preview
+      showConfirmPassword: false,
+      previewUrl: null,
       isSubmitting: false,
-      isLoading: false, // For loading user data into the form
+      isLoading: false,
+      isChangingPassword: false,
     };
   },
   computed: {
@@ -250,16 +293,23 @@ export default {
   },
   watch: {
     userId: {
-      immediate: true, // Fetch data immediately when component is mounted with a userId
-      handler(newId) {
-        if (newId) {
+      immediate: true,
+      handler(newId, oldId) { // Added oldId for clarity in watch
+        // Only fetch if newId is different from oldId or if it's the initial load (oldId is undefined)
+        if (newId && (newId !== oldId || oldId === undefined)) {
           this.fetchUserData();
         }
       }
     },
     visible(newValue) {
-        if (!newValue) { // When modal is hidden
+        if (!newValue) {
             this.resetForm();
+        } else {
+            // When modal becomes visible, if userId is already set, fetch data
+            // This is crucial for cases where the same modal instance is reused
+            if (this.userId) {
+                this.fetchUserData();
+            }
         }
     }
   },
@@ -267,15 +317,18 @@ export default {
     togglePasswordVisibility() {
       this.showPassword = !this.showPassword;
     },
+    toggleConfirmPasswordVisibility() {
+      this.showConfirmPassword = !this.showConfirmPassword;
+    },
     closeModal() {
       this.$emit('close');
-      // No need to call resetForm here, it's handled by watch(visible)
     },
     resetForm() {
         this.originalUserData = null;
         this.editedFormData = {
             username: "",
             password: "",
+            password_confirmation: "",
             name: "",
             role: "",
             profilePicture: null,
@@ -284,6 +337,7 @@ export default {
         this.errors = {
             username: "",
             password: "",
+            password_confirmation: "",
             name: "",
             role: "",
             profilePicture: "",
@@ -294,12 +348,33 @@ export default {
             fileInput.value = "";
         }
         this.showPassword = false;
+        this.showConfirmPassword = false;
         this.isSubmitting = false;
         this.isLoading = false;
+        this.isChangingPassword = false;
+    },
+    startChangingPassword() {
+        this.isChangingPassword = true;
+        this.editedFormData.password = "";
+        this.editedFormData.password_confirmation = "";
+        this.errors.password = "";
+        this.errors.password_confirmation = "";
+    },
+    cancelChangingPassword() {
+        this.isChangingPassword = false;
+        this.editedFormData.password = "";
+        this.editedFormData.password_confirmation = "";
+        this.errors.password = "";
+        this.errors.password_confirmation = "";
+        this.showPassword = false;
+        this.showConfirmPassword = false;
     },
     async fetchUserData() {
-        this.isLoading = true;
-        this.resetForm(); // Reset form before fetching new data
+        // PENTING: Pindahkan resetForm() dari sini!
+        // resetForm() hanya dipanggil saat modal ditutup (melalui watcher `visible`)
+        // atau secara manual jika diperlukan (misalnya saat klik "Tambah User")
+
+        this.isLoading = true; // Langsung set loading true
 
         try {
             const token = localStorage.getItem("token");
@@ -313,17 +388,24 @@ export default {
                 return;
             }
 
-            const response = await axios.get(`http://localhost:8000/api/admin/users/${this.userId}`, {
+            // Tambahkan delay minimal untuk UX, seperti di UserDetailModal
+            const fetchPromise = axios.get(`http://localhost:8000/api/admin/users/${this.userId}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
+            const [response] = await Promise.all([
+                fetchPromise,
+                new Promise(resolve => setTimeout(resolve, 300)) // Minimal 300ms delay
+            ]);
 
-            this.originalUserData = response.data.user; // Store original data
+
+            this.originalUserData = response.data.user;
             this.editedFormData = {
                 username: this.originalUserData.username,
                 name: this.originalUserData.name,
                 role: this.originalUserData.role,
                 password: "", // Password is never pre-filled for security
                 profilePicture: null,
+                password_confirmation: "",
             };
             this.currentProfilePictureUrl = this.originalUserData.profile_picture;
 
@@ -346,7 +428,7 @@ export default {
             this.errors.profilePicture = "Ukuran file maksimal 2MB.";
             this.editedFormData.profilePicture = null;
             this.previewUrl = null;
-            event.target.value = ""; // Clear the file input to allow re-selection
+            event.target.value = "";
             return;
         }
         const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
@@ -354,37 +436,35 @@ export default {
             this.errors.profilePicture = "Format file harus PNG, JPG, atau JPEG.";
             this.editedFormData.profilePicture = null;
             this.previewUrl = null;
-            event.target.value = ""; // Clear the file input
+            event.target.value = "";
             return;
         }
-        this.errors.profilePicture = ""; // Clear previous error
+        this.errors.profilePicture = "";
         this.editedFormData.profilePicture = file;
         this.previewUrl = URL.createObjectURL(file);
-        this.currentProfilePictureUrl = null; // Clear current picture if new one is selected
+        this.currentProfilePictureUrl = null;
       } else {
         this.editedFormData.profilePicture = null;
         this.previewUrl = null;
-        // If file input is cleared without new selection, revert to currentProfilePictureUrl if it existed
         if (this.originalUserData && this.originalUserData.profile_picture) {
             this.currentProfilePictureUrl = this.originalUserData.profile_picture;
         }
       }
     },
-    removeImage() { // For removing selected new image preview
+    removeImage() {
         this.editedFormData.profilePicture = null;
         this.previewUrl = null;
         const fileInput = document.getElementById('profilePicture');
         if (fileInput) {
             fileInput.value = "";
         }
-        // If original picture exists, show it again
         if (this.originalUserData && this.originalUserData.profile_picture) {
             this.currentProfilePictureUrl = this.originalUserData.profile_picture;
         }
     },
-    removeCurrentPicture() { // For explicitly removing the current profile picture from database
+    removeCurrentPicture() {
         this.currentProfilePictureUrl = null;
-        this.editedFormData.profilePicture = 'REMOVE_EXISTING'; // Special flag to indicate removal
+        this.editedFormData.profilePicture = 'REMOVE_EXISTING';
         this.previewUrl = null;
         const fileInput = document.getElementById('profilePicture');
         if (fileInput) {
@@ -393,7 +473,7 @@ export default {
     },
     validateForm() {
       let isValid = true;
-      this.errors = { username: "", password: "", name: "", role: "", profilePicture: "" };
+      this.errors = { username: "", password: "", password_confirmation: "", name: "", role: "", profilePicture: "" };
 
       if (!this.editedFormData.username) {
         this.errors.username = "Username tidak boleh kosong.";
@@ -406,12 +486,6 @@ export default {
         isValid = false;
       }
 
-      // Password validation only if it's being changed
-      if (this.editedFormData.password && this.editedFormData.password.length < 6) {
-        this.errors.password = "Password minimal 6 karakter.";
-        isValid = false;
-      }
-
       if (!this.editedFormData.name) {
         this.errors.name = this.editedFormData.role === 'puskesmas' ? "Nama Puskesmas tidak boleh kosong." : "Nama Lengkap tidak boleh kosong.";
         isValid = false;
@@ -421,6 +495,25 @@ export default {
         this.errors.role = "Role harus dipilih.";
         isValid = false;
       }
+
+      if (this.isChangingPassword) {
+        if (!this.editedFormData.password) {
+            this.errors.password = "Password baru tidak boleh kosong.";
+            isValid = false;
+        } else if (this.editedFormData.password.length < 6) {
+            this.errors.password = "Password baru minimal 6 karakter.";
+            isValid = false;
+        }
+
+        if (!this.editedFormData.password_confirmation) {
+            this.errors.password_confirmation = "Konfirmasi password baru tidak boleh kosong.";
+            isValid = false;
+        } else if (this.editedFormData.password !== this.editedFormData.password_confirmation) {
+            this.errors.password_confirmation = "Konfirmasi password tidak cocok.";
+            isValid = false;
+        }
+      }
+
       return isValid;
     },
     async submitForm() {
@@ -433,7 +526,6 @@ export default {
         return;
       }
 
-      // Show SweetAlert confirmation
       const result = await Swal.fire({
         title: 'Konfirmasi Perubahan User',
         text: `Apakah Anda yakin ingin menyimpan perubahan untuk user "${this.editedFormData.username}"?`,
@@ -456,27 +548,22 @@ export default {
             apiPayload.append("name", this.editedFormData.name);
             apiPayload.append("role", this.editedFormData.role);
 
-            // Only append password if it's not empty
-            if (this.editedFormData.password) {
+            if (this.isChangingPassword && this.editedFormData.password) {
                 apiPayload.append("password", this.editedFormData.password);
+                apiPayload.append("password_confirmation", this.editedFormData.password_confirmation);
             }
 
-            // Handle profile picture
             if (this.editedFormData.profilePicture instanceof File) {
                 apiPayload.append("profile_picture", this.editedFormData.profilePicture);
             } else if (this.editedFormData.profilePicture === 'REMOVE_EXISTING') {
-                apiPayload.append("profile_picture", ''); // Send empty string to remove
-            } else {
-                // If no new picture selected and not explicitly removed, don't send anything
-                // API should handle existing picture remaining if this field is absent
+                apiPayload.append("profile_picture", '');
             }
 
-            // Crucially for PATCH/PUT with FormData, specify _method=PUT or _method=PATCH
-            apiPayload.append("_method", "PUT"); // Or "PATCH" depending on your API route definition
+            apiPayload.append("_method", "PUT");
 
             this.isSubmitting = true;
 
-            const response = await axios.post( // Use POST for _method spoofing
+            const response = await axios.post(
                 `http://localhost:8000/api/admin/users/${this.userId}`,
                 apiPayload,
                 {
@@ -502,7 +589,7 @@ export default {
           text: result.value.message || "Perubahan user berhasil disimpan!",
           confirmButtonColor: '#047d78'
         });
-        this.$emit('user-updated', result.value.user); // Emit updated user data if API returns it
+        this.$emit('user-updated', result.value.user);
         this.closeModal();
       } else if (result.dismiss === Swal.DismissReason.cancel) {
         // User clicked cancel
@@ -971,6 +1058,54 @@ export default {
   cursor: not-allowed;
   opacity: 0.7;
 }
+
+.btn-change-password-action {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 15px;
+    background-color: var(--neutral-100);
+    border: 1px solid var(--neutral-300);
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--neutral-700);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-change-password-action:hover {
+    background-color: var(--neutral-200);
+    border-color: var(--neutral-400);
+}
+
+.btn-cancel-password-change {
+    padding: 8px 15px;
+    background-color: var(--danger-50);
+    color: var(--danger-700);
+    border: 1px solid var(--danger-300, #FCA5A5);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-cancel-password-change:hover {
+    background-color: var(--danger-100, #FEE2E2);
+    border-color: var(--danger-500);
+}
+
+.mt-3 {
+    margin-top: 1rem;
+}
+.d-flex {
+    display: flex;
+}
+.justify-content-end {
+    justify-content: flex-end;
+}
+
 
 @media (max-width: 768px) {
   .modal-container {
