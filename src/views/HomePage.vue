@@ -6,10 +6,7 @@
         <router-link to="/auth/login" class="login-btn">Login</router-link>
       </nav>
       <div class="hero-content">
-        <h1 class="hero-title">Aplikasi Kesehatan Terpadu</h1>
-        <p class="hero-subtitle">
-          Diabetes Mellitus & Hipertensi Terlayani di Kabupaten Banjar
-        </p>
+        <h1 class="hero-title">Aplikasi Kesehatan untuk Diabetes Mellitus dan Hipertensi Terlayani di Kabupaten Banjar</h1>
         <div class="arrow-container" @click="scrollToContent">
           <font-awesome-icon :icon="['fas', 'chevron-down']" />
         </div>
@@ -56,7 +53,6 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 
-// Script tetap sama, tidak ada perubahan logika
 export default {
   name: 'HomePage',
   setup() {
@@ -68,32 +64,31 @@ export default {
       infoContent.value?.scrollIntoView({ behavior: 'smooth' });
     };
 
-    const handleScroll = () => {
-      if (!loginSection.value) return;
-      const { top } = loginSection.value.getBoundingClientRect();
-      const windowHeight = window.innerHeight;
-
-      if (top < windowHeight && top > 0) {
-        window.removeEventListener('scroll', handleScrollThrottled);
-        router.push('/auth/login');
-      }
-    };
-    
-    let throttleTimeout = null;
-    const handleScrollThrottled = () => {
-      if (throttleTimeout) return;
-      throttleTimeout = setTimeout(() => {
-        handleScroll();
-        throttleTimeout = null;
-      }, 200);
-    };
+    let observer = null;
 
     onMounted(() => {
-      window.addEventListener('scroll', handleScrollThrottled);
+      if (!loginSection.value) return;
+
+      const options = {
+        root: null,
+        threshold: 0.1,
+      };
+
+      observer = new IntersectionObserver((entries) => {
+        const entry = entries[0];
+        if (entry.isIntersecting) {
+          observer.unobserve(loginSection.value);
+          router.push('/auth/login');
+        }
+      }, options);
+
+      observer.observe(loginSection.value);
     });
 
     onBeforeUnmount(() => {
-      window.removeEventListener('scroll', handleScrollThrottled);
+      if (observer) {
+        observer.disconnect();
+      }
     });
 
     return {
@@ -106,24 +101,12 @@ export default {
 </script>
 
 <style scoped>
-/* Variabel CSS disalin dari Login.vue untuk konsistensi */
-:root {
-  --primary-500: #10B981;
-  --primary-700: #047857;
-  --background-light: #F9FAFB;
-  --text-dark: #1F2937;
-  --text-medium: #6B7280;
-  --text-light: #9CA3AF;
-  --card-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.1);
-}
-
 .home-wrapper {
-  /* Menggunakan font Inter yang sama dengan Login.vue */
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-family-primary); 
   scroll-snap-type: y mandatory;
   overflow-y: scroll;
   height: 100vh;
-  background-color: var(--background-light); /* Latar belakang dasar */
+  background-color: var(--background-light);
 }
 
 /* Hero Section Styles */
@@ -133,13 +116,14 @@ export default {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  /* Menggunakan gradient warna yang sama */
-  background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%);
   color: white;
   text-align: center;
   padding: 20px;
   position: relative;
   scroll-snap-align: start;
+  background: 
+    linear-gradient(135deg, rgba(4, 125, 120, 0.7) 0%, rgba(3, 89, 85, 0.8) 100%),
+    url('../assets/dokumentasi-dinkes.jpg') no-repeat center center/cover;
 }
 
 .top-nav {
@@ -158,39 +142,48 @@ export default {
   font-weight: 700;
 }
 
-/* Tombol login disesuaikan gayanya */
 .login-btn {
-  background-color: white;
+  background-color: var(--bg-white);
   color: var(--primary-700);
   padding: 10px 25px;
-  border-radius: 12px; /* Disesuaikan dengan Login.vue */
+  border-radius: var(--radius-lg);
   text-decoration: none;
   font-weight: 600;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  box-shadow: var(--shadow-md);
 }
 
 .login-btn:hover {
-  background-color: #f0fdf4;
+  background-color: var(--primary-50);
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+  box-shadow: var(--shadow-lg);
 }
 
 .hero-content {
   animation: fadeIn 1.5s ease-out;
+  max-width: 900px;
+  margin: 0 auto;
 }
 
+/* PERBAIKAN HERO TITLE - Lebih User Friendly */
 .hero-title {
-  font-size: 3.5rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
+  font-family: var(--font-family-heading);
+  font-size: 2.8rem; /* Dikurangi dari 3.5rem */
+  font-weight: 600; /* Dikurangi dari 700 untuk less aggressive */
+  line-height: 1.3; /* Ditambahkan untuk readability yang lebih baik */
+  margin-bottom: 1.5rem;
+  max-width: 800px;
+  /* DIHAPUS: text-transform: uppercase; */
+  color: var(--bg-white);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); /* Ditambahkan untuk kontras yang lebih baik */
+  letter-spacing: -0.5px; /* Sedikit mengurangi spacing untuk tampilan lebih natural */
 }
 
 .hero-subtitle {
   font-size: 1.25rem;
   max-width: 600px;
   opacity: 0.9;
-  color: #D1FAE5; /* Warna hijau muda untuk subjudul */
+  color: var(--primary-100);
 }
 
 .arrow-container {
@@ -200,17 +193,10 @@ export default {
   animation: bounce 2s infinite;
 }
 
-.arrow-container svg { /* Targetkan svg di dalam container */
+.arrow-container svg {
   font-size: 2rem;
 }
 
-@keyframes bounce {
-  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-  40% { transform: translateY(-20px); }
-  60% { transform: translateY(-10px); }
-}
-
-/* Info Content Styles */
 .info-content {
   background-color: var(--background-light);
   padding: 80px 40px;
@@ -221,6 +207,7 @@ export default {
 }
 
 .section-title {
+  font-family: var(--font-family-heading);
   text-align: center;
   font-size: 2.25rem;
   font-weight: 700;
@@ -228,15 +215,14 @@ export default {
   margin-bottom: 20px;
 }
 
-/* Card disesuaikan dengan gaya .login-card */
 .info-card {
   display: flex;
   align-items: center;
   gap: 60px;
   max-width: 1100px;
   margin: 0 auto;
-  background: white;
-  border-radius: 16px;
+  background: var(--bg-white);
+  border-radius: var(--radius-xl);
   box-shadow: var(--card-shadow);
   padding: 40px;
   overflow: hidden;
@@ -248,7 +234,7 @@ export default {
 
 .card-image-container {
   flex: 1;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
 }
 
@@ -267,8 +253,8 @@ export default {
   flex: 1.2;
 }
 
-/* Judul dan deskripsi card disesuaikan dengan font dan warna Login.vue */
 .card-title {
+  font-family: var(--font-family-heading);
   font-size: 2rem;
   font-weight: 700;
   color: var(--text-dark);
@@ -281,7 +267,6 @@ export default {
   color: var(--text-medium);
 }
 
-/* Footer & Login Section */
 .scroll-prompt-footer {
   text-align: center;
   padding: 60px 20px;
@@ -296,15 +281,20 @@ export default {
   animation: bounce-small 2s infinite;
 }
 
+.login-section-container {
+  height: 100vh;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-20px); }
+  60% { transform: translateY(-10px); }
+}
+
 @keyframes bounce-small {
   0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
   40% { transform: translateY(-10px); }
   60% { transform: translateY(-5px); }
-}
-
-
-.login-section-container {
-  height: 100vh;
 }
 
 @keyframes fadeIn {
@@ -312,22 +302,39 @@ export default {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Media Queries - Responsiveness untuk Hero Title */
 @media (max-width: 992px) {
   .info-card {
     flex-direction: column !important;
     gap: 30px;
     padding: 30px;
   }
+  
+  .hero-title {
+    font-size: 2.4rem; /* Dikurangi untuk tablet */
+  }
 }
 
 @media (max-width: 768px) {
   .top-nav { padding: 15px 20px; }
-  .hero-title { font-size: 2.5rem; }
-  .hero-subtitle { font-size: 1rem; }
   
+  .hero-title { 
+    font-size: 2rem; /* Dikurangi dari 2.5rem untuk mobile */
+    line-height: 1.4; /* Sedikit diperbesar untuk mobile readability */
+    margin-bottom: 1rem;
+  }
+  
+  .hero-subtitle { font-size: 1rem; }
   .info-content { padding: 60px 20px; }
   .section-title { font-size: 1.8rem; }
   .card-title { font-size: 1.5rem; }
   .card-description { font-size: 0.95rem; }
+}
+
+@media (max-width: 480px) {
+  .hero-title {
+    font-size: 1.7rem; /* Lebih kecil lagi untuk layar sangat kecil */
+    padding: 0 10px;
+  }
 }
 </style>

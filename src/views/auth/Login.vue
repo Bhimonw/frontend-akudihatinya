@@ -125,9 +125,9 @@
         </div>
       </div>
     </div>
-    <div class="copyright-footer">
+    <!-- <div class="copyright-footer">
       <p>Copyright © {{ currentYear }} Dinas Kesehatan. Hak Cipta Dilindungi</p>
-    </div>
+    </div> -->
   </div>
 </template>
 

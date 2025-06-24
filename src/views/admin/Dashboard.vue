@@ -17,9 +17,13 @@ admin/Dashboard.vue
               <select v-model="selectedYear" @change="updateData" class="modern-select">
                 <option v-for="year in years" :key="year" :value="String(year)">{{ year }}</option>
               </select>
+              <span class="select-arrow">
+                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                  <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
             </div>
           </div>
-
           <div class="control-group">
             <label class="control-label">
               <span class="label-icon">🏥</span>
@@ -29,6 +33,11 @@ admin/Dashboard.vue
               <select v-model="selectedProgram" @change="updateData" class="modern-select">
                 <option v-for="program in programs" :key="program" :value="program">{{ program }}</option>
               </select>
+              <span class="select-arrow">
+                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                  <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
             </div>
           </div>
         </div>
@@ -425,14 +434,12 @@ export default {
   },
   data() {
     const currentYear = new Date().getFullYear();
-    const startYear = currentYear - 4; // Show last 5 years
-    const years = Array.from({ length: currentYear - startYear + 1 }, (_, i) => startYear + i)
-                      .filter(year => year >= 2024 && year <= Math.max(2025, currentYear)) // ensure currentYear is available if > 2025
-                      .reverse();
+    const startYear = 2024;
+    const years = Array.from({ length: currentYear - startYear + 1 }, (_, i) => startYear + i).reverse();
 
     return {
       chartInstance: null,
-      selectedYear: String(Math.min(currentYear, Math.max(...years.map(y=>parseInt(y))))), // Default to current year or max available if current not in range
+      selectedYear: String(currentYear),
       years: years,
       selectedProgram: "Diabetes Mellitus",
       programs: ["Diabetes Mellitus", "Hipertensi"],
@@ -991,24 +998,40 @@ body {
   display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; /* 14px */
   font-weight: 500; color: var(--gray-700, #374151);
 }
-.label-icon { font-size: 1rem; color: var(--primary-500); } /* 16px */
-.select-wrapper { position: relative; width: 200px; } /* Sedikit lebih kecil */
-.modern-select {
-  width: 100%; padding: 0.625rem 1rem; /* 10px 16px */
-  border-radius: var(--radius-md, 0.5rem); border: 1px solid var(--gray-300, #d1d5db);
-  background-color: white; font-size: 0.875rem; /* 14px */
-  color: var(--gray-800, #1f2937); appearance: none; cursor: pointer;
-  transition: all 0.2s ease;
-  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%236B7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  padding-right: 2.5rem; /* Space for arrow */
+.label-icon { font-size: 1rem; color: var(--primary-500); }
+
+.select-wrapper { position: relative; min-width: 200px; }
+  .select-arrow {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gray-400);
+    pointer-events: none;
+  }
+  
+  .modern-select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    background: white;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--gray-700);
+    appearance: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+.modern-select:hover { 
+  border-color: var(--primary-400); 
 }
-.modern-select:hover { border-color: var(--primary-400); }
-.modern-select:focus {
-  outline: none; border-color: var(--primary-500, #047d78);
-  box-shadow: 0 0 0 3px rgba(4, 125, 120, 0.2);
-}
+
+  .modern-select:focus {
+    outline: none;
+    border-color: var(--primary-500);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
 .select-arrow { display: none; } /* Digantikan oleh background-image pada select */
 
 .print-button {

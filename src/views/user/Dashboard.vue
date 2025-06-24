@@ -86,7 +86,7 @@
           <div class="metric-content">
             <h3 class="metric-title">Total Sasaran</h3>
             <p class="metric-value">{{ summaryCards.sasaran || '0' }}</p>
-            <p class="metric-subtitle">Target Population</p>
+            <p class="metric-subtitle">Sesuai Standar</p>
           </div>
         </div>
 
@@ -135,7 +135,7 @@
           <div class="metric-content">
             <h3 class="metric-title">Total Pelayanan</h3>
             <p class="metric-value">{{ summaryCards.totalPelayanan || '0' }}</p>
-            <p class="metric-subtitle">Total Services</p>
+            <p class="metric-subtitle">Pelayanan</p>
           </div>
         </div>
 
@@ -149,9 +149,9 @@
             <span class="metric-trend">📊</span>
           </div>
           <div class="metric-content">
-            <h3 class="metric-title">% Capaian</h3>
+            <h3 class="metric-title">% Capaian Pelayanan</h3>
             <p class="metric-value">{{ summaryCards.persenCapaianPelayanan || '0%' }}</p>
-            <p class="metric-subtitle">Achievement Rate</p>
+            <p class="metric-subtitle">% Sesuai Standar</p>
           </div>
         </div>
       </div>
@@ -257,17 +257,15 @@ export default {
   },
   data() {
     const currentYear = new Date().getFullYear();
-    const startYear = 2020;
-    const years = Array.from({ length: currentYear - startYear + 1 }, (_, i) => startYear + i).reverse();
+    const startYear = 2024;
+     const years = Array.from({ length: currentYear - startYear + 1 }, (_, i) => startYear + i).reverse();
     return {
       chartInstance: null,
       selectedYear: String(currentYear),
-      years: years.filter((year) => year >= 2024 && year <= 2025),
+      years: years,
       selectedProgram: "Diabetes Mellitus",
       programs: ["Diabetes Mellitus", "Hipertensi"],
       summaryCards: {},
-      // tableData: [], // Tidak terpakai, bisa dihapus jika benar
-      // data: {}, // Tidak terpakai, bisa dihapus jika benar
       monthlyTableData: [],
       chartData: {},
       apiStatus: 'idle',
@@ -857,6 +855,10 @@ body { /* This might conflict if user has global body styles, keep an eye on it 
     cursor: pointer;
     transition: all 0.2s;
   }
+
+.modern-select:hover { 
+  border-color: var(--primary-400); 
+}
   
   .modern-select:focus {
     outline: none;
