@@ -316,398 +316,387 @@
 <script>
 import Swal from 'sweetalert2';
 import MySwal from "../../utils/swal-custom.js";
-import axios from 'axios';
+// import axios from 'axios'; // Dihapus
+import apiClient from '../../api.js'; // Menggunakan apiClient
 import AddExaminationDataDM from "../../components/modals/AddExaminationDataDM.vue";
 import EditPatientDetail from '../../components/modals/EditPatientDetail.vue';
 import EditExaminationModal from '../../components/modals/EditExaminationModal.vue';
 
 export default {
-  name: "DetailPasienDM",
-  components: {
-    AddExaminationDataDM,
-    EditPatientDetail,
-    EditExaminationModal,
-  },
-  data() {
-    return {
-      patientId: this.$route.params.id,
-      patient: {},
-      exams: [], 
-      totalExamsFromAPI: 0, 
-      totalPagesFromAPI: 0, 
-      selectedYear: this.$route.query.year || new Date().getFullYear().toString(),
-      searchQuery: "",
-      currentPage: 1,
-      pageSize: 10, 
-      months: [
-        "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
-        "Jul", "Agu", "Sep", "Okt", "Nov", "Des"
-      ],
-      isModalOpen: false,
-      isEditModalOpen: false,
-      isLoading: false,
-      isLoadingExams: false,
-      selectedExam: null,
-      isEditExamModalOpen: false,
-    };
-  },
-  computed: {
-    firstItemIndex() {
-      return (this.currentPage - 1) * parseInt(this.pageSize);
-    },
-    lastItemIndex() {
-      const itemsOnCurrentPage = this.exams.length;
-      return this.firstItemIndex + itemsOnCurrentPage;
-    },
-    paginatedExams() {
-      return this.exams;
-    },
-    paginationItems() {
-      const result = [];
-      const totalPages = this.totalPagesFromAPI;
-      const currentPage = this.currentPage;
-      
-      if (totalPages <= 0) return [];
+  name: "DetailPasienDM",
+  components: {
+    AddExaminationDataDM,
+    EditPatientDetail,
+    EditExaminationModal,
+  },
+  data() {
+    return {
+      patientId: this.$route.params.id,
+      patient: {},
+      exams: [], 
+      totalExamsFromAPI: 0, 
+      totalPagesFromAPI: 0, 
+      selectedYear: this.$route.query.year || new Date().getFullYear().toString(),
+      searchQuery: "",
+      currentPage: 1,
+      pageSize: 10, 
+      months: [
+        "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
+        "Jul", "Agu", "Sep", "Okt", "Nov", "Des"
+      ],
+      isModalOpen: false,
+      isEditModalOpen: false,
+      isLoading: false,
+      isLoadingExams: false,
+      selectedExam: null,
+      isEditExamModalOpen: false,
+    };
+  },
+  computed: {
+    // ... Bagian computed tidak ada perubahan ...
+    firstItemIndex() {
+      return (this.currentPage - 1) * parseInt(this.pageSize);
+    },
+    lastItemIndex() {
+      const itemsOnCurrentPage = this.exams.length;
+      return this.firstItemIndex + itemsOnCurrentPage;
+    },
+    paginatedExams() {
+      return this.exams;
+    },
+    paginationItems() {
+      const result = [];
+      const totalPages = this.totalPagesFromAPI;
+      const currentPage = this.currentPage;
+      
+      if (totalPages <= 0) return [];
 
-      if (totalPages <= 7) {
-        for (let i = 1; i <= totalPages; i++) {
-          result.push(i);
-        }
-        return result;
-      }
-      
-      result.push(1);
-      
-      if (currentPage <= 4) {
-        for (let i = 2; i <= 5; i++) {
-          if (i < totalPages) result.push(i);
-        }
-        if (totalPages > 5 && currentPage < totalPages - 2)  result.push('ellipsis');
-      } else if (currentPage >= totalPages - 3) {
-        result.push('ellipsis');
-        for (let i = totalPages - 4; i < totalPages; i++) {
-          if (i > 1) result.push(i);
-        }
-      } else {
-        result.push('ellipsis');
-        result.push(currentPage - 1);
-        result.push(currentPage);
-        result.push(currentPage + 1);
-        result.push('ellipsis');
-      }
-      
-      if (!result.includes(totalPages)) {
-        result.push(totalPages);
-      }
-      const uniqueResult = [];
-      let lastPushed = -1;
-      for (const item of result) {
-          if (item === 'ellipsis') {
-              if (lastPushed !== 'ellipsis') { 
-                  uniqueResult.push(item);
-                  lastPushed = item;
-              }
-          } else if (item !== lastPushed) {
-              uniqueResult.push(item);
-              lastPushed = item;
-          }
-      }
-      return uniqueResult;
-    },
-  },
-  methods: {
-    formatDate(dateString) {
-      if (!dateString) {
-        return '-';
-      }
-      const months = [
-        "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
-      ];
-      const date = new Date(dateString);
-      const day = date.getDate();
-      const monthName = months[date.getMonth()];
-      const year = date.getFullYear();
-      return `${day} ${monthName} ${year}`;
-    },
-    async fetchPatientDetails() {
-      this.isLoading = true;
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          MySwal.fire('Error', 'Token tidak ditemukan. Silakan login kembali.', 'error');
-          this.$router.push({ name: 'Login' }); 
-          return;
-        }
-        const response = await axios.get(`http://localhost:8000/api/puskesmas/patients/${this.patientId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const apiPatient = response.data.patient;
-        this.patient = {
-          id: apiPatient.id,
-          name: apiPatient.name,
-          nik: apiPatient.nik || '-',
-          bpjs_number: apiPatient.bpjs_number || '-',
-          birth_date: apiPatient.birth_date || '-',
-          age: apiPatient.age || '-',
-          gender: apiPatient.gender === 'female' ? 'Perempuan' : (apiPatient.gender === 'male' ? 'Laki-Laki' : '-'),
-          address: apiPatient.address || '-',
-          phone_number: apiPatient.phone_number || '-',
-        };
-      } catch (error) {
-        console.error("Error fetching patient details:", error);
-        MySwal.fire('Error', 'Terjadi kesalahan saat memuat detail pasien.', 'error');
-      } finally {
-        this.isLoading = false;
-      }
-    },
-    async deletePatient() {
-        const confirmation = await Swal.fire({
-            title: 'Apakah Anda yakin?',
-            text: 'Anda akan menghapus data pasien ini! Semua data pemeriksaan pasien juga akan terhapus.',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Ya, hapus!',
-            cancelButtonText: 'Batal',
-        });
+      if (totalPages <= 7) {
+        for (let i = 1; i <= totalPages; i++) {
+          result.push(i);
+        }
+        return result;
+      }
+      
+      result.push(1);
+      
+      if (currentPage <= 4) {
+        for (let i = 2; i <= 5; i++) {
+          if (i < totalPages) result.push(i);
+        }
+        if (totalPages > 5 && currentPage < totalPages - 2)  result.push('ellipsis');
+      } else if (currentPage >= totalPages - 3) {
+        result.push('ellipsis');
+        for (let i = totalPages - 4; i < totalPages; i++) {
+          if (i > 1) result.push(i);
+        }
+      } else {
+        result.push('ellipsis');
+        result.push(currentPage - 1);
+        result.push(currentPage);
+        result.push(currentPage + 1);
+        result.push('ellipsis');
+      }
+      
+      if (!result.includes(totalPages)) {
+        result.push(totalPages);
+      }
+      const uniqueResult = [];
+      let lastPushed = -1;
+      for (const item of result) {
+          if (item === 'ellipsis') {
+              if (lastPushed !== 'ellipsis') { 
+                  uniqueResult.push(item);
+                  lastPushed = item;
+              }
+          } else if (item !== lastPushed) {
+              uniqueResult.push(item);
+              lastPushed = item;
+          }
+      }
+      return uniqueResult;
+    },
+  },
+  methods: {
+    formatDate(dateString) {
+      if (!dateString) {
+        return '-';
+      }
+      const months = [
+        "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+      ];
+      const date = new Date(dateString);
+      const day = date.getDate();
+      const monthName = months[date.getMonth()];
+      const year = date.getFullYear();
+      return `${day} ${monthName} ${year}`;
+    },
+    async fetchPatientDetails() {
+      this.isLoading = true;
+      try {
+        // --- PERUBAHAN DI SINI ---
+        // Logika token dan header manual dihapus
+        const response = await apiClient.get(`/puskesmas/patients/${this.patientId}`);
+        const apiPatient = response.data.patient;
+        this.patient = {
+          id: apiPatient.id,
+          name: apiPatient.name,
+          nik: apiPatient.nik || '-',
+          bpjs_number: apiPatient.bpjs_number || '-',
+          birth_date: apiPatient.birth_date || '-',
+          age: apiPatient.age || '-',
+          gender: apiPatient.gender === 'female' ? 'Perempuan' : (apiPatient.gender === 'male' ? 'Laki-Laki' : '-'),
+          address: apiPatient.address || '-',
+          phone_number: apiPatient.phone_number || '-',
+        };
+      } catch (error) {
+        console.error("Error fetching patient details:", error);
+        MySwal.fire('Error', 'Terjadi kesalahan saat memuat detail pasien.', 'error');
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    async deletePatient() {
+        const confirmation = await Swal.fire({
+            title: 'Apakah Anda yakin?',
+            text: 'Anda akan menghapus data pasien ini! Semua data pemeriksaan pasien juga akan terhapus.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Ya, hapus!',
+            cancelButtonText: 'Batal',
+        });
 
-        if (!confirmation.isConfirmed) {
-            return;
-        }
+        if (!confirmation.isConfirmed) {
+            return;
+        }
 
-        try {
-            const token = localStorage.getItem("token");
-            if (!token) throw new Error("Token tidak ditemukan");
-
-            await axios.delete(`http://localhost:8000/api/puskesmas/patients/${this.patientId}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-
-            MySwal.fire('Berhasil', 'Data pasien berhasil dihapus.', 'success');
-            this.$router.push('/user/diabetes-mellitus');
-        } catch (error) {
-            console.error("Error deleting patient:", error);
-            MySwal.fire('Gagal', error.response?.data?.message || 'Terjadi kesalahan saat menghapus data pasien.', 'error');
-        }
-    },
-    async fetchExaminations() {
-      this.isLoadingExams = true;
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          MySwal.fire('Error', 'Token tidak ditemukan. Silakan login kembali.', 'error');
-          this.$router.push({ name: 'Login' }); 
-          return;
-        }
-        const response = await axios.get("http://localhost:8000/api/puskesmas/dm-examinations", {
-          params: {
-            patient_id: this.patientId,
-            year: this.selectedYear,
-            search: this.searchQuery, 
-            per_page: this.pageSize,
-            page: this.currentPage,
-          },
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.data && response.data.data && response.data.meta) {
-          const { data, meta } = response.data;
-          this.exams = Array.isArray(data) ? data : (typeof data === 'object' && data !== null ? Object.values(data) : []);
-          this.totalExamsFromAPI = parseInt(meta.total) || 0;
-          this.currentPage = parseInt(meta.current_page) || 1;
-          this.totalPagesFromAPI = parseInt(meta.last_page) || 0;
-          this.pageSize = parseInt(meta.per_page) || 10; 
-        } else {
-          console.error("Struktur respons API tidak sesuai untuk examinations:", response.data);
-          this.exams = [];
-          this.totalExamsFromAPI = 0;
-          this.totalPagesFromAPI = 0;
-          MySwal.fire('Error', 'Gagal memuat data pemeriksaan: format data tidak sesuai.', 'error');
-
-        }
-      } catch (error) {
-        console.error("Error fetching examinations:", error);
-        if (error.response && error.response.status === 401) {
-            MySwal.fire('Sesi Berakhir', 'Silakan login kembali.', 'warning')
-                .then(() => this.$router.push({ name: 'Login' })); 
-        } else {
-            MySwal.fire('Error', 'Terjadi kesalahan saat memuat data pemeriksaan.', 'error');
-        }
-        this.exams = [];
-        this.totalExamsFromAPI = 0;
-        this.totalPagesFromAPI = 0;
-      } finally {
-        this.isLoadingExams = false;
-      }
-    },
+        try {
+            // --- PERUBAHAN DI SINI ---
+            await apiClient.delete(`/puskesmas/patients/${this.patientId}`);
+            MySwal.fire('Berhasil', 'Data pasien berhasil dihapus.', 'success');
+            this.$router.push('/user/diabetes-mellitus');
+        } catch (error) {
+            console.error("Error deleting patient:", error);
+            MySwal.fire('Gagal', error.response?.data?.message || 'Terjadi kesalahan saat menghapus data pasien.', 'error');
+        }
+    },
+    async fetchExaminations() {
+      this.isLoadingExams = true;
+      try {
+        // --- PERUBAHAN DI SINI ---
+        const response = await apiClient.get("/puskesmas/dm-examinations", {
+          params: {
+            patient_id: this.patientId,
+            year: this.selectedYear,
+            search: this.searchQuery, 
+            per_page: this.pageSize,
+            page: this.currentPage,
+          },
+        });
+        // --- AKHIR PERUBAHAN ---
+        if (response.data && response.data.data && response.data.meta) {
+          const { data, meta } = response.data;
+          this.exams = Array.isArray(data) ? data : (typeof data === 'object' && data !== null ? Object.values(data) : []);
+          this.totalExamsFromAPI = parseInt(meta.total) || 0;
+          this.currentPage = parseInt(meta.current_page) || 1;
+          this.totalPagesFromAPI = parseInt(meta.last_page) || 0;
+          this.pageSize = parseInt(meta.per_page) || 10; 
+        } else {
+          console.error("Struktur respons API tidak sesuai untuk examinations:", response.data);
+          this.exams = [];
+          this.totalExamsFromAPI = 0;
+          this.totalPagesFromAPI = 0;
+          MySwal.fire('Error', 'Gagal memuat data pemeriksaan: format data tidak sesuai.', 'error');
+        }
+      } catch (error) {
+        console.error("Error fetching examinations:", error);
+        if (error.response && error.response.status === 401) {
+            MySwal.fire('Sesi Berakhir', 'Silakan login kembali.', 'warning')
+                .then(() => this.$router.push({ name: 'Login' })); 
+        } else {
+            MySwal.fire('Error', 'Terjadi kesalahan saat memuat data pemeriksaan.', 'error');
+        }
+        this.exams = [];
+        this.totalExamsFromAPI = 0;
+        this.totalPagesFromAPI = 0;
+      } finally {
+        this.isLoadingExams = false;
+      }
+    },
     async deleteExam(id) {
-        const confirmation = await MySwal.fire({
-            title: 'Apakah Anda yakin?',
-            text: 'Anda akan menghapus data pemeriksaan ini.',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Ya, hapus!',
-            cancelButtonText: 'Batal',
-            showLoaderOnConfirm: true,
-        });
+        const result = await Swal.fire({
+            title: 'Apakah Anda Yakin?',
+            text: "Data pemeriksaan ini akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Ya, Hapus Data!',
+            cancelButtonText: 'Batal',
+            showLoaderOnConfirm: true,
+            preConfirm: async () => {
+                try {
+                    await apiClient.delete(`/puskesmas/dm-examinations/${id}`);
+                    return true;
+                } catch (error) {
+                    Swal.showValidationMessage(
+                        `Gagal menghapus data: ${error.response?.data?.message || 'Error tidak diketahui'}`
+                    );
+                    return false;
+                }
+            },
+            allowOutsideClick: () => !Swal.isLoading()
+        });
 
-        if (!confirmation.isConfirmed) {
-            return;
-        }
-        try {
-            const token = localStorage.getItem("token");
-            if (!token) throw new Error("Token tidak ditemukan");
+        if (result.isConfirmed && result.value) {
+            await Swal.fire(
+                'Berhasil Dihapus!',
+                'Data pemeriksaan pasien telah berhasil dihapus.',
+                'success'
+            );
+            
+            // Logika untuk menyesuaikan halaman jika item terakhir di halaman dihapus
+            if (this.paginatedExams.length === 1 && this.currentPage > 1) {
+                this.currentPage--;
+            }
+            this.fetchExaminations(); 
+        }
+    },
+    openEditExamModal(exam) {
+      this.selectedExam = { ...exam }; 
+      this.isEditExamModalOpen = true;
+    },
+    closeEditExamModal() {
+      this.isEditExamModalOpen = false;
+      this.selectedExam = null;
+    },
+    handleEditExamSubmit() {
+      this.fetchExaminations();
+    },
+    handleAddExamSubmit() {
+        this.fetchExaminations();
+        this.closeModal();
+    },
+    handleEditPatientSubmit(updatedPatient) {
+        this.patient = { ...this.patient, ...updatedPatient }; 
+        this.fetchPatientDetails(); 
+        this.closeEditModal();
+    },
+    prevPage() {
+      if (this.currentPage > 1) {
+        this.currentPage--;
+        this.fetchExaminations();
+      }
+    },
+    nextPage() {
+      if (this.currentPage < this.totalPagesFromAPI) {
+        this.currentPage++;
+        this.fetchExaminations();
+      }
+    },
+    goToPage(page) {
+      if (page >= 1 && page <= this.totalPagesFromAPI && page !== this.currentPage) {
+        this.currentPage = page;
+        this.fetchExaminations();
+      }
+    },
+    resetPagination() {
+      this.currentPage = 1;
+      this.fetchExaminations();
+    },
+    editPatient() {
+      this.isEditModalOpen = true;
+    },
+    closeModal() {
+      this.isModalOpen = false;
+    },
+    closeEditModal() {
+      this.isEditModalOpen = false;
+    },
+    hasVisitInMonth(month) {
+      const monthIndex = this.months.indexOf(month);
+      if (monthIndex === -1) return false;
 
-            await axios.delete(`http://localhost:8000/api/puskesmas/dm-examinations/${id}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            await MySwal.fire('Berhasil', 'Data pemeriksaan berhasil dihapus.', 'success');
-            if (this.paginatedExams.length === 1 && this.currentPage > 1) {
-                this.currentPage--;
-            }
-            this.fetchExaminations(); 
-        } catch (error) {
-            console.error("Error deleting examination:", error);
-            MySwal.fire('Gagal', error.response?.data?.message || 'Terjadi kesalahan.', 'error');
-        }
-    },
-    openEditExamModal(exam) {
-      this.selectedExam = { ...exam }; 
-      this.isEditExamModalOpen = true;
-    },
-    closeEditExamModal() {
-      this.isEditExamModalOpen = false;
-      this.selectedExam = null;
-    },
-    handleEditExamSubmit() {
-      this.fetchExaminations();
-    },
-    handleAddExamSubmit() {
-        this.fetchExaminations();
-        this.closeModal();
-    },
-    handleEditPatientSubmit(updatedPatient) {
-        this.patient = { ...this.patient, ...updatedPatient }; 
-        this.fetchPatientDetails(); 
-        this.closeEditModal();
-    },
-    prevPage() {
-      if (this.currentPage > 1) {
-        this.currentPage--;
-        this.fetchExaminations();
-      }
-    },
-    nextPage() {
-      if (this.currentPage < this.totalPagesFromAPI) {
-        this.currentPage++;
-        this.fetchExaminations();
-      }
-    },
-    goToPage(page) {
-      if (page >= 1 && page <= this.totalPagesFromAPI && page !== this.currentPage) {
-        this.currentPage = page;
-        this.fetchExaminations();
-      }
-    },
-    resetPagination() {
-      this.currentPage = 1;
-      this.fetchExaminations();
-    },
-    editPatient() {
-      this.isEditModalOpen = true;
-    },
-    closeModal() {
-      this.isModalOpen = false;
-    },
-    closeEditModal() {
-      this.isEditModalOpen = false;
-    },
-    hasVisitInMonth(month) {
-      const monthIndex = this.months.indexOf(month);
-      if (monthIndex === -1) return false;
-
-      return this.exams.some((exam) => {
-        const examDate = new Date(exam.examination_date);
-        return examDate.getMonth() === monthIndex && examDate.getFullYear() === parseInt(this.selectedYear);
-      });
-    },
-    async copyToClipboard(text) {
-      try {
-        await navigator.clipboard.writeText(text);
-        MySwal.fire({
-          toast: true,
-          position: 'top-end',
-          icon: 'success',
-          title: 'Tersalin!',
-          showConfirmButton: false,
-          timer: 1500,
-          timerProgressBar: true,
-        });
-      } catch (err) {
-        console.error('Failed to copy: ', err);
-        MySwal.fire({
-          toast: true,
-          position: 'top-end',
-          icon: 'error',
-          title: 'Gagal menyalin',
-          showConfirmButton: false,
-          timer: 1500,
-          timerProgressBar: true,
-        });
-      }
-    },
-  },
-  watch: {
-    selectedYear(newYear, oldYear) {
-      if (newYear !== oldYear) {
-        this.currentPage = 1;
-        this.$router.push({ query: { ...this.$route.query, year: newYear } }).catch(err => {
-            if (err.name !== 'NavigationDuplicated') console.error(err);
-        });
-        this.fetchExaminations();
-      }
-    },
-    searchQuery() {
-      this.currentPage = 1;
-      this.fetchExaminations();
-    },
-    pageSize() {
-      this.currentPage = 1;
-      this.fetchExaminations();
-    },
-    '$route.params.id'(newId, oldId) {
-        if (newId !== oldId) {
-            this.patientId = newId;
-            this.currentPage = 1;
-            this.fetchPatientDetails();
-            this.fetchExaminations();
-        }
-    },
-    '$route.query.year'(newYear, oldYear) {
-        const yearToUse = newYear || new Date().getFullYear().toString();
-        if (yearToUse !== this.selectedYear) {
-            this.selectedYear = yearToUse;
-        }
-    }
-  },
-  mounted() {
-    const yearFromQuery = this.$route.query.year;
-    if (yearFromQuery && yearFromQuery !== this.selectedYear) {
-        this.selectedYear = yearFromQuery;
-    } else if (!yearFromQuery && this.selectedYear !== (new Date().getFullYear()).toString()) {
-         this.$router.replace({ query: { ...this.$route.query, year: this.selectedYear } }).catch(err => {
-            if (err.name !== 'NavigationDuplicated') console.error(err);
-        });
-    }
-    this.fetchPatientDetails();
-    this.fetchExaminations();
-  },
+      return this.exams.some((exam) => {
+        const examDate = new Date(exam.examination_date);
+        return examDate.getMonth() === monthIndex && examDate.getFullYear() === parseInt(this.selectedYear);
+      });
+    },
+    async copyToClipboard(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        MySwal.
+fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: 'Tersalin!',
+          showConfirmButton: false,
+          timer: 1500,
+          timerProgressBar: true,
+        });
+      } catch (err) {
+        console.error('Failed to copy: ', err);
+        MySwal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'error',
+          title: 'Gagal menyalin',
+          showConfirmButton: false,
+          timer: 1500,
+          timerProgressBar: true,
+        });
+      }
+    },
+  },
+  watch: {
+    selectedYear(newYear, oldYear) {
+      if (newYear !== oldYear) {
+        this.currentPage = 1;
+        this.$router.push({ query: { ...this.$route.query, year: newYear } }).catch(err => {
+            if (err.name !== 'NavigationDuplicated') console.error(err);
+        });
+        this.fetchExaminations();
+      }
+    },
+    searchQuery() {
+      this.currentPage = 1;
+      this.fetchExaminations();
+    },
+    pageSize() {
+      this.currentPage = 1;
+      this.fetchExaminations();
+    },
+    '$route.params.id'(newId, oldId) {
+        if (newId !== oldId) {
+            this.patientId = newId;
+            this.currentPage = 1;
+            this.fetchPatientDetails();
+            this.fetchExaminations();
+        }
+    },
+    '$route.query.year'(newYear, oldYear) {
+        const yearToUse = newYear || new Date().getFullYear().toString();
+        if (yearToUse !== this.selectedYear) {
+            this.selectedYear = yearToUse;
+        }
+    }
+  },
+  mounted() {
+    const yearFromQuery = this.$route.query.year;
+    if (yearFromQuery && yearFromQuery !== this.selectedYear) {
+        this.selectedYear = yearFromQuery;
+    } else if (!yearFromQuery && this.selectedYear !== (new Date().getFullYear()).toString()) {
+         this.$router.replace({ query: { ...this.$route.query, year: this.selectedYear } }).catch(err => {
+            if (err.name !== 'NavigationDuplicated') console.error(err);
+        });
+    }
+    this.fetchPatientDetails();
+    this.fetchExaminations();
+  },
 };
 </script>
 

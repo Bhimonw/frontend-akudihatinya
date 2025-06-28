@@ -149,7 +149,6 @@
 import Swal from 'sweetalert2';
 import apiClient from "../../api.js";
 import AddPatientModal from "../../components/modals/AddPatientModal.vue";
-// Pastikan untuk menambahkan faSpinner jika belum ada
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faSpinner } from '@fortawesome/free-solid-svg-icons';
 

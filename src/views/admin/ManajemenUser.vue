@@ -185,333 +185,310 @@
 </template>
 
 <script>
-import axios from "axios";
+import apiClient from "../../api.js";
 import Swal from "sweetalert2";
 
 import AddNewUserModal from "../../components/modals/AddNewUser.vue";
-import EditUserModal from "../../components/modals/EditUserModal.vue"; // Import the new modal
+import EditUserModal from "../../components/modals/EditUserModal.vue";
 import ConfirmModal from "../../components/modals/ConfirmModal.vue";
 import UserDetailModal from "../../components/modals/UserDetailModal.vue";
 import { library } from '@fortawesome/fontawesome-svg-core';
 import {
-  faUsers, faPlus, faSearch, faTimes, faSpinner, faUsersSlash,
-  faEdit, faEye, faTrash, faChevronLeft, faChevronRight, faUserTag,
-  faUserPlus, faAt, faKey, faHospital, faUser, faExclamationCircle, faEyeSlash
+  faUsers, faPlus, faSearch, faTimes, faSpinner, faUsersSlash,
+  faEdit, faEye, faTrash, faChevronLeft, faChevronRight, faUserTag,
+  faUserPlus, faAt, faKey, faHospital, faUser, faExclamationCircle, faEyeSlash
 } from '@fortawesome/free-solid-svg-icons';
 
 library.add(
-  faUsers, faPlus, faSearch, faTimes, faSpinner, faUsersSlash,
-  faEdit, faEye, faTrash, faChevronLeft, faChevronRight, faUserTag,
-  faUserPlus, faAt, faKey, faHospital, faUser, faExclamationCircle, faEyeSlash
+  faUsers, faPlus, faSearch, faTimes, faSpinner, faUsersSlash,
+  faEdit, faEye, faTrash, faChevronLeft, faChevronRight, faUserTag,
+  faUserPlus, faAt, faKey, faHospital, faUser, faExclamationCircle, faEyeSlash
 );
 
 
 export default {
-  name: "ManajemenUser",
-  components: {
-    AddNewUserModal,
-    EditUserModal, // Register the new modal
-    ConfirmModal,
-    UserDetailModal,
-  },
-  data() {
-    return {
-      users: [],
-      currentPage: 1,
-      pageSize: 10,
-      searchQuery: "",
-      filterRole: "",
-      showAddUserModal: false,
-      showEditUserModal: false, // State for edit modal visibility
-      selectedUserIdForEdit: null, // To pass the user ID to the edit modal
-      showConfirmModal: false,
-      userToDelete: null,
-      selectedUser: null,
-      showDetailModal: false,
-      isLoading: false,
-      searchTimeout: null,
-    };
-  },
-  computed: {
-    totalUsers() {
-      return this.filteredUsers.length;
-    },
-    totalPages() {
-      if (this.totalUsers === 0) return 0;
-      return Math.ceil(this.totalUsers / this.pageSize);
-    },
-    firstItemIndex() {
-      if (this.totalUsers === 0) return -1;
-      return (this.currentPage - 1) * this.pageSize;
-    },
-    lastItemIndex() {
-      if (this.totalUsers === 0) return 0;
-      const calculatedLastIndex = this.currentPage * this.pageSize;
-      return Math.min(calculatedLastIndex, this.totalUsers);
-    },
-    filteredUsers() {
-      return this.users.filter((user) => {
-        const searchLower = this.searchQuery.toLowerCase();
-        const roleMatch = this.filterRole
-          ? user.role.toLowerCase() === this.filterRole.toLowerCase()
-          : true;
+  name: "ManajemenUser",
+  components: {
+    AddNewUserModal,
+    EditUserModal,
+    ConfirmModal,
+    UserDetailModal,
+  },
+  data() {
+    return {
+      users: [],
+      currentPage: 1,
+      pageSize: 10,
+      searchQuery: "",
+      filterRole: "",
+      showAddUserModal: false,
+      showEditUserModal: false,
+      selectedUserIdForEdit: null,
+      showConfirmModal: false,
+      userToDelete: null,
+      selectedUser: null,
+      showDetailModal: false,
+      isLoading: false,
+      searchTimeout: null,
+    };
+  },
+  computed: {
+    // ... bagian computed tetap sama ...
+    totalUsers() {
+      return this.filteredUsers.length;
+    },
+    totalPages() {
+      if (this.totalUsers === 0) return 0;
+      return Math.ceil(this.totalUsers / this.pageSize);
+    },
+    firstItemIndex() {
+      if (this.totalUsers === 0) return -1;
+      return (this.currentPage - 1) * this.pageSize;
+    },
+    lastItemIndex() {
+      if (this.totalUsers === 0) return 0;
+      const calculatedLastIndex = this.currentPage * this.pageSize;
+      return Math.min(calculatedLastIndex, this.totalUsers);
+    },
+    filteredUsers() {
+      return this.users.filter((user) => {
+        const searchLower = this.searchQuery.toLowerCase();
+        const roleMatch = this.filterRole
+          ? user.role.toLowerCase() === this.filterRole.toLowerCase()
+          : true;
 
-        const searchMatch =
-          (user.username && user.username.toLowerCase().includes(searchLower)) ||
-          (user.name && user.name.toLowerCase().includes(searchLower)) ||
-          (user.role && user.role.toLowerCase().includes(searchLower)) ||
-          (user.address && user.address.toLowerCase().includes(searchLower));
+        const searchMatch =
+          (user.username && user.username.toLowerCase().includes(searchLower)) ||
+          (user.name && user.name.toLowerCase().includes(searchLower)) ||
+          (user.role && user.role.toLowerCase().includes(searchLower)) ||
+          (user.address && user.address.toLowerCase().includes(searchLower));
 
-        return searchMatch && roleMatch;
-      });
-    },
-    paginatedUsers() {
-      if (this.totalUsers === 0) return [];
-      if (this.totalPages > 0 && this.currentPage > this.totalPages) {
-        this.currentPage = this.totalPages;
-      }
-      const start = Math.max(0, this.firstItemIndex);
-      const end = Math.max(start, this.lastItemIndex);
-      return this.filteredUsers.slice(start, end);
-    },
-    paginationItems() {
-        const result = [];
-        const totalPages = this.totalPages;
-        const currentPage = this.currentPage;
+        return searchMatch && roleMatch;
+      });
+    },
+    paginatedUsers() {
+      if (this.totalUsers === 0) return [];
+      if (this.totalPages > 0 && this.currentPage > this.totalPages) {
+        this.currentPage = this.totalPages;
+      }
+      const start = Math.max(0, this.firstItemIndex);
+      const end = Math.max(start, this.lastItemIndex);
+      return this.filteredUsers.slice(start, end);
+    },
+    paginationItems() {
+        const result = [];
+        const totalPages = this.totalPages;
+        const currentPage = this.currentPage;
 
-        // Jika total halaman sedikit, tampilkan semua
-        if (totalPages <= 7) {
-            for (let i = 1; i <= totalPages; i++) {
-                result.push(i);
-            }
-            return result;
-        }
-        
-        // Logika untuk menampilkan halaman dengan elipsis
-        result.push(1); // Selalu tampilkan halaman pertama
+        // Jika total halaman sedikit, tampilkan semua
+        if (totalPages <= 7) {
+            for (let i = 1; i <= totalPages; i++) {
+                result.push(i);
+            }
+            return result;
+        }
+        
+        result.push(1);
 
-        if (currentPage > 4) {
-            result.push('ellipsis');
-        }
+        if (currentPage > 4) {
+            result.push('ellipsis');
+        }
 
-        let startRange = (currentPage <= 4) ? 2 : currentPage - 1;
-        let endRange = (currentPage >= totalPages - 3) ? totalPages - 1 : currentPage + 1;
-        if(currentPage <= 4) endRange = 5;
-        if(currentPage >= totalPages - 3) startRange = totalPages - 4;
+        let startRange = (currentPage <= 4) ? 2 : currentPage - 1;
+        let endRange = (currentPage >= totalPages - 3) ? totalPages - 1 : currentPage + 1;
+        if(currentPage <= 4) endRange = 5;
+        if(currentPage >= totalPages - 3) startRange = totalPages - 4;
 
-        for (let i = startRange; i <= endRange; i++) {
-            if (i > 1 && i < totalPages) {
-                result.push(i);
-            }
-        }
+        for (let i = startRange; i <= endRange; i++) {
+            if (i > 1 && i < totalPages) {
+                result.push(i);
+            }
+        }
 
-        if (currentPage < totalPages - 3) {
-            result.push('ellipsis');
-        }
-        
-        result.push(totalPages);
-        
-        return [...new Set(result)]; 
-    },
-  },
-  methods: {
-    async fetchUsers() {
-      this.isLoading = true;
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          Swal.fire({
-            title: "Sesi Berakhir!",
-            text: "Sesi Anda telah berakhir. Silakan login kembali.",
-            icon: "warning",
-          }).then(() => {
-            // Optional: Redirect to login page
-            // this.$router.push({ name: 'Login' });
-          });
-          return;
-        }
-        const response = await axios.get("http://localhost:8000/api/admin/users", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        this.users = response.data.data.map((user) => ({
-          id: user.id,
-          username: user.username,
-          name: user.name,
-          role: user.role,
-          address:
-            user.puskesmas?.name ||
-            (user.role === "admin" ? "Kantor Pusat" : "Belum ada data puskesmas"),
-          email: user.email || "",
-          phone: user.phone || "",
-          profile_picture_url: user.profile_picture_url,
-          puskesmas_detail: user.puskesmas,
-          created_at: user.created_at,
-          updated_at: user.updated_at,
-        }));
-      } catch (error) {
-        console.error("Gagal mengambil data pengguna:", error.response || error);
-        if (error.response && error.response.status === 401) {
-          Swal.fire({
-            title: "Sesi Tidak Valid",
-            text: "Sesi Anda tidak valid. Silakan login ulang.",
-            icon: "error",
-          }).then(() => {
-            // this.$router.push({ name: 'Login' });
-          });
-        } else {
-          Swal.fire("Error!", "Gagal memuat data pengguna.", "error");
-        }
-      } finally {
-        this.isLoading = false;
-      }
-    },
-    handleSearchInput() {
-      clearTimeout(this.searchTimeout);
-      this.searchTimeout = setTimeout(() => {
-        this.resetPagination();
-      }, 500);
-    },
-    getRoleBadgeClass(role) {
-      const roleLower = role ? role.toLowerCase() : "";
-      if (roleLower === "admin") return "role-admin";
-      if (roleLower === "puskesmas") return "role-petugas"; // Keep as 'petugas' for consistency with current style
-      return "role-user";
-    },
-    clearSearch() {
-      this.searchQuery = "";
-      this.resetPagination();
-    },
-    openAddUserModal() {
-      this.showAddUserModal = true;
-    },
-    closeAddUserModal() {
-      this.showAddUserModal = false;
-    },
-    // Handler for successful user addition from the modal
-    async handleUserAddedSuccess(message) {
-      this.closeAddUserModal();
-      await Swal.fire({
-          icon: 'success',
-          title: 'Berhasil!',
-          text: message || "User berhasil ditambahkan!",
-          confirmButtonColor: '#047d78'
-      });
-      await this.fetchUsers();
-      this.resetPagination();
-    },
-    // Handler for failed user addition from the modal
-    handleUserAddFailed(errorMessage) {
-      Swal.fire('Gagal!', errorMessage, 'error');
-    },
+        if (currentPage < totalPages - 3) {
+            result.push('ellipsis');
+        }
+        
+        result.push(totalPages);
+        
+        return [...new Set(result)]; 
+    },
+  },
+  methods: {
+    async fetchUsers() {
+      this.isLoading = true;
+      try {
+        const response = await apiClient.get("/admin/users");
 
-    // New methods for Edit User Modal
-    openEditUserModal(user) {
-        this.selectedUserIdForEdit = user.id;
-        this.showEditUserModal = true;
-    },
-    closeEditUserModal() {
-        this.showEditUserModal = false;
-        this.selectedUserIdForEdit = null;
-    },
-    async handleUserUpdatedSuccess(updatedUser) {
-        this.closeEditUserModal();
-        await Swal.fire({
-            icon: 'success',
-            title: 'Berhasil!',
-            text: 'Data user berhasil diperbarui.',
-            confirmButtonColor: '#047d78'
-        });
-        await this.fetchUsers(); // Re-fetch all users
-        // Optionally, update the specific user in the current `users` array if not re-fetching all
-    },
-    handleUserUpdateFailed(errorMessage) {
-        Swal.fire('Gagal!', errorMessage, 'error');
-    },
+        this.users = response.data.data.map((user) => ({
+          id: user.id,
+          username: user.username,
+          name: user.name,
+          role: user.role,
+          address:
+            user.puskesmas?.name ||
+            (user.role === "admin" ? "Kantor Pusat" : "Belum ada data puskesmas"),
+          email: user.email || "",
+          phone: user.phone || "",
+          profile_picture_url: user.profile_picture_url,
+          puskesmas_detail: user.puskesmas,
+          created_at: user.created_at,
+          updated_at: user.updated_at,
+        }));
+      } catch (error) {
+        console.error("Gagal mengambil data pengguna:", error.response || error);
+        // Error handling untuk 401 kemungkinan sudah ditangani oleh interceptor di apiClient.js
+        // Namun, tetap baik untuk memiliki fallback di sini.
+        if (error.response && error.response.status === 401) {
+          Swal.fire({
+            title: "Sesi Tidak Valid",
+            text: "Sesi Anda tidak valid. Silakan login ulang.",
+            icon: "error",
+          }).then(() => {
+            // this.$router.push({ name: 'Login' });
+          });
+        } else {
+          Swal.fire("Error!", "Gagal memuat data pengguna.", "error");
+        }
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    // ... metode lainnya tetap sama ...
+    handleSearchInput() {
+      clearTimeout(this.searchTimeout);
+      this.searchTimeout = setTimeout(() => {
+        this.resetPagination();
+      }, 500);
+    },
+    getRoleBadgeClass(role) {
+      const roleLower = role ? role.toLowerCase() : "";
+      if (roleLower === "admin") return "role-admin";
+      if (roleLower === "puskesmas") return "role-petugas"; // Keep as 'petugas' for consistency with current style
+      return "role-user";
+    },
+    clearSearch() {
+      this.searchQuery = "";
+      this.resetPagination();
+    },
+    openAddUserModal() {
+      this.showAddUserModal = true;
+    },
+    closeAddUserModal() {
+      this.showAddUserModal = false;
+    },
+    async handleUserAddedSuccess(message) {
+      this.closeAddUserModal();
+      await Swal.fire({
+          icon: 'success',
+          title: 'Berhasil!',
+          text: message || "User berhasil ditambahkan!",
+          confirmButtonColor: '#047d78'
+      });
+      await this.fetchUsers();
+      this.resetPagination();
+    },
+    handleUserAddFailed(errorMessage) {
+      Swal.fire('Gagal!', errorMessage, 'error');
+    },
+    openEditUserModal(user) {
+        this.selectedUserIdForEdit = user.id;
+        this.showEditUserModal = true;
+    },
+    closeEditUserModal() {
+        this.showEditUserModal = false;
+        this.selectedUserIdForEdit = null;
+    },
+    async handleUserUpdatedSuccess(updatedUser) {
+        this.closeEditUserModal();
+        await Swal.fire({
+            icon: 'success',
+            title: 'Berhasil!',
+            text: 'Data user berhasil diperbarui.',
+            confirmButtonColor: '#047d78'
+        });
+        await this.fetchUsers();
+    },
+    handleUserUpdateFailed(errorMessage) {
+        Swal.fire('Gagal!', errorMessage, 'error');
+    },
+    prevPage() {
+      if (this.currentPage > 1) {
+        this.currentPage--;
+      }
+    },
+    nextPage() {
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++;
+      }
+    },
+    goToPage(page) {
+      this.currentPage = page;
+    },
+    resetPagination() {
+      this.currentPage = 1;
+    },
+    viewUserDetails(user) {
+      this.selectedUser = user;
+      if (this.selectedUser) {
+        this.showDetailModal = true;
+      }
+    },
+    closeDetailModal() {
+      this.showDetailModal = false;
+      this.selectedUser = null;
+    },
+    async confirmDelete(id) {
+        const result = await Swal.fire({
+            title: 'Apakah Anda yakin?',
+            text: 'Anda akan menghapus user ini! Tindakan ini tidak dapat dibatalkan.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, hapus!',
+            cancelButtonText: 'Batal',
+            showLoaderOnConfirm: true,
+            preConfirm: async () => {
+                try {
+                    // --- PERUBAHAN DI SINI ---
+                    // Logika token dan header manual dihapus
+                    await apiClient.delete(`/admin/users/${id}`); // Menggunakan apiClient
+                    // --- AKHIR PERUBAHAN ---
+                    return true;
+                } catch (error) {
+                    let errorMessage = error.response?.data?.message || error.message || "Terjadi kesalahan saat menghapus data.";
+                    Swal.showValidationMessage(errorMessage);
+                    return false;
+                }
+            },
+            allowOutsideClick: () => !Swal.isLoading()
+        });
 
-    prevPage() {
-      if (this.currentPage > 1) {
-        this.currentPage--;
-      }
-    },
-    nextPage() {
-      if (this.currentPage < this.totalPages) {
-        this.currentPage++;
-      }
-    },
-    goToPage(page) {
-      this.currentPage = page;
-    },
-    resetPagination() {
-      this.currentPage = 1;
-    },
-    viewUserDetails(user) {
-      this.selectedUser = user;
-      if (this.selectedUser) {
-        this.showDetailModal = true;
-      }
-    },
-    closeDetailModal() {
-      this.showDetailModal = false;
-      this.selectedUser = null;
-    },
-    // Updated confirmDelete to use Swal
-    async confirmDelete(id) {
-        const result = await Swal.fire({
-            title: 'Apakah Anda yakin?',
-            text: 'Anda akan menghapus user ini! Tindakan ini tidak dapat dibatalkan.',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33', // Red for delete
-            cancelButtonColor: '#6c757d', // Grey for cancel
-            confirmButtonText: 'Ya, hapus!',
-            cancelButtonText: 'Batal',
-            showLoaderOnConfirm: true, // Show loading spinner
-            preConfirm: async () => {
-                try {
-                    const token = localStorage.getItem("token");
-                    if (!token) {
-                        return Swal.showValidationMessage("Token tidak ditemukan. Silakan login kembali.");
-                    }
-                    await axios.delete(`http://localhost:8000/api/admin/users/${id}`, {
-                        headers: { Authorization: `Bearer ${token}` },
-                    });
-                    return true; // Indicate success
-                } catch (error) {
-                    let errorMessage = error.response?.data?.message || error.message || "Terjadi kesalahan saat menghapus data.";
-                    // Use Swal.showValidationMessage to display error within the dialog itself
-                    Swal.showValidationMessage(errorMessage);
-                    return false; // Indicate failure
-                }
-            },
-            allowOutsideClick: () => !Swal.isLoading() // Prevent closing while loading
-        });
-
-        if (result.isConfirmed) {
-            if (result.value === true) { // Check if preConfirm returned true
-                Swal.fire('Berhasil!', 'User berhasil dihapus.', 'success');
-                await this.fetchUsers(); // Re-fetch data
-                // Adjust pagination if current page becomes empty
-                if (this.paginatedUsers.length === 0 && this.currentPage > 1) {
-                    this.currentPage = Math.max(1, this.totalPages);
-                } else if (this.currentPage > this.totalPages && this.totalPages > 0) {
-                    this.currentPage = this.totalPages;
-                }
-            }
-            // If result.value is false, preConfirm already showed an error message.
-        }
-    },
-  },
-  created() {
-    this.fetchUsers();
-  },
-  watch: {
-    filterRole() {
-      this.resetPagination();
-    },
-  },
-  beforeUnmount() {
-    clearTimeout(this.searchTimeout);
-  }
+        if (result.isConfirmed) {
+            if (result.value === true) {
+                Swal.fire('Berhasil!', 'User berhasil dihapus.', 'success');
+                await this.fetchUsers();
+                if (this.paginatedUsers.length === 0 && this.currentPage > 1) {
+                    this.currentPage = Math.max(1, this.totalPages);
+                } else if (this.currentPage > this.totalPages && this.totalPages > 0) {
+                    this.currentPage = this.totalPages;
+                }
+            }
+        }
+    },
+  },
+  created() {
+    this.fetchUsers();
+  },
+  watch: {
+    filterRole() {
+      this.resetPagination();
+    },
+  },
+  beforeUnmount() {
+    clearTimeout(this.searchTimeout);
+  }
 };
 </script>
 

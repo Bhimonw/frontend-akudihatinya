@@ -393,7 +393,7 @@ export default {
           formData.append('profile_picture', selectedFile.value);
         }
         
-        const response = await axios.post('http://localhost:8000/api/users/me', 
+        const response = await axios.put('http://localhost:8000/api/users/me', 
           formData,
           {
             headers: {

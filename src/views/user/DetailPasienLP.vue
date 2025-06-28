@@ -319,7 +319,7 @@
 
 <script>
 import Swal from 'sweetalert2';
-import axios from 'axios';
+import apiClient from '../../api.js';
 import AddExaminationDataDM from "../../components/modals/AddExaminationDataDM.vue";
 import AddExaminationDataHT from "../../components/modals/AddExaminationDataHT.vue";
 import EditPatientDetail from '../../components/modals/EditPatientDetail.vue';
@@ -327,327 +327,304 @@ import EditExaminationModal from '../../components/modals/EditExaminationModal.v
 import EditExaminationDataHT from '../../components/modals/EditExaminationDataHT.vue';
 
 export default {
-  name: "DetailPasien",
-  components: {
-    AddExaminationDataDM,
-    AddExaminationDataHT,
-    EditPatientDetail,
-    EditExaminationModal,
-    EditExaminationDataHT,
-  },
-  data() {
-    return {
-      patientId: this.$route.params.id,
-      patient: {
-        dm_years: [],
-        ht_years: [],
-      },
-      exams: [], // Menampung semua data pemeriksaan dari API
-      
-      selectedDiseaseType: null,
-      availableDiseaseTypes: [],
-      selectedYear: null,
-      
-      searchQuery: "",
-      months: [
-        "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
-        "Jul", "Agu", "Sep", "Okt", "Nov", "Des"
-      ],
-      isModalOpen: false,
-      isEditModalOpen: false,
-      isLoading: false,
-      isLoadingExams: false,
-      selectedExam: null,
-      isEditExamModalOpen: false,
-    };
-  },
-  computed: {
-    breadcrumbLink() {
-      // Logika breadcrumb tetap sama
-      return '/user/list-pasien';
-    },
-    breadcrumbText() {
-      // Logika breadcrumb tetap sama
-      return 'Daftar Pasien';
-    },
-    diseaseYears() {
-      if (this.selectedDiseaseType === 'DM' && this.patient && this.patient.dm_years) {
-        return [...new Set(this.patient.dm_years)].sort((a, b) => b - a);
-      }
-      if (this.selectedDiseaseType === 'HT' && this.patient && this.patient.ht_years) {
-        return [...new Set(this.patient.ht_years)].sort((a, b) => b - a);
-      }
-      return [];
-    },
-    // PERBAIKAN: Mengganti `paginatedExams` menjadi `filteredExams`
-    filteredExams() {
-      if (!this.searchQuery) {
-        return this.exams; // Jika tidak ada pencarian, kembalikan semua data
-      }
-      // Jika ada pencarian, filter berdasarkan tanggal
-      return this.exams.filter(exam => 
-        this.formatDate(exam.examination_date).toLowerCase().includes(this.searchQuery.toLowerCase())
-      );
-    },
-  },
-  methods: {
-    formatDate(dateString) {
-      if (!dateString) return '-';
-      const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-      const date = new Date(dateString);
-      const day = date.getDate();
-      const monthName = months[date.getMonth()];
-      const year = date.getFullYear();
-      return `${day} ${monthName} ${year}`;
-    },
-    async fetchPatientDetails() {
-      this.isLoading = true;
-      this.availableDiseaseTypes = [];
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          Swal.fire('Error', 'Token tidak ditemukan. Silakan login kembali.', 'error');
-          this.$router.push({ name: 'Login' }); 
-          return;
-        }
+  name: "DetailPasien",
+  components: {
+    AddExaminationDataDM,
+    AddExaminationDataHT,
+    EditPatientDetail,
+    EditExaminationModal,
+    EditExaminationDataHT,
+  },
+  data() {
+    return {
+      patientId: this.$route.params.id,
+      patient: {
+        dm_years: [],
+        ht_years: [],
+      },
+      exams: [], 
+      selectedDiseaseType: null,
+      availableDiseaseTypes: [],
+      selectedYear: null,
+      searchQuery: "",
+      months: [
+        "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
+        "Jul", "Agu", "Sep", "Okt", "Nov", "Des"
+      ],
+      isModalOpen: false,
+      isEditModalOpen: false,
+      isLoading: false,
+      isLoadingExams: false,
+      selectedExam: null,
+      isEditExamModalOpen: false,
+    };
+  },
+  computed: {
+    breadcrumbLink() {
+      return '/user/list-pasien';
+    },
+    breadcrumbText() {
+      return 'Daftar Pasien';
+    },
+    diseaseYears() {
+      if (this.selectedDiseaseType === 'DM' && this.patient && this.patient.dm_years) {
+        return [...new Set(this.patient.dm_years)].sort((a, b) => b - a);
+      }
+      if (this.selectedDiseaseType === 'HT' && this.patient && this.patient.ht_years) {
+        return [...new Set(this.patient.ht_years)].sort((a, b) => b - a);
+      }
+      return [];
+    },
+    filteredExams() {
+      if (!this.searchQuery) {
+        return this.exams;
+      }
+      return this.exams.filter(exam => 
+        this.formatDate(exam.examination_date).toLowerCase().includes(this.searchQuery.toLowerCase())
+      );
+    },
+  },
+  methods: {
+    formatDate(dateString) {
+      if (!dateString) return '-';
+      const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+      const date = new Date(dateString);
+      return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+    },
 
-        const response = await axios.get(`http://localhost:8000/api/puskesmas/patients/${this.patientId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        
-        const apiPatient = response.data.patient;
-        if (!apiPatient) {
-            Swal.fire('Error', 'Data pasien tidak ditemukan.', 'error');
-            this.isLoading = false;
-            return;
-        }
+    async fetchPatientDetails() {
+      this.isLoading = true;
+      this.availableDiseaseTypes = [];
+      try {
+        const response = await apiClient.get(`/puskesmas/patients/${this.patientId}`);
+        const apiPatient = response.data.patient;
 
-        this.patient = {
-          ...apiPatient,
-          name: apiPatient.name,
-          nik: apiPatient.nik || '-',
-          bpjs_number: apiPatient.bpjs_number || '-',
-          phone_number: apiPatient.phone_number || '-',
-          birth_date: apiPatient.birth_date || '-',
-          age: apiPatient.age || '-',
-          gender: apiPatient.gender === 'female' ? 'Perempuan' : (apiPatient.gender === 'male' ? 'Laki-Laki' : '-'),
-          address: apiPatient.address || '-',
-          dm_years: apiPatient.dm_years || [],
-          ht_years: apiPatient.ht_years || [],
-        };
+        if (!apiPatient) {
+            Swal.fire('Error', 'Data pasien tidak ditemukan.', 'error');
+            this.isLoading = false;
+            return;
+        }
 
-        if (this.patient.has_dm) {
-          this.availableDiseaseTypes.push({ value: 'DM', text: 'Diabetes Mellitus' });
-        }
-        if (this.patient.has_ht) {
-          this.availableDiseaseTypes.push({ value: 'HT', text: 'Hipertensi' });
-        }
+        this.patient = {
+          ...apiPatient,
+          gender: apiPatient.gender === 'female' ? 'Perempuan' : (apiPatient.gender === 'male' ? 'Laki-Laki' : '-'),
+        };
 
-        const queryDisease = this.$route.query.disease;
-        const queryYear = this.$route.query.year;
+        if (this.patient.has_dm) this.availableDiseaseTypes.push({ value: 'DM', text: 'Diabetes Mellitus' });
+        if (this.patient.has_ht) this.availableDiseaseTypes.push({ value: 'HT', text: 'Hipertensi' });
 
-        if (queryDisease && this.availableDiseaseTypes.find(d => d.value.toLowerCase() === queryDisease.toLowerCase())) {
-            this.selectedDiseaseType = this.availableDiseaseTypes.find(d => d.value.toLowerCase() === queryDisease.toLowerCase()).value;
-        } else if (this.availableDiseaseTypes.length > 0) {
-            this.selectedDiseaseType = this.availableDiseaseTypes[0].value;
-        }
+        const queryDisease = this.$route.query.disease;
+        const queryYear = this.$route.query.year;
 
-        if (this.selectedDiseaseType) {
-            const yearsForSelectedDisease = this.diseaseYears;
-            if (queryYear && yearsForSelectedDisease.includes(parseInt(queryYear))) {
-                this.selectedYear = parseInt(queryYear);
-            } else if (yearsForSelectedDisease.length > 0) {
-                this.selectedYear = yearsForSelectedDisease[0];
-            } else {
-                this.selectedYear = new Date().getFullYear();
-            }
-        } else {
-            this.selectedYear = null;
-        }
-        
-        this.updateRouterQuery();
-        if(this.selectedDiseaseType && this.selectedYear) {
-            this.fetchExaminations();
-        }
+        if (queryDisease && this.availableDiseaseTypes.find(d => d.value.toLowerCase() === queryDisease.toLowerCase())) {
+            this.selectedDiseaseType = this.availableDiseaseTypes.find(d => d.value.toLowerCase() === queryDisease.toLowerCase()).value;
+        } else if (this.availableDiseaseTypes.length > 0) {
+            this.selectedDiseaseType = this.availableDiseaseTypes[0].value;
+        }
 
-      } catch (error) {
-        console.error("Error fetching patient details:", error);
-        Swal.fire('Error', 'Terjadi kesalahan saat memuat detail pasien.', 'error');
-      } finally {
-        this.isLoading = false;
-      }
-    },
-    onDiseaseTypeChange() {
-        const yearsForNewDisease = this.diseaseYears;
-        this.selectedYear = yearsForNewDisease.length > 0 ? yearsForNewDisease[0] : new Date().getFullYear();
-        
-        this.updateRouterQuery();
-        this.fetchExaminations();
-    },
-    onYearChange() {
-        this.updateRouterQuery();
-        this.fetchExaminations();
-    },
-    updateRouterQuery() {
-        const query = { ...this.$route.query };
-        if (this.selectedDiseaseType) query.disease = this.selectedDiseaseType.toLowerCase();
-        else delete query.disease;
-        
-        if (this.selectedYear) query.year = this.selectedYear.toString();
-        else delete query.year;
+        if (this.selectedDiseaseType) {
+            const years = this.diseaseYears;
+            if (queryYear && years.includes(parseInt(queryYear))) {
+                this.selectedYear = parseInt(queryYear);
+            } else if (years.length > 0) {
+                this.selectedYear = years[0];
+            } else {
+                this.selectedYear = new Date().getFullYear();
+            }
+        } else {
+            this.selectedYear = null;
+        }
+        
+        this.updateRouterQuery();
+        if(this.selectedDiseaseType && this.selectedYear) {
+            this.fetchExaminations();
+        }
+      } catch (error) {
+        console.error("Error fetching patient details:", error);
+        Swal.fire('Error', 'Terjadi kesalahan saat memuat detail pasien.', 'error');
+      } finally {
+        this.isLoading = false;
+      }
+    },
 
-        this.$router.replace({ query }).catch(err => {
-            if (err.name !== 'NavigationDuplicated') console.error(err);
-        });
-    },
-    
-    // KODE BARU DIMULAI DARI SINI
-    async deletePatient() {
-      const result = await Swal.fire({
-        title: 'Anda yakin?',
-        text: `Data pasien "${this.patient.name}" akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Ya, hapus!',
-        cancelButtonText: 'Batal'
-      });
+    async deletePatient() {
+      const result = await Swal.fire({
+        title: 'Anda yakin?',
+        text: `Data pasien "${this.patient.name}" akan dihapus permanen.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ya, hapus!',
+        cancelButtonText: 'Batal'
+      });
 
-      if (result.isConfirmed) {
-        try {
-          const token = localStorage.getItem("token");
-          if (!token) {
-            Swal.fire('Error', 'Sesi Anda telah berakhir. Silakan login kembali.', 'error');
-            this.$router.push({ name: 'Login' });
-            return;
-          }
+      if (result.isConfirmed) {
+        try {
+          await apiClient.delete(`/puskesmas/patients/${this.patientId}`);
+          await Swal.fire('Berhasil!', 'Data pasien telah dihapus.', 'success');
+          this.$router.push('/user/list-pasien');
+        } catch (error) {
+          console.error("Error deleting patient:", error);
+          Swal.fire('Gagal!', 'Terjadi kesalahan saat menghapus data pasien.', 'error');
+        }
+      }
+    },
 
-          await axios.delete(`http://localhost:8000/api/puskesmas/patients/${this.patientId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+    async fetchExaminations() {
+      if (!this.selectedDiseaseType || !this.selectedYear) {
+        this.exams = [];
+        return;
+      }
+      this.isLoadingExams = true;
+      try {
+        let endpoint = "";
+        if (this.selectedDiseaseType === 'DM') {
+          endpoint = "/puskesmas/dm-examinations";
+        } else if (this.selectedDiseaseType === 'HT') {
+          endpoint = "/puskesmas/ht-examinations";
+        } else {
+            this.isLoadingExams = false;
+            return;
+        }
 
-          await Swal.fire({
-            title: 'Berhasil!',
-            text: 'Data pasien telah berhasil dihapus.',
-            icon: 'success',
-            timer: 2000,
-            showConfirmButton: false
-          });
+        const response = await apiClient.get(endpoint, {
+          params: {
+            patient_id: this.patientId,
+            year: this.selectedYear,
+          },
+        });
 
-          // Arahkan kembali ke halaman daftar pasien
-          this.$router.push('/user/list-pasien');
+        this.exams = response.data?.data || [];
+      } catch (error) {
+        console.error("Error fetching examinations:", error);
+        this.exams = [];
+        Swal.fire('Error', 'Gagal memuat data pemeriksaan.', 'error');
+      } finally {
+        this.isLoadingExams = false;
+      }
+    },
 
-        } catch (error) {
-          console.error("Error deleting patient:", error);
-          Swal.fire(
-            'Gagal!',
-            'Terjadi kesalahan saat menghapus data pasien. Coba lagi nanti.',
-            'error'
-          );
-        }
-      }
-    },
-    // KODE BARU BERAKHIR DI SINI
+    async deleteExam(id) {
+      const result = await Swal.fire({
+        title: 'Anda yakin?',
+        text: "Data pemeriksaan ini akan dihapus permanen.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ya, hapus!',
+        cancelButtonText: 'Batal'
+      });
 
-    // PERBAIKAN: Method fetchExaminations tanpa paginasi
-    async fetchExaminations() {
-      if (!this.selectedDiseaseType || !this.selectedYear) {
-        this.exams = [];
-        return;
-      }
-      this.isLoadingExams = true;
-      try {
-        const token = localStorage.getItem("token");
-        let apiUrl = "";
-        if (this.selectedDiseaseType === 'DM') {
-          apiUrl = "http://localhost:8000/api/puskesmas/dm-examinations";
-        } else if (this.selectedDiseaseType === 'HT') {
-          apiUrl = "http://localhost:8000/api/puskesmas/ht-examinations";
-        } else {
-            this.isLoadingExams = false;
-            return;
-        }
+      if (result.isConfirmed) {
+        try {
+            let endpoint = "";
+            if (this.selectedDiseaseType === 'DM') {
+              endpoint = `/puskesmas/dm-examinations/${id}`;
+            } else if (this.selectedDiseaseType === 'HT') {
+              endpoint = `/puskesmas/ht-examinations/${id}`;
+            } else {
+                return; // Tidak melakukan apa-apa jika tipe penyakit tidak valid
+            }
+            await apiClient.delete(endpoint);
+            Swal.fire('Berhasil!', 'Data pemeriksaan telah dihapus.', 'success');
+            this.fetchExaminations(); // Muat ulang data
+        } catch (error) {
+            console.error("Error deleting exam:", error);
+            Swal.fire('Gagal!', 'Terjadi kesalahan saat menghapus data.', 'error');
+        }
+      }
+    },
 
-        const response = await axios.get(apiUrl, {
-          params: {
-            patient_id: this.patientId,
-            year: this.selectedYear,
-            // Hapus parameter `per_page` dan `page` untuk mengambil semua data
-          },
-          headers: { Authorization: `Bearer ${token}` },
-        });
+    onDiseaseTypeChange() {
+        const yearsForNewDisease = this.diseaseYears;
+        this.selectedYear = yearsForNewDisease.length > 0 ? yearsForNewDisease[0] : new Date().getFullYear();
+        this.updateRouterQuery();
+        this.fetchExaminations();
+    },
+    onYearChange() {
+        this.updateRouterQuery();
+        this.fetchExaminations();
+    },
+    updateRouterQuery() {
+        const query = { ...this.$route.query };
+        if (this.selectedDiseaseType) query.disease = this.selectedDiseaseType.toLowerCase();
+        else delete query.disease;
+        
+        if (this.selectedYear) query.year = this.selectedYear.toString();
+        else delete query.year;
 
-        if (response.data && response.data.data) {
-          this.exams = response.data.data; // Langsung simpan array data
-        } else {
-            this.exams = [];
-        }
-      } catch (error) {
-        console.error("Error fetching examinations:", error);
-        this.exams = [];
-        Swal.fire('Error', `Terjadi kesalahan saat memuat data pemeriksaan.`, 'error');
-      } finally {
-        this.isLoadingExams = false;
-      }
-    },
-    async deleteExam(id) {
-        // ... (existing logic)
-    },
-    openEditExamModal(exam) {
-      this.selectedExam = { ...exam }; 
-      this.isEditExamModalOpen = true;
-    },
-    closeEditExamModal() {
-      this.isEditExamModalOpen = false;
-      this.selectedExam = null;
-    },
-    handleEditExamSubmit() {
-      this.fetchPatientDetails();
-      this.closeEditExamModal();
-    },
-    handleAddExamSubmit() {
-      this.fetchPatientDetails();
-      this.closeModal();
-    },
-    handleEditPatientSubmit() {
-      this.fetchPatientDetails(); 
-      this.closeEditModal();
-    },
-    editPatient() {
-      this.isEditModalOpen = true;
-    },
-    closeModal() {
-      this.isModalOpen = false;
-    },
-    closeEditModal() {
-      this.isEditModalOpen = false;
-    },
-    hasVisitInMonth(month) {
-      const monthIndex = this.months.indexOf(month);
-      if (monthIndex === -1) return false;
-      return this.exams.some((exam) => {
-        const examDate = new Date(exam.examination_date);
-        return examDate.getMonth() === monthIndex && examDate.getFullYear() === parseInt(this.selectedYear);
-      });
-    },
-    async copyToClipboard(text) {
-        // ... (existing logic)
-    },
-  },
-  watch: {
-    // Watcher untuk `searchQuery` tidak memerlukan perubahan karena computed property
-    // akan otomatis dijalankan ulang.
-    '$route.params.id'(newId, oldId) {
-        if (newId !== oldId) {
-            this.patientId = newId;
-            this.fetchPatientDetails();
-        }
-    },
-  },
-  mounted() {
-    this.fetchPatientDetails();
-  },
+        this.$router.replace({ query }).catch(err => {
+            if (err.name !== 'NavigationDuplicated') console.error(err);
+        });
+    },
+    openEditExamModal(exam) {
+      this.selectedExam = { ...exam }; 
+      this.isEditExamModalOpen = true;
+    },
+    closeEditExamModal() {
+      this.isEditExamModalOpen = false;
+      this.selectedExam = null;
+    },
+    handleEditExamSubmit() {
+      this.fetchExaminations();
+      this.closeEditExamModal();
+    },
+    handleAddExamSubmit() {
+      this.fetchExaminations();
+      this.closeModal();
+    },
+    handleEditPatientSubmit() {
+      this.fetchPatientDetails(); 
+      this.closeEditModal();
+    },
+    editPatient() {
+      this.isEditModalOpen = true;
+    },
+    closeModal() {
+      this.isModalOpen = false;
+    },
+    closeEditModal() {
+      this.isEditModalOpen = false;
+    },
+    hasVisitInMonth(month) {
+      const monthIndex = this.months.indexOf(month);
+      if (monthIndex === -1) return false;
+      return this.exams.some((exam) => {
+        const examDate = new Date(exam.examination_date);
+        return examDate.getMonth() === monthIndex && examDate.getFullYear() === parseInt(this.selectedYear);
+      });
+    },
+    async copyToClipboard(text) {
+        if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: 'Tersalin!',
+          showConfirmButton: false,
+          timer: 1500,
+          timerProgressBar: true,
+        });
+      } catch (err) {
+        console.error('Gagal menyalin:', err);
+      }
+    },
+  },
+  watch: {
+    '$route.params.id'(newId) {
+      if (newId) {
+        this.patientId = newId;
+        this.fetchPatientDetails();
+      }
+    },
+  },
+  mounted() {
+    this.fetchPatientDetails();
+  },
 };
 </script>
 

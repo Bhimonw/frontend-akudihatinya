@@ -1111,8 +1111,15 @@ body {
     border-color: var(--primary-500);
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
-.select-arrow { display: none; } /* Digantikan oleh background-image pada select */
-
+  .select-arrow {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gray-400);
+    pointer-events: none;
+  }
+  
 .print-button {
   display: flex; align-items: center; gap: 0.625rem; /* 10px */
   padding: 0.75rem 1.25rem; /* 12px 20px */

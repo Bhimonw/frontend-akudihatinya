@@ -235,7 +235,7 @@
 
 <script>
 import { Chart } from "chart.js/auto";
-import apiClient from "../../api.js"; // Pastikan path ini benar
+import apiClient from "../../api.js";
 
 // Import FontAwesome icons
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';

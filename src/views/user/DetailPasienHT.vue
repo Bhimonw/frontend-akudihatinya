@@ -311,7 +311,7 @@
 
 <script>
 import Swal from 'sweetalert2';
-import axios from 'axios';
+import apiClient from '../../api.js';
 import AddExaminationDataHT from "../../components/modals/AddExaminationDataHT.vue";
 import EditPatientDetail from '../../components/modals/EditPatientDetail.vue';
 import EditExaminationDataHT from '../../components/modals/EditExaminationDataHT.vue';
@@ -425,39 +425,30 @@ export default {
       const year = date.getFullYear();
       return `${day} ${monthName} ${year}`;
     },
-    async fetchPatientDetails() {
-      this.isLoading = true;
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          Swal.fire('Error', 'Token tidak ditemukan. Silakan login kembali.', 'error');
-          this.$router.push({ name: 'Login' }); 
-          return;
-        }
-        const response = await axios.get(`http://localhost:8000/api/puskesmas/patients/${this.patientId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const apiPatient = response.data.patient;
-        this.patient = {
-          id: apiPatient.id,
-          name: apiPatient.name,
-          nik: apiPatient.nik || '-',
-          bpjs_number: apiPatient.bpjs_number || '-',
-          birth_date: apiPatient.birth_date || '-',
-          age: apiPatient.age || '-',
-          gender: apiPatient.gender === 'female' ? 'Perempuan' : (apiPatient.gender === 'male' ? 'Laki-Laki' : '-'),
-          address: apiPatient.address || '-',
-          phone_number: apiPatient.phone_number || '-',
-        };
-      } catch (error) {
-        console.error("Error fetching patient details:", error);
-        Swal.fire('Error', 'Terjadi kesalahan saat memuat detail pasien.', 'error');
-      } finally {
-        this.isLoading = false;
-      }
-    },
+    async fetchPatientDetails() {
+      this.isLoading = true;
+      try {
+        // --- PERUBAHAN DI SINI ---
+        const response = await apiClient.get(`/puskesmas/patients/${this.patientId}`);
+        const apiPatient = response.data.patient;
+        this.patient = {
+          id: apiPatient.id,
+          name: apiPatient.name,
+          nik: apiPatient.nik || '-',
+          bpjs_number: apiPatient.bpjs_number || '-',
+          birth_date: apiPatient.birth_date || '-',
+          age: apiPatient.age || '-',
+          gender: apiPatient.gender === 'female' ? 'Perempuan' : (apiPatient.gender === 'male' ? 'Laki-Laki' : '-'),
+          address: apiPatient.address || '-',
+          phone_number: apiPatient.phone_number || '-',
+        };
+      } catch (error) {
+        console.error("Error fetching patient details:", error);
+        Swal.fire('Error', 'Terjadi kesalahan saat memuat detail pasien.', 'error');
+      } finally {
+        this.isLoading = false;
+      }
+    },
     async deletePatient() {
         const confirmation = await Swal.fire({
             title: 'Apakah Anda yakin?',
@@ -475,41 +466,26 @@ export default {
         }
 
         try {
-            const token = localStorage.getItem("token");
-            if (!token) throw new Error("Token tidak ditemukan");
-
-            await axios.delete(`http://localhost:8000/api/puskesmas/patients/${this.patientId}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-
-            Swal.fire('Berhasil', 'Data pasien berhasil dihapus.', 'success');
-            this.$router.push('/user/hipertensi');
-        } catch (error) {
-            console.error("Error deleting patient:", error);
-            Swal.fire('Gagal', error.response?.data?.message || 'Terjadi kesalahan saat menghapus data pasien.', 'error');
-        }
-    },
-    async fetchExaminations() {
-      this.isLoadingExams = true;
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          Swal.fire('Error', 'Token tidak ditemukan. Silakan login kembali.', 'error');
-          this.$router.push({ name: 'Login' }); 
-          return;
-        }
-        const response = await axios.get("http://localhost:8000/api/puskesmas/ht-examinations", {
-          params: {
-            patient_id: this.patientId,
-            year: this.selectedYear,
-            search: this.searchQuery, 
-            per_page: this.pageSize,
-            page: this.currentPage,
-          },
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+            await apiClient.delete(`/puskesmas/patients/${this.patientId}`);
+            Swal.fire('Berhasil', 'Data pasien berhasil dihapus.', 'success');
+            this.$router.push('/user/hipertensi');
+        } catch (error) {
+            console.error("Error deleting patient:", error);
+            Swal.fire('Gagal', error.response?.data?.message || 'Terjadi kesalahan saat menghapus data pasien.', 'error');
+        }
+    },
+    async fetchExaminations() {
+      this.isLoadingExams = true;
+      try {
+        const response = await apiClient.get("/puskesmas/ht-examinations", {
+          params: {
+            patient_id: this.patientId,
+            year: this.selectedYear,
+            search: this.searchQuery, 
+            per_page: this.pageSize,
+            page: this.currentPage,
+          },
+        });
 
         if (response.data && response.data.data && response.data.meta) {
           const { data, meta } = response.data;
@@ -556,19 +532,14 @@ export default {
             return;
         }
         try {
-            const token = localStorage.getItem("token");
-            if (!token) throw new Error("Token tidak ditemukan");
-
-            await axios.delete(`http://localhost:8000/api/puskesmas/ht-examinations/${id}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            Swal.fire('Berhasil', 'Data pemeriksaan berhasil dihapus.', 'success');
-            this.fetchExaminations(); 
-        } catch (error) {
-            console.error("Error deleting examination:", error);
-            Swal.fire('Gagal', error.response?.data?.message || 'Terjadi kesalahan.', 'error');
-        }
-    },
+            await apiClient.delete(`/puskesmas/ht-examinations/${id}`);
+            Swal.fire('Berhasil', 'Data pemeriksaan berhasil dihapus.', 'success');
+            this.fetchExaminations(); 
+        } catch (error) {
+            console.error("Error deleting examination:", error);
+            Swal.fire('Gagal', error.response?.data?.message || 'Terjadi kesalahan.', 'error');
+        }
+    },
     openEditExamModal(exam) {
       this.selectedExam = { ...exam }; 
       this.isEditExamModalOpen = true;
