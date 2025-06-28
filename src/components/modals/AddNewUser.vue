@@ -84,7 +84,7 @@
                 <div class="form-group">
                   <label for="name">{{ nameLabel }} <span class="required">*</span></label>
                   <div class="input-wrapper">
-                     <font-awesome-icon :icon="formData.role === 'puskesmas' ? ['fas', 'hospital'] : ['fas', 'user']" class="input-icon" />
+                      <font-awesome-icon :icon="formData.role === 'puskesmas' ? ['fas', 'hospital'] : ['fas', 'user']" class="input-icon" />
                     <input
                       type="text"
                       id="name"
@@ -119,7 +119,7 @@
                       <option value="puskesmas">Puskesmas</option>
                     </select>
                   </div>
-                   <transition name="fade">
+                    <transition name="fade">
                     <p v-if="errors.role" class="error-message">
                       <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
                       {{ errors.role }}
@@ -139,12 +139,12 @@
                     accept="image/png, image/jpeg, image/jpg"
                   />
                 </div>
-                 <div v-if="previewUrl" class="image-preview-container-custom">
-                    <img :src="previewUrl" alt="Preview Foto Profil" class="image-preview-custom" />
-                    <button type="button" @click="removeImage" class="remove-image-button-custom" title="Hapus gambar">
-                        <font-awesome-icon :icon="['fas', 'times']" />
-                    </button>
-                </div>
+                  <div v-if="previewUrl" class="image-preview-container-custom">
+                      <img :src="previewUrl" alt="Preview Foto Profil" class="image-preview-custom" />
+                      <button type="button" @click="removeImage" class="remove-image-button-custom" title="Hapus gambar">
+                          <font-awesome-icon :icon="['fas', 'times']" />
+                      </button>
+                  </div>
                 <transition name="fade">
                   <p v-if="errors.profilePicture" class="error-message">
                     <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
@@ -168,7 +168,7 @@
                   <font-awesome-icon :icon="['fas', 'spinner']" spin /> Menyimpan...
                 </span>
                 <span v-else>
-                  <font-awesome-icon :icon="['fas', 'plus']" /> Tambah User
+                  <font-awesome-icon :icon="['fas', 'save']" /> Simpan User
                 </span>
               </button>
             </div>
@@ -181,18 +181,19 @@
 
 <script>
 import axios from "axios";
-// IMPOR SWEETALERT LANGSUNG SEPERTI AddNewPatient.vue
 import Swal from 'sweetalert2';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
 import {
   faUserPlus, faAt, faKey, faHospital, faUser, faUserTag,
-  faExclamationCircle, faEye, faEyeSlash, faTimes, faSpinner
+  faExclamationCircle, faEye, faEyeSlash, faTimes, faSpinner,
+  faIdCard, faUserShield, faSave // PERUBAHAN: Menambahkan faSave
 } from '@fortawesome/free-solid-svg-icons';
 
 library.add(
   faUserPlus, faAt, faKey, faHospital, faUser, faUserTag,
-  faExclamationCircle, faEye, faEyeSlash, faTimes, faSpinner
+  faExclamationCircle, faEye, faEyeSlash, faTimes, faSpinner,
+  faIdCard, faUserShield, faSave // PERUBAHAN: Menambahkan faSave
 );
 
 export default {
@@ -266,7 +267,7 @@ export default {
     handleFileUpload(event) {
       const file = event.target.files[0];
       if (file) {
-        if (file.size > 2 * 1024 * 1024) {
+        if (file.size > 2 * 1024 * 1024) { // 2MB limit
             this.errors.profilePicture = "Ukuran file maksimal 2MB.";
             this.formData.profilePicture = null;
             this.previewUrl = null;
@@ -340,24 +341,22 @@ export default {
       if (!this.validateForm()) {
         return;
       }
-
-      // Show SweetAlert confirmation using direct Swal import
+      
       const result = await Swal.fire({
         title: 'Konfirmasi Penambahan User',
-        text: `Apakah Anda yakin ingin menambahkan user dengan username "${this.formData.username}"?`,
+        html: `Apakah Anda yakin ingin menyimpan user dengan username "<b>${this.formData.username}</b>"?`, // Menggunakan html untuk bold
         icon: 'question',
         showCancelButton: true,
-        confirmButtonColor: '#047d78',
-        cancelButtonColor: '#ef4444',
-        confirmButtonText: 'Ya, Tambahkan!',
+        confirmButtonColor: '#059669', // Menggunakan warna dari skema baru
+        cancelButtonColor: '#EF4444',
+        confirmButtonText: 'Ya, Simpan!',
         cancelButtonText: 'Batal',
-        showLoaderOnConfirm: true, // Show loading spinner on confirm
-        preConfirm: async () => { // Make preConfirm async
+        showLoaderOnConfirm: true,
+        preConfirm: async () => {
           try {
             const token = localStorage.getItem("token");
             if (!token) {
-                // Return a rejected promise to stop Swal and handle error
-                return Swal.showValidationMessage("Token tidak ditemukan. Silakan login kembali.");
+              return Swal.showValidationMessage("Token tidak ditemukan. Silakan login kembali.");
             }
 
             const apiPayload = new FormData();
@@ -370,7 +369,7 @@ export default {
                 apiPayload.append("profile_picture", this.formData.profilePicture);
             }
 
-            this.isSubmitting = true; // Set internal submitting state here
+            this.isSubmitting = true;
 
             const response = await axios.post(
                 "http://localhost:8000/api/admin/users",
@@ -379,24 +378,20 @@ export default {
                     headers: { Authorization: `Bearer ${token}` },
                 }
             );
-            return response.data; // Return data for result.value
+            return response.data;
           } catch (error) {
-              this.handleSubmissionError(error); // This will emit to parent and show toast
-              // Re-throw or return rejected promise so Swal knows it failed
+              this.handleSubmissionError(error); 
               return Swal.showValidationMessage(
                 error.response?.data?.message || error.message || "Terjadi kesalahan saat menyimpan data."
               );
           } finally {
-              this.isSubmitting = false; // Reset internal submitting state
+              this.isSubmitting = false;
           }
         }
       });
 
-      if (result.isConfirmed && result.value) { // Ensure confirmation AND successful preConfirm
+      if (result.isConfirmed && result.value) {
         this.$emit('user-added', result.value.message || "User berhasil ditambahkan!");
-        // The parent will handle closing the modal and re-fetching data
-      } else if (result.dismiss === Swal.DismissReason.cancel) {
-        // User clicked cancel, no action needed
       }
     },
     handleSubmissionError(error) {
@@ -431,26 +426,6 @@ export default {
 </script>
 
 <style scoped>
-/* CSS Variables (diambil dari AddNewPatient.vue) */
-.modal-backdrop {
-  --primary-50: #ECFDF5;
-  --primary-100: #D1FAE5;
-  --primary-500: #10B981;
-  --primary-600: #059669;
-  --primary-700: #047857;
-  --neutral-50: #F9FAFB;
-  --neutral-100: #F3F4F6;
-  --neutral-200: #E5E7EB;
-  --neutral-300: #D1D5DB;
-  --neutral-400: #9CA3AF;
-  --neutral-500: #6B7280;
-  --neutral-700: #374151;
-  --neutral-800: #1F2937;
-  --danger-500: #EF4444;
-  --danger-700: #B91C1C;
-  font-family: 'Inter', sans-serif;
-}
-
 /* Modal Backdrop */
 .modal-backdrop {
   position: fixed;
@@ -475,7 +450,7 @@ export default {
 /* Modal Container */
 .modal-container {
   width: 90%;
-  max-width: 700px;
+  max-width: 700px; /* Lebar disamakan dengan form user */
   max-height: 90vh;
   background-color: #ffffff;
   border-radius: 12px;
@@ -623,7 +598,7 @@ export default {
   display: flex;
   align-items: center;
 }
-.form-label .optional-text {
+.optional-text { /* Diperbaiki dari .form-label .optional-text */
     font-size: 0.8em;
     color: var(--neutral-500);
     font-weight: 400;
@@ -663,7 +638,8 @@ export default {
   box-sizing: border-box;
 }
 .file-input-custom {
-  padding: 8px 12px;
+  /* penyesuaian padding untuk file input agar lebih rapi */
+  padding: 8px 12px 8px 12px; 
 }
 
 .form-input:hover,
@@ -731,7 +707,7 @@ export default {
   color: var(--primary-500);
 }
 .form-input:focus + .password-toggle-custom {
-   border-left-color: var(--primary-500);
+    border-left-color: var(--primary-500);
 }
 
 .image-preview-container-custom {
@@ -792,7 +768,7 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-width: 110px;
+  min-width: 120px; /* Lebar minimum disamakan */
   justify-content: center;
 }
 

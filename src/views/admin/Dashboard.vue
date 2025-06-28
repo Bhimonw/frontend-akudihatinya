@@ -396,10 +396,38 @@ admin/Dashboard.vue
                     </template>
                 </table>
             </div>
-            <div class="pagination-controls" v-if="processedTableData.length > 0">
-              <button @click="prevPage" :disabled="currentPage === 1">Sebelumnya</button>
-              <span>Halaman {{ currentPage }} dari {{ totalPages }}</span>
-              <button @click="nextPage" :disabled="currentPage === totalPages">Berikutnya</button>
+
+            <div class="pagination-container" v-if="sortedData.length > 0">
+                <div class="pagination-info">
+                    <p class="pagination-text">
+                        Baris per halaman:
+                        <div class="pagination-dropdown-wrapper">
+                            <select v-model.number="itemsPerPage" class="pagination-dropdown-select">
+                                <option value="10">10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+                        Menampilkan {{ firstItemIndex + 1 }} - {{ lastItemIndex }} dari {{ sortedData.length }} data
+                    </p>
+                </div>
+                <nav class="pagination-nav" aria-label="Pagination">
+                    <button class="pagination-button prev" @click="prevPage" :disabled="currentPage === 1">
+                        <font-awesome-icon :icon="['fas', 'chevron-left']" />
+                    </button>
+                    
+                    <template v-for="(item, index) in paginationItems" :key="index">
+                        <button v-if="item !== 'ellipsis'" :class="['pagination-button', { 'active': currentPage === item }]" @click="goToPage(item)">
+                            {{ item }}
+                        </button>
+                        <div v-else class="pagination-ellipsis">...</div>
+                    </template>
+                    
+                    <button class="pagination-button next" @click="nextPage" :disabled="currentPage === totalPages">
+                        <font-awesome-icon :icon="['fas', 'chevron-right']" />
+                    </button>
+                </nav>
             </div>
         </div>
     </div>
@@ -417,14 +445,15 @@ import {
   faTableList, faCalendarDays, faCalendarWeek,
   faExclamationCircle, faSync, faDownload,
   faFileExcel, faFilePdf, faSpinner,
-  // No need to import sort icons here if using text (▲▼)
+  faChevronLeft, faChevronRight,
 } from '@fortawesome/free-solid-svg-icons';
 import { library } from '@fortawesome/fontawesome-svg-core';
 
 library.add(
   faTableList, faCalendarDays, faCalendarWeek,
   faExclamationCircle, faSync, faDownload,
-  faFileExcel, faFilePdf, faSpinner
+  faFileExcel, faFilePdf, faSpinner,
+  faChevronLeft, faChevronRight,
 );
 
 export default {
@@ -439,7 +468,7 @@ export default {
 
     return {
       chartInstance: null,
-      selectedYear: String(currentYear),
+      selectedYear: String(currentYear), // Default to current year or max available if current not in range
       years: years,
       selectedProgram: "Diabetes Mellitus",
       programs: ["Diabetes Mellitus", "Hipertensi"],
@@ -507,7 +536,54 @@ export default {
       const start = (this.currentPage - 1) * this.itemsPerPage;
       const end = start + this.itemsPerPage;
       return this.sortedData.slice(start, end);
-    }
+    },
+    firstItemIndex() {
+      return (this.currentPage - 1) * this.itemsPerPage;
+    },
+    lastItemIndex() {
+      const last = this.currentPage * this.itemsPerPage;
+      return Math.min(last, this.sortedData.length);
+    },
+    paginationItems() {
+        const result = [];
+        const totalPages = this.totalPages;
+        const currentPage = this.currentPage;
+        
+        if (totalPages <= 7) {
+          for (let i = 1; i <= totalPages; i++) {
+            result.push(i);
+          }
+          return result;
+        }
+        
+        result.push(1);
+        
+        if (currentPage > 4) {
+          result.push('ellipsis');
+        }
+        
+        if (currentPage <= 4) {
+          for (let i = 2; i <= 5; i++) {
+            if (i < totalPages) result.push(i);
+          }
+        } else if (currentPage >= totalPages - 3) {
+          for (let i = totalPages - 4; i < totalPages; i++) {
+            result.push(i);
+          }
+        } else {
+          result.push(currentPage - 1, currentPage, currentPage + 1);
+        }
+        
+        if (currentPage < totalPages - 3) {
+          result.push('ellipsis');
+        }
+        
+        if (totalPages > 1) {
+            result.push(totalPages);
+        }
+        
+        return [...new Set(result)];
+    },
   },
   mounted() {
     if (!this.years.includes(parseInt(this.selectedYear))) {
@@ -515,12 +591,15 @@ export default {
     }
     this.fetchData();
   },
+  watch: {
+    itemsPerPage() {
+      this.currentPage = 1;
+    }
+  },
   methods: {
-    // onLoadingComplete() { /* No longer needed as UI shows immediately */ },
-    // onLoadingError() { /* Error handled within fetchData */ },
     updateData() {
-      this.currentPage = 1; // Reset to first page on data change
-      this.sortKey = ''; // Reset sort
+      this.currentPage = 1;
+      this.sortKey = '';
       this.fetchData();
     },
     async fetchData() {
@@ -1537,7 +1616,126 @@ body {
   font-size: 0.875rem;
   color: var(--gray-600, #4b5563);
 }
+.pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+}
 
+.pagination-info {
+    flex-grow: 1;
+}
+
+.pagination-text {
+    font-size: 0.875rem;
+    color: var(--gray-600, #4b5563);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.pagination-dropdown-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.pagination-dropdown-select {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--gray-300, #d1d5db);
+    border-radius: var(--radius-md, 0.5rem);
+    background: white;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--gray-700);
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+.pagination-dropdown-select:hover {
+    border-color: var(--primary-400);
+}
+
+.pagination-nav {
+    display: inline-flex;
+    border-radius: var(--radius-md, 0.5rem);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.pagination-button {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 40px;
+    padding: 0 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--gray-700);
+    background-color: white;
+    border: 1px solid var(--gray-200);
+    margin-left: -1px; /* Overlap borders */
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.pagination-button:hover:not(.active):not(:disabled) {
+    background-color: var(--gray-100);
+    color: var(--primary-600);
+}
+
+.pagination-button.active {
+    background-color: var(--primary-50, #eef7f7);
+    color: var(--primary-600, #036a65);
+    border-color: var(--primary-200);
+    z-index: 3;
+    font-weight: 600;
+}
+
+.pagination-button.prev,
+.pagination-button.next {
+    color: var(--gray-500);
+}
+.pagination-button.prev:hover:not(:disabled),
+.pagination-button.next:hover:not(:disabled) {
+    background-color: var(--primary-50);
+}
+
+.pagination-button:disabled {
+    color: var(--gray-400);
+    background-color: var(--gray-50);
+    cursor: not-allowed;
+}
+
+.pagination-button:first-child {
+    border-top-left-radius: var(--radius-md);
+    border-bottom-left-radius: var(--radius-md);
+    margin-left: 0;
+}
+.pagination-button:last-child {
+    border-top-right-radius: var(--radius-md);
+    border-bottom-right-radius: var(--radius-md);
+}
+
+.pagination-ellipsis {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 40px;
+    padding: 0 0.5rem;
+    font-size: 0.875rem;
+    color: var(--gray-700);
+    background-color: white;
+    border: 1px solid var(--gray-200);
+    margin-left: -1px;
+}
 
 /* Responsive adjustments */
 @media (max-width: 1024px) { /* Breakpoint untuk stacking chart dan ranking */
@@ -1586,7 +1784,6 @@ body {
 
   .pagination-controls { flex-direction: column; gap: 0.5rem; }
   .pagination-controls button { width: 100%; }
-
 
 }
 

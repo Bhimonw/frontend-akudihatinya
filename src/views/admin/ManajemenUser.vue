@@ -126,68 +126,40 @@
           </tbody>
         </table>
       </div>
+      <div class="pagination-container" v-if="totalPages > 0">
+      </div>
 
       <div class="pagination-container" v-if="totalPages > 0">
-        <div class="pagination-wrapper">
-          <div class="pagination-info">
-            <div class="showing-text">
-              <p class="text-sm text-gray-700 flex items-center gap-2">
-                <span>Menampilkan</span>
-                <strong>{{ paginatedUsers.length > 0 ? firstItemIndex + 1 : 0 }}-{{ lastItemIndex }}</strong>
-                <span>dari</span>
-                <strong>{{ totalUsers }}</strong>
-                <span>item</span>
+          <div class="pagination-info-side">
+              <p class="pagination-text">
+                  Baris per halaman:
+                  <div class="pagination-dropdown-wrapper">
+                      <select v-model.number="pageSize" @change="resetPagination" class="pagination-dropdown-select">
+                          <option value="10">10</option>
+                          <option value="25">25</option>
+                          <option value="100">100</option>
+                      </select>
+                  </div>
+                  Menampilkan <strong>{{ firstItemIndex + 1 }} - {{ lastItemIndex }}</strong> dari <strong>{{ totalUsers }}</strong> user
               </p>
-            </div>
-
-            <div class="rows-per-page">
-              <span>Baris per halaman:</span>
-              <div class="dropdown-container select-wrapper">
-                <select
-                  id="rowsPerPage"
-                  v-model="pageSize"
-                  @change="resetPagination"
-                  class="dropdown-select modern-select"
-                >
-                  <option value="10">10</option>
-                  <option value="25">25</option>
-                  <option value="100">100</option>
-                </select>
-              </div>
-            </div>
           </div>
 
-          <nav class="pagination-controls" aria-label="Pagination">
-            <button
-              class="pagination-button prev"
-              @click="prevPage"
-              :disabled="currentPage === 1"
-              :class="{ disabled: currentPage === 1 }"
-            >
-              <font-awesome-icon :icon="['fas', 'chevron-left']" />
-              <span class="button-text">Sebelumnya</span>
-            </button>
-            <div class="page-numbers">
-              <button
-                v-for="page in displayedPages"
-                :key="page"
-                :class="['pagination-button page-number', { active: currentPage === page }]"
-                @click="goToPage(page)"
-              >
-                {{ page }}
+          <nav class="pagination-nav" aria-label="Pagination">
+              <button class="pagination-button prev-next" @click="prevPage" :disabled="currentPage === 1">
+                  <font-awesome-icon :icon="['fas', 'chevron-left']" />
               </button>
-            </div>
-            <button
-              class="pagination-button next"
-              @click="nextPage"
-              :disabled="currentPage === totalPages"
-              :class="{ disabled: currentPage === totalPages }"
-            >
-              <span class="button-text">Selanjutnya</span>
-              <font-awesome-icon :icon="['fas', 'chevron-right']" />
-            </button>
+              
+              <template v-for="(item, index) in paginationItems" :key="index">
+                  <button v-if="item !== 'ellipsis'" :class="['pagination-button', { 'active': currentPage === item }]" @click="goToPage(item)">
+                      {{ item }}
+                  </button>
+                  <div v-else class="pagination-ellipsis">...</div>
+              </template>
+              
+              <button class="pagination-button prev-next" @click="nextPage" :disabled="currentPage === totalPages">
+                  <font-awesome-icon :icon="['fas', 'chevron-right']" />
+              </button>
           </nav>
-        </div>
       </div>
     </div>
 
@@ -302,18 +274,44 @@ export default {
       const end = Math.max(start, this.lastItemIndex);
       return this.filteredUsers.slice(start, end);
     },
-    displayedPages() {
-      const maxButtons = 5;
-      if (this.totalPages <= maxButtons) {
-        return Array.from({ length: this.totalPages }, (_, i) => i + 1);
-      }
-      const halfButtons = Math.floor(maxButtons / 2);
-      let startPage = Math.max(1, this.currentPage - halfButtons);
-      let endPage = Math.min(this.totalPages, startPage + maxButtons - 1);
-      if (endPage - startPage + 1 < maxButtons) {
-        startPage = Math.max(1, endPage - maxButtons + 1);
-      }
-      return Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
+    paginationItems() {
+        const result = [];
+        const totalPages = this.totalPages;
+        const currentPage = this.currentPage;
+
+        // Jika total halaman sedikit, tampilkan semua
+        if (totalPages <= 7) {
+            for (let i = 1; i <= totalPages; i++) {
+                result.push(i);
+            }
+            return result;
+        }
+        
+        // Logika untuk menampilkan halaman dengan elipsis
+        result.push(1); // Selalu tampilkan halaman pertama
+
+        if (currentPage > 4) {
+            result.push('ellipsis');
+        }
+
+        let startRange = (currentPage <= 4) ? 2 : currentPage - 1;
+        let endRange = (currentPage >= totalPages - 3) ? totalPages - 1 : currentPage + 1;
+        if(currentPage <= 4) endRange = 5;
+        if(currentPage >= totalPages - 3) startRange = totalPages - 4;
+
+        for (let i = startRange; i <= endRange; i++) {
+            if (i > 1 && i < totalPages) {
+                result.push(i);
+            }
+        }
+
+        if (currentPage < totalPages - 3) {
+            result.push('ellipsis');
+        }
+        
+        result.push(totalPages);
+        
+        return [...new Set(result)]; 
     },
   },
   methods: {
@@ -1019,89 +1017,144 @@ export default {
 }
 
 .pagination-container {
-  padding: 12px 0;
-  margin-top: 24px;
-}
-.pagination-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.pagination-info {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.showing-text,
-.rows-per-page {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  color: var(--gray-600);
-}
-.pagination-controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-}
-.page-numbers {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.pagination-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 40px;
-  height: 40px;
-  padding: 0 12px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--gray-600);
-  background: #ffffff;
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-.pagination-button:hover:not(.disabled) {
-  color: var(--primary-500);
-  border-color: var(--primary-500);
-}
-.pagination-button.page-number {
-  width: 40px;
-}
-.pagination-button.active {
-  color: #ffffff;
-  background-color: var(--primary-500);
-  border-color: var(--primary-500);
-}
-.pagination-button.prev,
-.pagination-button.next {
-  gap: 6px;
-  padding: 0 16px;
-}
-.pagination-button.disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  background-color: var(--gray-50);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    margin-top: 1.5rem; /* 24px */
+    flex-wrap: wrap;
+    gap: 1.5rem;
 }
 
-@media (min-width: 768px) {
-  .pagination-wrapper {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .pagination-info {
-    flex-direction: row;
-    align-items: center;
-    gap: 20px;
-  }
+.pagination-info-side {
+    flex-grow: 1;
 }
+
+.pagination-text {
+    font-size: 0.875rem; /* 14px */
+    color: var(--gray-600);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.pagination-text strong {
+    color: var(--gray-800);
+    font-weight: 600;
+}
+
+.pagination-dropdown-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.pagination-dropdown-select {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-md);
+    background: white;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--gray-700);
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+.pagination-dropdown-select:hover {
+    border-color: var(--primary-400);
+}
+
+.pagination-nav {
+    display: inline-flex;
+    border-radius: var(--radius-md);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.pagination-button {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 40px;
+    padding: 0 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--gray-700);
+    background-color: white;
+    border: 1px solid var(--gray-200);
+    margin-left: -1px; /* Overlap borders */
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.pagination-button:first-child {
+    border-top-left-radius: var(--radius-md);
+    border-bottom-left-radius: var(--radius-md);
+    margin-left: 0;
+}
+.pagination-button:last-child {
+    border-top-right-radius: var(--radius-md);
+    border-bottom-right-radius: var(--radius-md);
+}
+
+.pagination-button:hover:not(.active):not(:disabled) {
+    background-color: var(--gray-100);
+    color: var(--primary-600);
+}
+
+.pagination-button.active {
+    background-color: var(--primary-50);
+    color: var(--primary-600);
+    border-color: var(--primary-300);
+    z-index: 3;
+    font-weight: 600;
+}
+
+.pagination-button.prev-next {
+    color: var(--gray-500);
+}
+.pagination-button.prev-next:hover:not(:disabled) {
+    background-color: var(--primary-50);
+}
+
+.pagination-button:disabled {
+    color: var(--gray-400);
+    background-color: var(--gray-50);
+    cursor: not-allowed;
+}
+
+.pagination-ellipsis {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 40px;
+    padding: 0 0.5rem;
+    font-size: 0.875rem;
+    color: var(--gray-700);
+    background-color: white;
+    border: 1px solid var(--gray-200);
+    margin-left: -1px;
+}
+
+@media (max-width: 768px) {
+    .pagination-container {
+        flex-direction: column;
+        align-items: center;
+    }
+    .pagination-nav {
+        margin-top: 1rem;
+    }
+    .pagination-info-side {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+}
+
 @media (max-width: 640px) {
   .toolbar {
     flex-direction: column;
@@ -1121,23 +1174,6 @@ export default {
   }
   .dropdown-container-role {
     width: 100%;
-  }
-
-  .pagination-button.prev .button-text,
-  .pagination-button.next .button-text {
-    display: none;
-  }
-  .pagination-button.prev,
-  .pagination-button.next {
-    width: 40px;
-    padding: 0;
-  }
-  .pagination-wrapper {
-    align-items: center;
-  }
-  .pagination-info {
-    align-items: center;
-    text-align: center;
   }
 
   .page-header-alt {

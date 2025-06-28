@@ -1237,11 +1237,11 @@ body { /* This might conflict if user has global body styles, keep an eye on it 
   }
   
   .legend-item.male {
-    color: var(--primary-600); /* User CSS uses #3B82F6 directly in chart.js config, this is for legend */
+    color: #3B82F6;
   }
   
   .legend-item.female {
-    color: #ec4899; /* Consistent */
+    color: #ec4899
   }
   
   .legend-dot {
@@ -1251,7 +1251,7 @@ body { /* This might conflict if user has global body styles, keep an eye on it 
   }
   
   .legend-item.male .legend-dot {
-    background: var(--primary-500); /* User CSS uses #3B82F6 directly in chart.js config */
+    background: #3B82F6;
   }
   
   .legend-item.female .legend-dot {
@@ -1351,7 +1351,10 @@ body { /* This might conflict if user has global body styles, keep an eye on it 
     font-size: 12px;
     font-weight: 600;
     padding: 12px;
+    vertical-align: middle;
   }
+
+  
   
   .table-row:hover { /* User specific row hover */
     background: #f9fafb; /* var(--gray-50) */

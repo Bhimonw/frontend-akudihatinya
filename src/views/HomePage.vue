@@ -2,7 +2,10 @@
   <div class="home-wrapper">
     <header class="hero-section">
       <nav class="top-nav">
-        <div class="logo-text">akudihatinya</div>
+        <div class="logo-container">
+          <img src="../assets/ptm-icon.jpg" alt="Logo Aplikasi" class="logo-img" />
+          <div class="logo-text">akudihatinya</div>
+        </div>
         <router-link to="/auth/login" class="login-btn">Login</router-link>
       </nav>
       <div class="hero-content">
@@ -17,7 +20,7 @@
       <h2 class="section-title">Tentang Kami</h2>
       <section class="info-card">
         <div class="card-image-container">
-          <img src="../assets/ptm.jpg" alt="Gedung Dinas Kesehatan Kabupaten Banjar" class="card-image"/>
+          <img src="../assets/dinkes.webp" alt="Gedung Dinas Kesehatan Kabupaten Banjar" class="card-image"/>
         </div>
         <div class="card-text">
           <h3 class="card-title">Dinas Kesehatan Kabupaten Banjar</h3>
@@ -34,7 +37,7 @@
         <div class="card-text">
           <h3 class="card-title">Seksi Penyakit Tidak Menular (PTM)</h3>
           <p class="card-description">
-            Seksi PTM berfokus pada pengendalian faktor risiko dan penanganan Penyakit Tidak Menular, khususnya Diabetes Mellitus dan Hipertensi, yang menjadi tantangan kesehatan utama. Kami menyelenggarakan skrining, edukasi, dan pemantauan rutin untuk memastikan penderita mendapatkan pelayanan yang optimal dan berkelanjutan.
+            Sebagai bagian dari Bidang Pencegahan dan Pengendalian Penyakit (P2P), Seksi Penyakit Tidak Menular (PTM) memiliki fokus utama untuk menekan laju PTM di Kabupaten Banjar. Kami secara khusus menangani tantangan kesehatan utama seperti Diabetes Melitus dan Hipertensi melalui serangkaian program terpadu. Upaya kami meliputi kegiatan skrining deteksi dini, edukasi berkelanjutan kepada masyarakat, serta pemantauan rutin bagi penderita untuk memastikan mereka mendapatkan penanganan yang optimal dan komprehensif.
           </p>
         </div>
       </section>
@@ -135,6 +138,21 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+/* DITAMBAHKAN: Style untuk container logo dan teks */
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 12px; /* Jarak antara logo dan teks */
+}
+
+/* DITAMBAHKAN: Style untuk gambar logo */
+.logo-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%; /* Membuat gambar menjadi lingkaran */
+  object-fit: cover; /* Memastikan gambar tidak terdistorsi */
 }
 
 .logo-text {

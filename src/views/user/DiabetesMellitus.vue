@@ -162,7 +162,7 @@ export default {
   },
   data() {
     const currentYear = new Date().getFullYear();
-    const startYear = 2000;
+    const startYear = 2024;
     const years = Array.from({ length: currentYear - startYear + 1 }, (_, i) => startYear + i).reverse();
     return {
       patients: [], // Data pasien dari API
