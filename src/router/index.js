@@ -21,7 +21,6 @@ import ListPasien from '../views/user/ListPasien.vue';
 import DetailPasienLP from '../views/user/DetailPasienLP.vue';
 import DiabetesMellitus from '../views/user/DiabetesMellitus.vue';
 import Hipertensi from '../views/user/Hipertensi.vue';
-import TambahDataPeserta from '../views/user/TambahDataPeserta.vue';
 import DetailPasienDM from '../views/user/DetailPasienDM.vue';
 import DetailPasienHT from '../views/user/DetailPasienHT.vue';
 
@@ -110,12 +109,6 @@ const routes = [
         path: 'hipertensi',
         component: Hipertensi,
         meta: { requiresAuth: true, isAdmin: false, title: 'Laporan Pemantauan Hipertensi' },
-      },
-      {
-        path: '/tambah-data-peserta',
-        name: 'TambahDataPeserta',
-        component: TambahDataPeserta,
-        meta: { requiresAuth: true, isAdmin: false},
       },
       {
         path: 'diabetes-mellitus/patient/:id',

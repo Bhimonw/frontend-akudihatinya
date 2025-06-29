@@ -382,8 +382,6 @@ export default {
         }
   
         const formData = new FormData();
-        formData.append('_method', 'PUT'); // Laravel expects PUT method for form-data updates
-
         // Append profile data
         formData.append('username', userData.value.username);
         formData.append('name', userData.value.nama_puskesmas); // Use 'name' for puskesmas name if API expects it

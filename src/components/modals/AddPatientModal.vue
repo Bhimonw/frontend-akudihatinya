@@ -148,274 +148,221 @@
 
 <script>
 import Swal from 'sweetalert2';
-import axios from "axios";
+import apiClient from "../../api.js"; // Menggunakan apiClient
 import AddNewPatientModal from "../../components/modals/AddNewPatient.vue";
 
 export default {
-  components: {
-    AddNewPatientModal
-  },
-  props: {
-    show: {
-      type: Boolean,
-      required: true,
-    },
-    selectedYear: { // Receive selectedYear as a prop
-      type: String,
-      required: true,
-    },
-    examinationType: {
-      type: String,
-      required: true,
-      validator: function (value) {
-        return ["dm", "htn"].includes(value);
+  components: {
+    AddNewPatientModal
+  },
+  props: {
+    show: {
+      type: Boolean,
+      required: true,
+    },
+    selectedYear: {
+      type: String,
+      required: true,
+    },
+    examinationType: {
+      type: String,
+      required: true,
+      validator: function (value) {
+        return ["dm", "ht"].includes(value); // Menggunakan 'ht' agar konsisten dengan API
+      }
+    }
+  },
+  data() {
+    return {
+      patients: [],
+      searchPatientQuery: "",
+      showNewPatientForm: false,
+      isLoading: false,
+      currentPage: 1,
+      pageSize: 10,
+      totalPatients: 0,
+      totalPages: 0,
+    };
+  },
+  computed: {
+    // ... Bagian computed tidak ada perubahan ...
+    firstItemIndex() {
+      if (this.totalPatients === 0) return -1;
+      return (this.currentPage - 1) * this.pageSize;
+    },
+    lastItemIndex() {
+      return Math.min(this.currentPage * this.pageSize, this.totalPatients);
+    },
+    filteredPatients() {
+      return this.patients;
+    },
+    paginationItems() {
+      const result = [];
+      const totalPages = this.totalPages;
+      const currentPage = this.currentPage;
+      if (totalPages <= 7) {
+        for (let i = 1; i <= totalPages; i++) result.push(i);
+        return result;
+      }
+      result.push(1);
+      if (currentPage > 4) result.push('ellipsis');
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+      for (let i = start; i <= end; i++) {
+        if (!result.includes(i)) result.push(i);
       }
-    }
-  },
-  data() {
-    return {
-      patients: [],
-      searchPatientQuery: "",
-      showNewPatientForm: false,
-      isLoading: false,
-      currentPage: 1,
-      pageSize: 10,
-      totalPatients: 0,
-      totalPages: 0,
-    };
-  },
-  computed: {
-    firstItemIndex() {
-      if (this.totalPatients === 0) return -1;
-      return (this.currentPage - 1) * this.pageSize;
-    },
-    lastItemIndex() {
-      return Math.min(this.currentPage * this.pageSize, this.totalPatients);
-    },
-    filteredPatients() {
-      return this.patients;
-    },
-    paginationItems() {
-      const result = [];
-      const totalPages = this.totalPages;
-      const currentPage = this.currentPage;
+      if (currentPage < totalPages - 3) result.push('ellipsis');
+      if (!result.includes(totalPages)) result.push(totalPages);
+      return result;
+    },
+  },
+  methods: {
+    prevPage() {
+      if (this.currentPage > 1) {
+        this.currentPage--;
+        this.fetchPatients();
+      }
+    },
+    nextPage() {
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++;
+        this.fetchPatients();
+      }
+    },
+    goToPage(page) {
+      if (page !== 'ellipsis' && page !== this.currentPage) {
+        this.currentPage = page;
+        this.fetchPatients();
+      }
+    },
+    resetPagination() {
+      this.currentPage = 1;
+      this.fetchPatients();
+    },
+    async fetchPatients(page = this.currentPage) {
+      this.isLoading = true;
+      try {
+        const response = await apiClient.get("/puskesmas/patients", {
+          params: {
+            page: page,
+            per_page: this.pageSize,
+            search: this.searchPatientQuery || undefined,
+            exclude_year: this.selectedYear,
+            exclude_type: this.examinationType,
+          },
+        });
+        
+        const { data, meta } = response.data;
+        this.patients = data || [];
+        this.totalPatients = meta.total || 0;
+        this.pageSize = meta.per_page || 10;
+        this.currentPage = meta.current_page || 1;
+        this.totalPages = meta.last_page || 0;
 
-      if (totalPages <= 7) {
-        for (let i = 1; i <= totalPages; i++) {
-          result.push(i);
-        }
-        return result;
-      }
-      result.push(1);
+      } catch (error) {
+        console.error("Error fetching patients:", error);
+        Swal.fire({
+          title: "Gagal Memuat Data",
+          text: "Tidak dapat memuat daftar pasien. Silakan coba lagi.",
+          icon: "error",
+          confirmButtonColor: '#d33',
+        });
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    closeModal() {
+      this.$emit("close");
+      this.resetForm();
+    },
+    handleNewPatientCreated(newlyCreatedPatient) {
+      this.selectPatient(newlyCreatedPatient);
+    },
+    async selectPatient(patient) {
+      try {
+        const yearAsNumber = parseInt(this.selectedYear, 10);
+        if (isNaN(yearAsNumber)) {
+          Swal.fire("Kesalahan", "Format tahun tidak valid.", "error");
+          return;
+        }
+        
+        // Membuat nama penyakit dinamis untuk pesan konfirmasi
+        const diseaseName = this.examinationType === 'dm' ? 'Diabetes Mellitus' : 'Hipertensi';
+        
+        const confirmation = await Swal.fire({
+          title: "Konfirmasi",
+          html: `Anda yakin akan menambahkan <strong>${patient.name}</strong> ke data pasien ${diseaseName} tahun <strong>${this.selectedYear}</strong>?`,
+          icon: "question",
+          showCancelButton: true,
+          confirmButtonText: "Ya, Tambahkan",
+          confirmButtonColor: '#10B981',
+          cancelButtonText: "Batal",
+          cancelButtonColor: '#6B7280',
+        });
 
-      if (currentPage <= 4) {
-        for (let i = 2; i <= 5; i++) {
-          result.push(i);
-        }
-        result.push('ellipsis');
-        result.push(totalPages);
-        return result;
-      }
-      if (currentPage >= totalPages - 3) {
-        result.push('ellipsis');
-        for (let i = totalPages - 4; i < totalPages; i++) {
-          result.push(i);
-        }
-        result.push(totalPages); // Add the last page
-        return result;
-      }
+        if (!confirmation.isConfirmed) return;
 
-      result.push('ellipsis');
-      result.push(currentPage - 1);
-      result.push(currentPage);
-      result.push(currentPage + 1);
-      result.push('ellipsis');
-      result.push(totalPages);
+        const payload = {
+          year: yearAsNumber,
+          examination_type: this.examinationType,
+        };
 
-      return result;
-    },
-  },
-  methods: {
-    prevPage() {
-      if (this.currentPage > 1) {
-        this.currentPage--;
-        this.fetchPatients();
-      }
-    },
-    nextPage() {
-      if (this.currentPage < this.totalPages) {
-        this.currentPage++;
-        this.fetchPatients();
-      }
-    },
-    goToPage(page) {
-      if (page !== 'ellipsis') {
-        this.currentPage = page;
-        this.fetchPatients();
-      }
-    },
-    resetPagination() {
-      this.currentPage = 1;
-      this.fetchPatients();
-    },
-    async fetchPatients(page = this.currentPage) {
-      this.isLoading = true;
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          console.error("Token tidak ditemukan");
-          return;
-        }
-        const response = await axios.get("http://localhost:8000/api/puskesmas/patients", {
-          params:{
-            page: page,
-            per_page: this.pageSize,
-            search: this.searchPatientQuery || undefined,
-            // Add a parameter to exclude patients already in the current year's list
-            exclude_year: this.selectedYear,
-            exclude_type: this.examinationType,
-          },
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        await apiClient.post(
+          `/puskesmas/patients/${patient.id}/examination-year`,
+          payload
+        );
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Berhasil!',
+          text: `Pasien ${patient.name} berhasil ditambahkan ke daftar tahun ${this.selectedYear}.`,
+          timer: 2000,
+          timerProgressBar: true,
+          showConfirmButton: false,
         });
-        
-        if (!response.data || !response.data.meta) {
-          console.error("Invalid API response structure:", response.data);
-          alert("Terjadi kesalahan: Struktur respons API tidak sesuai.");
-          return;
-        }
-        
-        const { data, meta } = response.data;
-        this.patients = Array.isArray(data) ? data : Object.values(data || {});
-        
-        this.totalPatients = parseInt(meta.total) || 0;
-        this.pageSize = parseInt(meta.per_page) || 10;
-        this.currentPage = parseInt(meta.current_page) || 1;
-        this.totalPages = parseInt(meta.last_page) || 0;
 
-      } catch (error) {
-        Swal.fire({
-          title: "Error!",
-          text: "Gagal memuat data pasien. Silakan coba lagi.",
+        this.$emit("submit", patient);
+        this.closeModal();
+
+      } catch (error) {
+        console.error("Error adding examination year:", error.response?.data || error.message);
+        const errorMessage = error.response?.data?.message || "Gagal menambahkan tahun pemeriksaan.";
+        Swal.fire({
+          title: "Gagal Menambahkan", 
+          text: errorMessage, 
           icon: "error",
+          confirmButtonColor: '#d33',
         });
-      } finally {
-        this.isLoading = false;
-      }
-    },
-    closeModal() {
-      this.$emit("close");
-      this.resetForm();
-    },
-    // FIX: This handler is triggered AFTER a new patient is successfully created and saved in AddNewPatientModal.
-    handleNewPatientCreated(newlyCreatedPatient) {
-      // The goal is to add this newly created patient to the examination list for the current year.
-      // So, we'll call `selectPatient` with the data of the new patient.
-      console.log("Pasien baru berhasil dibuat, sekarang menambahkannya ke tahun pemeriksaan...", newlyCreatedPatient);
-      this.selectPatient(newlyCreatedPatient);
-    },
-    async selectPatient(patient) {
-      try {
-        if (!this.selectedYear) {
-          console.error("Selected year is missing or invalid.");
-          Swal.fire("Kesalahan", "Tahun pemeriksaan tidak valid. Silakan pilih tahun yang sesuai.", "error");
-          return;
-        }
-
-        const yearAsNumber = parseInt(this.selectedYear, 10);
-        if (isNaN(yearAsNumber)) {
-          console.error("Invalid year format:", this.selectedYear);
-          Swal.fire("Kesalahan", "Format tahun tidak valid. Harap periksa input.", "error");
-          return;
-        }
-        
-        const confirmation = await Swal.fire({
-          title: "Konfirmasi",
-          html: `Apakah Anda yakin akan menambahkan <strong>${patient.name}</strong> ke data pasien Diabetes Mellitus tahun <strong>${this.selectedYear}</strong>?`,
-          icon: "question",
-          showCancelButton: true,
-          confirmButtonText: "Ya, Tambahkan",
-          cancelButtonText: "Batal",
-        });
-
-        if (!confirmation.isConfirmed) {
-          return;
-        }
-
-        const payload = {
-          year: yearAsNumber,
-          examination_type: this.examinationType,
-        };
-
-        const token = localStorage.getItem("token");
-        if (!token) {
-          Swal.fire("Sesi Berakhir", "Silakan login kembali.", "error");
-          return;
-        }
-
-        const response = await axios.post(
-          `http://localhost:8000/api/puskesmas/patients/${patient.id}/examination-year`,
-          payload,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (!response.data || !response.data.message) {
-          Swal.fire("Kesalahan", "Struktur respons API tidak sesuai.", "error");
-          return;
-        }
-
-        Swal.fire("Berhasil!", "Data pasien berhasil ditambahkan!", "success");
-
-        // Emit event to parent (DiabetesMellitus.vue) to refresh its list
-        this.$emit("submit", patient);
-
-        // Close the entire modal component
-        this.closeModal();
-
-      } catch (error) {
-        console.error("Error adding examination year:", error.response?.data || error.message);
-        let errorMessage = "Gagal menambahkan tahun pemeriksaan.";
-        if (error.response?.data?.message) {
-          errorMessage = error.response.data.message;
-        }
-        Swal.fire("Kesalahan", errorMessage, "error");
-      }
-    },
-    resetForm() {
-      this.showNewPatientForm = false;
-      this.searchPatientQuery = "";
-      this.currentPage = 1;
-    },
-  },
-  watch: {
-    searchPatientQuery() {
-      this.resetPagination();
-    },
-    show: {
-      immediate: true,
-      handler(newVal) {
-        if (newVal) {
-          // Reset state every time the modal is opened
-          this.showNewPatientForm = false;
-          this.searchPatientQuery = "";
-          this.currentPage = 1;
-          this.fetchPatients(1);
-        }
-      }
-    }
-  },
-  // The 'created' hook is no longer necessary because the 'show' watcher with `immediate: true` handles the initial data fetch.
+      }
+    },
+    resetForm() {
+      this.showNewPatientForm = false;
+      this.searchPatientQuery = "";
+      this.currentPage = 1;
+    },
+  },
+  watch: {
+    searchPatientQuery() {
+      // Tambahkan debounce untuk pencarian agar tidak memanggil API di setiap ketikan
+      if (this.searchTimeout) clearTimeout(this.searchTimeout);
+      this.searchTimeout = setTimeout(() => {
+        this.resetPagination();
+      }, 500); // Tunggu 500ms setelah user berhenti mengetik
+    },
+    show: {
+      immediate: true,
+      handler(newVal) {
+        if (newVal) {
+          this.resetForm();
+          this.fetchPatients(1);
+        }
+      }
+    }
+  },
 };
 </script>
 
 <style scoped>
-/* Styling Anda tidak perlu diubah, jadi saya akan salin kembali */
-/* Variables for consistent colors */
 :root {
   --primary-50: #ECFDF5;
   --primary-100: #D1FAE5;

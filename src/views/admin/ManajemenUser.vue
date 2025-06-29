@@ -190,7 +190,6 @@ import Swal from "sweetalert2";
 
 import AddNewUserModal from "../../components/modals/AddNewUser.vue";
 import EditUserModal from "../../components/modals/EditUserModal.vue";
-import ConfirmModal from "../../components/modals/ConfirmModal.vue";
 import UserDetailModal from "../../components/modals/UserDetailModal.vue";
 import { library } from '@fortawesome/fontawesome-svg-core';
 import {
@@ -211,7 +210,6 @@ export default {
   components: {
     AddNewUserModal,
     EditUserModal,
-    ConfirmModal,
     UserDetailModal,
   },
   data() {
@@ -224,8 +222,6 @@ export default {
       showAddUserModal: false,
       showEditUserModal: false,
       selectedUserIdForEdit: null,
-      showConfirmModal: false,
-      userToDelete: null,
       selectedUser: null,
       showDetailModal: false,
       isLoading: false,

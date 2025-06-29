@@ -34,7 +34,7 @@
                   required
                   :state="errors.date ? false : null"
                   ref="dateInput"
-                  @update:model-value="errors.date = ''"
+                  @update:model-value="clearError('date')"
                 />
               </div>
               <transition name="fade">
@@ -105,7 +105,7 @@
             <button class="btn-cancel" @click="$emit('close')" type="button">
               <font-awesome-icon :icon="['fas', 'times']" /> Batal
             </button>
-            <button class="btn-save" type="submit" :disabled="isSubmitting">
+            <button class="btn-save" @click="handleSubmit" :disabled="isSubmitting">
               <span v-if="isSubmitting">
                 <font-awesome-icon :icon="['fas', 'spinner']" spin /> Menyimpan...
               </span>
@@ -121,10 +121,8 @@
 </template>
 
 <script>
-// DIUBAH: Swal diganti dengan MySwal agar konsisten (opsional, tapi disarankan)
-import MySwal from "../../utils/swal-custom.js"; // Asumsi path ini benar
-import axios from "axios";
-// DITAMBAHKAN: Import VueDatePicker dan CSS-nya
+import Swal from 'sweetalert2'; // Menggunakan Swal standar
+import apiClient from '../../api.js'; // Menggunakan apiClient
 import VueDatePicker from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css';
 
@@ -135,7 +133,6 @@ export default {
     selectedYear: { type: [Number, String], required: true },
   },
   components: {
-    // DIUBAH: Mengganti Flatpickr dengan VueDatePicker
     VueDatePicker
   },
   data() {
@@ -146,7 +143,6 @@ export default {
         diastolic: null, 
       },
       isSubmitting: false,
-      // DITAMBAHKAN: errors object yang lengkap
       errors: {
         date: '',
         systolic: '',
@@ -154,7 +150,6 @@ export default {
       },
     };
   },
-  // DITAMBAHKAN: Computed properties untuk min/max date
   computed: {
     parsedSelectedYear() {
         return parseInt(this.selectedYear);
@@ -171,13 +166,11 @@ export default {
     }
   },
   methods: {
-    // DITAMBAHKAN: Metode dari DM.vue
     getDefaultDate() {
       const currentYear = new Date().getFullYear();
-      if (this.parsedSelectedYear === currentYear) {
-        return new Date();
-      }
-      return new Date(this.parsedSelectedYear, 11, 31);
+      return this.parsedSelectedYear === currentYear 
+        ? new Date()
+        : new Date(this.parsedSelectedYear, 11, 31);
     },
     formatDateForPicker(date) {
         const day = date.getDate();
@@ -192,89 +185,113 @@ export default {
           const targetEl = errorElement.$el ? errorElement.$el : errorElement;
           if (targetEl) {
               targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              if (typeof errorElement.focus === 'function') {
-                  errorElement.focus();
-              } else if (targetEl.querySelector('input')) {
-                  targetEl.querySelector('input').focus();
-              } else if (typeof targetEl.focus === 'function') {
-                  targetEl.focus();
+              const input = targetEl.querySelector('input') || targetEl;
+              if (input && typeof input.focus === 'function') {
+                input.focus();
               }
           }
         }
       });
     },
-    
-    // DIUBAH: Logika validateForm disamakan dengan DM.vue
     validateForm() {
-      Object.keys(this.errors).forEach(key => {
-        this.errors[key] = '';
-      });
+      // Reset semua error
+      Object.keys(this.errors).forEach(key => this.errors[key] = '');
       let isValid = true;
       let firstErrorField = null;
 
+      // Validasi tanggal
       if (!this.formData.date) {
-        this.errors.date = "Tanggal pemeriksaan wajib diisi.";
+        this.errors.date = "Tanggal pemeriksaan wajib diisi";
         isValid = false;
         if (!firstErrorField) firstErrorField = 'dateInput';
       }
 
-      this.validateSystolic();
-      this.validateDiastolic();
-      
-      // DIUBAH: Validasi kini memeriksa apakah kolom wajib diisi
-      if (!this.formData.systolic) {
-          this.errors.systolic = "Tekanan darah sistolik wajib diisi.";
+      // Validasi sistolik
+      if (!this.formData.systolic && this.formData.systolic !== 0) {
+        this.errors.systolic = "Tekanan darah sistolik wajib diisi";
+        isValid = false;
+        if (!firstErrorField) firstErrorField = 'systolicInput';
+      } else {
+        // Jalankan validasi range sistolik
+        this.validateSystolic();
+        if (this.errors.systolic) {
           isValid = false;
           if (!firstErrorField) firstErrorField = 'systolicInput';
+        }
       }
-      if (!this.formData.diastolic) {
-          this.errors.diastolic = "Tekanan darah diastolik wajib diisi.";
+
+      // Validasi diastolik
+      if (!this.formData.diastolic && this.formData.diastolic !== 0) {
+        this.errors.diastolic = "Tekanan darah diastolik wajib diisi";
+        isValid = false;
+        if (!firstErrorField) firstErrorField = 'diastolicInput';
+      } else {
+        // Jalankan validasi range diastolik
+        this.validateDiastolic();
+        if (this.errors.diastolic) {
           isValid = false;
           if (!firstErrorField) firstErrorField = 'diastolicInput';
+        }
       }
-
-      if (this.errors.systolic && this.errors.systolic !== "Tekanan darah sistolik wajib diisi.") { isValid = false; if (!firstErrorField) firstErrorField = 'systolicInput'; }
-      if (this.errors.diastolic && this.errors.diastolic !== "Tekanan darah diastolik wajib diisi.") { isValid = false; if (!firstErrorField) firstErrorField = 'diastolicInput'; }
       
-      if (!isValid) {
+      // Scroll ke error pertama jika ada
+      if (!isValid && firstErrorField) {
         this.scrollToError(firstErrorField);
-        return false;
       }
 
-      return true;
+      return isValid;
     },
     validateSystolic() {
       const val = this.formData.systolic;
-      // Hapus validasi "wajib diisi" dari sini agar bisa dikontrol oleh validateForm
-      if (val === null || val === '') { this.errors.systolic = ""; return; }
+      
+      // Jika kosong, biarkan validasi utama yang menangani
+      if (val === null || val === '' || val === undefined) { 
+        return; 
+      }
+      
+      // Validasi range
       if (val < 50 || val > 300) {
-        this.errors.systolic = "Nilai Sistolik harus antara 50 dan 300.";
+        this.errors.systolic = "Nilai sistolik harus antara 50 dan 300 mmHg";
       } else {
-        this.errors.systolic = "";
+        // Clear error jika valid dan sudah ada isinya
+        if (this.errors.systolic && this.errors.systolic.includes("antara")) {
+          this.errors.systolic = "";
+        }
       }
     },
     validateDiastolic() {
       const val = this.formData.diastolic;
-      if (val === null || val === '') { this.errors.diastolic = ""; return; }
+      
+      // Jika kosong, biarkan validasi utama yang menangani
+      if (val === null || val === '' || val === undefined) { 
+        return; 
+      }
+      
+      // Validasi range
       if (val < 30 || val > 200) {
-        this.errors.diastolic = "Nilai Diastolik harus antara 30 dan 200.";
+        this.errors.diastolic = "Nilai diastolik harus antara 30 dan 200 mmHg";
       } else {
-        this.errors.diastolic = "";
+        // Clear error jika valid dan sudah ada isinya
+        if (this.errors.diastolic && this.errors.diastolic.includes("antara")) {
+          this.errors.diastolic = "";
+        }
       }
     },
-
-    // DIUBAH: Logika handleSubmit disederhanakan
+    clearError(fieldName) {
+      if (this.errors[fieldName]) {
+        this.errors[fieldName] = '';
+      }
+    },
     async handleSubmit() {
       if (!this.validateForm()) {
-        return;
+        return; 
       }
+      
       this.isSubmitting = true;
       try {
-        const dateToUse = this.formData.date;
-        const examinationDate = `${dateToUse.getFullYear()}-${(dateToUse.getMonth() + 1).toString().padStart(2, '0')}-${dateToUse.getDate().toString().padStart(2, '0')}`;
-        const token = localStorage.getItem("token");
-        if (!token) throw new Error("Token tidak ditemukan");
-
+        const date = this.formData.date;
+        const examinationDate = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+        
         const payload = {
           patient_id: parseInt(this.patientId),
           examination_date: examinationDate,
@@ -282,14 +299,11 @@ export default {
           diastolic: this.formData.diastolic,
         };
 
-        await axios.post("http://localhost:8000/api/puskesmas/ht-examinations", payload, {
-            headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-          }
-        );
+        await apiClient.post("/puskesmas/ht-examinations", payload);
 
-        MySwal.fire({
+        Swal.fire({
           icon: "success",
-          title: "Berhasil",
+          title: "Berhasil!",
           text: "Data pemeriksaan hipertensi berhasil ditambahkan.",
           timer: 2000,
           timerProgressBar: true,
@@ -300,10 +314,11 @@ export default {
         this.$emit("close");
       } catch (error) {
         console.error("Error adding HT examination:", error);
-        MySwal.fire({
+        Swal.fire({
           icon: "error",
-          title: "Gagal Menyimpan Data",
-          text: error.response?.data?.message || error.message || "Terjadi kesalahan saat menambahkan data.",
+          title: "Gagal Menyimpan",
+          text: error.response?.data?.message || "Terjadi kesalahan pada server. Silakan coba lagi.",
+          confirmButtonColor: '#d33',
         });
       } finally {
         this.isSubmitting = false;
@@ -318,7 +333,6 @@ export default {
       this.errors = { date: '', systolic: '', diastolic: '' };
     },
   },
-  // DITAMBAHKAN: Watcher untuk konsistensi
   watch: {
     visible(newValue) {
       if (newValue) {
@@ -333,9 +347,6 @@ export default {
 </script>
 
 <style scoped>
-/* --- HANYA ADA PERUBAHAN PADA STYLE --- */
-
-/* Pengaturan Variabel untuk DatePicker */
 :deep(.dp__main) {
   --dp-border-radius: 10px;
   --dp-input-padding: 12px 12px 12px 42px;
