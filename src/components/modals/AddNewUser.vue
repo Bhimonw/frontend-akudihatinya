@@ -13,7 +13,7 @@
 
       <div class="modal-body">
         <div class="new-user-form">
-          <form>
+          <form @submit.prevent="submitForm">
             <div class="form-section">
               <div class="section-header">
                 <font-awesome-icon :icon="['fas', 'user-shield']" class="section-icon" />
@@ -33,6 +33,7 @@
                       :class="{ 'input-error': errors.username }"
                       placeholder="Masukkan username"
                       required
+                      @input="errors.username = ''"
                     />
                   </div>
                   <transition name="fade">
@@ -55,6 +56,7 @@
                       :class="{ 'input-error': errors.password }"
                       placeholder="Masukkan password"
                       required
+                      @input="errors.password = ''"
                     />
                     <button
                       type="button"
@@ -93,6 +95,7 @@
                       :class="{ 'input-error': errors.name }"
                       :placeholder="namePlaceholder"
                       required
+                      @input="errors.name = ''"
                     />
                   </div>
                   <transition name="fade">
@@ -113,6 +116,7 @@
                       class="form-select"
                       :class="{ 'input-error': errors.role }"
                       required
+                      @change="errors.role = ''"
                     >
                       <option value="" disabled>Pilih role user</option>
                       <option value="admin">Admin</option>
@@ -155,13 +159,12 @@
             </div>
 
             <div class="form-actions">
-              <button type="button" class="btn-cancel" @click="closeModal">
+              <button type="button" class="btn-cancel" @click="closeModal" :disabled="isSubmitting">
                 <font-awesome-icon :icon="['fas', 'times']" /> Batal
               </button>
               <button
-                type="button"
+                type="submit"
                 class="btn-save"
-                @click="submitForm"
                 :disabled="isSubmitting"
               >
                 <span v-if="isSubmitting">
@@ -180,25 +183,27 @@
 </template>
 
 <script>
-import axios from "axios";
+// --- PERUBAHAN 1: Impor axios diganti dengan apiClient ---
+import apiClient from '../../api.js'; // Menggunakan apiClient
 import Swal from 'sweetalert2';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
 import {
   faUserPlus, faAt, faKey, faHospital, faUser, faUserTag,
   faExclamationCircle, faEye, faEyeSlash, faTimes, faSpinner,
-  faIdCard, faUserShield, faSave // PERUBAHAN: Menambahkan faSave
+  faIdCard, faUserShield, faSave
 } from '@fortawesome/free-solid-svg-icons';
 
 library.add(
   faUserPlus, faAt, faKey, faHospital, faUser, faUserTag,
   faExclamationCircle, faEye, faEyeSlash, faTimes, faSpinner,
-  faIdCard, faUserShield, faSave // PERUBAHAN: Menambahkan faSave
+  faIdCard, faUserShield, faSave
 );
 
 export default {
   name: "AddNewUserModal",
-  emits: ['close', 'user-added', 'user-add-failed'],
+  // --- PERUBAHAN 2: Menghapus emit user-add-failed karena notifikasi error ditangani di dalam komponen ---
+  emits: ['close', 'user-added'],
   data() {
     return {
       formData: {
@@ -263,6 +268,7 @@ export default {
             fileInput.value = "";
         }
         this.showPassword = false;
+        this.isSubmitting = false; // Pastikan status submitting juga di-reset
     },
     handleFileUpload(event) {
       const file = event.target.files[0];
@@ -332,92 +338,80 @@ export default {
       }
       return isValid;
     },
+    
+    // --- PERUBAHAN 3: Metode submitForm dirombak total menyerupai AddNewPatient.vue ---
     async submitForm() {
-      if (this.isSubmitting) {
-        console.warn("Form submission already in progress, ignoring double click.");
-        return;
-      }
+      if (!this.validateForm()) return;
 
-      if (!this.validateForm()) {
-        return;
-      }
-      
       const result = await Swal.fire({
-        title: 'Konfirmasi Penambahan User',
-        html: `Apakah Anda yakin ingin menyimpan user dengan username "<b>${this.formData.username}</b>"?`, // Menggunakan html untuk bold
+        title: 'Konfirmasi Data',
+        html: `Apakah Anda yakin ingin menyimpan user "<b>${this.formData.username}</b>"?`,
         icon: 'question',
         showCancelButton: true,
-        confirmButtonColor: '#059669', // Menggunakan warna dari skema baru
-        cancelButtonColor: '#EF4444',
-        confirmButtonText: 'Ya, Simpan!',
+        confirmButtonText: 'Ya, Simpan',
         cancelButtonText: 'Batal',
-        showLoaderOnConfirm: true,
-        preConfirm: async () => {
-          try {
-            const token = localStorage.getItem("token");
-            if (!token) {
-              return Swal.showValidationMessage("Token tidak ditemukan. Silakan login kembali.");
-            }
-
-            const apiPayload = new FormData();
-            apiPayload.append("username", this.formData.username);
-            apiPayload.append("password", this.formData.password);
-            apiPayload.append("name", this.formData.name);
-            apiPayload.append("role", this.formData.role);
-
-            if (this.formData.profilePicture instanceof File) {
-                apiPayload.append("profile_picture", this.formData.profilePicture);
-            }
-
-            this.isSubmitting = true;
-
-            const response = await axios.post(
-                "http://localhost:8000/api/admin/users",
-                apiPayload,
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                }
-            );
-            return response.data;
-          } catch (error) {
-              this.handleSubmissionError(error); 
-              return Swal.showValidationMessage(
-                error.response?.data?.message || error.message || "Terjadi kesalahan saat menyimpan data."
-              );
-          } finally {
-              this.isSubmitting = false;
-          }
-        }
+        confirmButtonColor: '#10B981',
+        cancelButtonColor: '#6B7280',
       });
 
-      if (result.isConfirmed && result.value) {
-        this.$emit('user-added', result.value.message || "User berhasil ditambahkan!");
+      if (!result.isConfirmed) return;
+
+      this.isSubmitting = true;
+
+      const apiPayload = new FormData();
+      apiPayload.append("username", this.formData.username);
+      apiPayload.append("password", this.formData.password);
+      apiPayload.append("name", this.formData.name);
+      apiPayload.append("role", this.formData.role);
+      if (this.formData.profilePicture) {
+        apiPayload.append("profile_picture", this.formData.profilePicture);
+      }
+      
+      try {
+        // Menggunakan apiClient untuk mengirim data. Tidak perlu menyertakan token secara manual.
+        // Endpoint yang digunakan adalah relatif terhadap baseURL di apiClient.
+        const response = await apiClient.post("/admin/users", apiPayload);
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Berhasil!',
+          text: response.data.message || 'Data user baru berhasil disimpan.',
+          timer: 2000,
+          timerProgressBar: true,
+          showConfirmButton: false
+        });
+
+        this.$emit('user-added', response.data.user); // Pastikan API mengembalikan data user
+        this.closeModal();
+
+      } catch (error) {
+        // Penanganan error disamakan dengan AddNewPatient.vue
+        let errorMessage = "Terjadi kesalahan saat menyimpan data user.";
+        if (error.response) {
+          console.error("API Error:", error.response.data);
+          if (error.response.data && error.response.data.message) {
+            errorMessage = error.response.data.message;
+          }
+          if (error.response.status === 422 && error.response.data.errors) {
+            const errorsArray = Object.values(error.response.data.errors).flat();
+            errorMessage = errorsArray.join('\n');
+          }
+        } else {
+          console.error("Network/Request Error:", error.message);
+          errorMessage = "Tidak dapat terhubung ke server. Periksa koneksi Anda.";
+        }
+        Swal.fire({
+          title: "Gagal Menyimpan!",
+          text: errorMessage,
+          icon: "error",
+          confirmButtonColor: '#d33',
+        });
+      } finally {
+        this.isSubmitting = false;
       }
     },
-    handleSubmissionError(error) {
-      console.error("Gagal menambahkan user:", error.response ? error.response.data : error.message);
-      let errorMessage = "Gagal menambahkan user.";
-      if (error.response && error.response.data) {
-          if (error.response.data.message) {
-              errorMessage = error.response.data.message;
-          } else if (error.response.data.errors) {
-              const errors = error.response.data.errors;
-              const firstErrorKey = Object.keys(errors)[0];
-              if (firstErrorKey && errors[firstErrorKey].length > 0) {
-                  errorMessage = errors[firstErrorKey][0];
-              } else {
-                  errorMessage = `Terjadi kesalahan validasi. (${error.response.status})`;
-              }
-          } else {
-              errorMessage = `Terjadi kesalahan server. (${error.response.status})`;
-          }
-      } else if (error.request) {
-          errorMessage = "Tidak ada respons dari server. Periksa koneksi Anda.";
-      } else {
-          errorMessage = error.message || "Terjadi kesalahan tidak diketahui.";
-      }
-      this.$emit('user-add-failed', errorMessage);
-    }
+
+    // --- PERUBAHAN 4: Metode handleSubmissionError dihapus karena logikanya sudah terintegrasi di submitForm ---
   },
   mounted() {
     this.resetForm();
@@ -426,7 +420,8 @@ export default {
 </script>
 
 <style scoped>
-/* Modal Backdrop */
+/* Style tidak ada perubahan, sama seperti sebelumnya */
+/* ... (semua style dari file asli Anda) ... */
 .modal-backdrop {
   position: fixed;
   top: 0;
@@ -447,10 +442,9 @@ export default {
   to { opacity: 1; }
 }
 
-/* Modal Container */
 .modal-container {
   width: 90%;
-  max-width: 700px; /* Lebar disamakan dengan form user */
+  max-width: 700px;
   max-height: 90vh;
   background-color: #ffffff;
   border-radius: 12px;
@@ -466,35 +460,34 @@ export default {
   to { transform: translateY(0); opacity: 1; }
 }
 
-/* Modal Header */
 .modal-header {
   padding: 18px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid var(--neutral-200);
-  background-color: var(--primary-50);
+  border-bottom: 1px solid #E5E7EB;
+  background-color: #ECFDF5;
 }
 
 .modal-header h2 {
   margin: 0;
   font-size: 20px;
   font-weight: 600;
-  color: var(--primary-700);
+  color: #047857;
   display: flex;
   align-items: center;
 }
 
 .icon-margin {
   margin-right: 10px;
-  color: var(--primary-500);
+  color: #10B981;
 }
 
 .close-button {
   background: transparent;
   border: none;
   font-size: 20px;
-  color: var(--neutral-500);
+  color: #6B7280;
   cursor: pointer;
   width: 36px;
   height: 36px;
@@ -506,36 +499,34 @@ export default {
 }
 
 .close-button:hover {
-  background-color: var(--neutral-200);
-  color: var(--neutral-800);
+  background-color: #E5E7EB;
+  color: #1F2937;
 }
 
-/* Modal Body */
 .modal-body {
   padding: 24px;
   flex-grow: 1;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: var(--neutral-400) var(--neutral-100);
+  scrollbar-color: #9CA3AF #F3F4F6;
 }
 
 .modal-body::-webkit-scrollbar {
   width: 8px;
 }
 .modal-body::-webkit-scrollbar-track {
-  background: var(--neutral-100);
+  background: #F3F4F6;
   border-radius: 10px;
 }
 .modal-body::-webkit-scrollbar-thumb {
-  background-color: var(--neutral-400);
+  background-color: #9CA3AF;
   border-radius: 10px;
 }
 
-/* Form Sections */
 .form-section {
   background-color: white;
   border-radius: 10px;
-  border: 1px solid var(--neutral-200);
+  border: 1px solid #E5E7EB;
   padding: 20px;
   margin-bottom: 24px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
@@ -546,12 +537,12 @@ export default {
   align-items: center;
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--neutral-200);
+  border-bottom: 1px solid #E5E7EB;
 }
 
 .section-icon {
   font-size: 18px;
-  color: var(--primary-500);
+  color: #10B981;
   margin-right: 12px;
 }
 
@@ -559,7 +550,7 @@ export default {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: var(--neutral-700);
+  color: #374151;
 }
 
 .new-user-form {
@@ -594,19 +585,19 @@ export default {
   font-size: 14px;
   font-weight: 500;
   margin-bottom: 8px;
-  color: var(--neutral-700);
+  color: #374151;
   display: flex;
   align-items: center;
 }
-.optional-text { /* Diperbaiki dari .form-label .optional-text */
+.optional-text {
     font-size: 0.8em;
-    color: var(--neutral-500);
+    color: #6B7280;
     font-weight: 400;
     margin-left: 4px;
 }
 
 .required {
-  color: var(--danger-500);
+  color: #EF4444;
   margin-left: 4px;
 }
 
@@ -619,7 +610,7 @@ export default {
 .input-icon {
   position: absolute;
   left: 12px;
-  color: var(--neutral-500);
+  color: #6B7280;
   font-size: 15px;
   pointer-events: none;
 }
@@ -628,28 +619,27 @@ export default {
 .form-select {
   width: 100%;
   padding: 12px 12px 12px 40px;
-  border: 1px solid var(--neutral-300);
+  border: 1px solid #D1D5DB;
   border-radius: 8px;
   font-size: 14px;
-  color: var(--neutral-800);
+  color: #1F2937;
   background-color: white;
   transition: all 0.3s ease;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   box-sizing: border-box;
 }
 .file-input-custom {
-  /* penyesuaian padding untuk file input agar lebih rapi */
-  padding: 8px 12px 8px 12px; 
+  padding: 8px 12px 8px 12px;
 }
 
 .form-input:hover,
 .form-select:hover {
-  border-color: var(--primary-300, #6EE7B7);
+  border-color: #6EE7B7;
 }
 
 .form-input:focus,
 .form-select:focus {
-  border-color: var(--primary-500);
+  border-color: #10B981;
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
   outline: none;
 }
@@ -657,18 +647,18 @@ export default {
 .form-input:focus ~ .input-icon,
 .form-select:focus ~ .input-icon,
 .input-wrapper:focus-within .input-icon {
-  color: var(--primary-500);
+  color: #10B981;
 }
 
 .input-error {
-  border-color: var(--danger-500) !important;
+  border-color: #EF4444 !important;
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
 }
 
 .error-message {
   margin-top: 6px;
   font-size: 12px;
-  color: var(--danger-500);
+  color: #EF4444;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -693,8 +683,8 @@ export default {
   width: 40px;
   background: transparent;
   border: none;
-  border-left: 1px solid var(--neutral-300);
-  color: var(--neutral-500);
+  border-left: 1px solid #D1D5DB;
+  color: #6B7280;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -704,10 +694,10 @@ export default {
   padding: 0;
 }
 .password-toggle-custom:hover {
-  color: var(--primary-500);
+  color: #10B981;
 }
 .form-input:focus + .password-toggle-custom {
-    border-left-color: var(--primary-500);
+    border-left-color: #10B981;
 }
 
 .image-preview-container-custom {
@@ -715,12 +705,12 @@ export default {
     position: relative;
     width: 100px;
     height: 100px;
-    border: 1px dashed var(--neutral-300);
+    border: 1px dashed #D1D5DB;
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: var(--neutral-50, #F9FAFB);
+    background-color: #F9FAFB;
 }
 .image-preview-custom {
     max-width: 100%;
@@ -732,7 +722,7 @@ export default {
     position: absolute;
     top: -8px;
     right: -8px;
-    background-color: var(--danger-500);
+    background-color: #EF4444;
     color: white;
     border: 2px solid white;
     border-radius: 50%;
@@ -746,7 +736,7 @@ export default {
     box-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
 .remove-image-button-custom:hover {
-    background-color: var(--danger-700, #B91C1C);
+    background-color: #B91C1C;
 }
 
 .form-actions {
@@ -755,7 +745,7 @@ export default {
   justify-content: flex-end;
   gap: 12px;
   padding-top: 20px;
-  border-top: 1px solid var(--neutral-200);
+  border-top: 1px solid #E5E7EB;
 }
 
 .btn-cancel, .btn-save {
@@ -768,31 +758,31 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-width: 120px; /* Lebar minimum disamakan */
+  min-width: 120px;
   justify-content: center;
 }
 
 .btn-cancel {
   background-color: white;
-  border: 1px solid var(--neutral-300);
-  color: var(--neutral-700);
+  border: 1px solid #D1D5DB;
+  color: #374151;
 }
 .btn-cancel:hover {
-  background-color: var(--neutral-100);
-  border-color: var(--neutral-400);
+  background-color: #F3F4F6;
+  border-color: #9CA3AF;
 }
 
 .btn-save {
-  background-color: var(--primary-500);
+  background-color: #10B981;
   border: none;
   color: white;
 }
 .btn-save:hover {
-  background-color: var(--primary-600);
+  background-color: #059669;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 .btn-save:disabled {
-  background-color: var(--neutral-400);
+  background-color: #9CA3AF;
   cursor: not-allowed;
   opacity: 0.7;
 }

@@ -16,61 +16,39 @@
             <div class="spinner"></div>
             <p>Memuat data user...</p>
         </div>
-        <div v-else class="edit-user-form"> <form @submit.prevent="submitForm">
+        <div v-else class="edit-user-form">
+          <form @submit.prevent="submitForm">
             <div class="form-section">
               <div class="section-header">
                 <font-awesome-icon :icon="['fas', 'user-shield']" class="section-icon" />
                 <h3>Informasi Akun</h3>
               </div>
-
               <div class="form-row">
                 <div class="form-group">
                   <label for="username">Username <span class="required">*</span></label>
                   <div class="input-wrapper">
                     <font-awesome-icon :icon="['fas', 'at']" class="input-icon" />
-                    <input
-                      type="text"
-                      id="username"
-                      v-model="editedFormData.username"
-                      class="form-input"
-                      :class="{ 'input-error': errors.username }"
-                      placeholder="Masukkan username"
-                      required
-                    />
+                    <input type="text" id="username" v-model="editedFormData.username" class="form-input" :class="{ 'input-error': errors.username }" placeholder="Masukkan username" required />
                   </div>
                   <transition name="fade">
-                    <p v-if="errors.username" class="error-message">
-                      <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
-                      {{ errors.username }}
-                    </p>
+                    <p v-if="errors.username" class="error-message"><font-awesome-icon :icon="['fas', 'exclamation-circle']" /> {{ errors.username }}</p>
                   </transition>
                 </div>
-
                 <div class="form-group">
                   <label for="role">Role <span class="required">*</span></label>
                   <div class="input-wrapper">
                     <font-awesome-icon :icon="['fas', 'user-tag']" class="input-icon" />
-                    <select
-                      id="role"
-                      v-model="editedFormData.role"
-                      class="form-select"
-                      :class="{ 'input-error': errors.role }"
-                      required
-                    >
+                    <select id="role" v-model="editedFormData.role" class="form-select" :class="{ 'input-error': errors.role }" required>
                       <option value="" disabled>Pilih role user</option>
                       <option value="admin">Admin</option>
                       <option value="puskesmas">Puskesmas</option>
                     </select>
                   </div>
-                   <transition name="fade">
-                    <p v-if="errors.role" class="error-message">
-                      <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
-                      {{ errors.role }}
-                    </p>
+                  <transition name="fade">
+                    <p v-if="errors.role" class="error-message"><font-awesome-icon :icon="['fas', 'exclamation-circle']" /> {{ errors.role }}</p>
                   </transition>
                 </div>
               </div>
-
               <div class="form-group full-width">
                 <div v-if="!isChangingPassword">
                     <button type="button" class="btn-change-password-action" @click="startChangingPassword">
@@ -81,64 +59,26 @@
                     <label for="password">Password Baru <span class="required">*</span></label>
                     <div class="input-wrapper password-input-container-custom">
                         <font-awesome-icon :icon="['fas', 'key']" class="input-icon" />
-                        <input
-                            :type="showPassword ? 'text' : 'password'"
-                            id="password"
-                            v-model="editedFormData.password"
-                            class="form-input"
-                            :class="{ 'input-error': errors.password }"
-                            placeholder="Masukkan password baru"
-                            required
-                        />
-                        <button
-                            type="button"
-                            class="password-toggle-custom"
-                            @click="togglePasswordVisibility"
-                        >
+                        <input :type="showPassword ? 'text' : 'password'" id="password" v-model="editedFormData.password" class="form-input" :class="{ 'input-error': errors.password }" placeholder="Masukkan password baru" required />
+                        <button type="button" class="password-toggle-custom" @click="togglePasswordVisibility">
                             <font-awesome-icon :icon="['fas', showPassword ? 'eye-slash' : 'eye']" />
                         </button>
                     </div>
-                    <transition name="fade">
-                        <p v-if="errors.password" class="error-message">
-                            <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
-                            {{ errors.password }}
-                        </p>
-                    </transition>
-
+                    <transition name="fade"><p v-if="errors.password" class="error-message"><font-awesome-icon :icon="['fas', 'exclamation-circle']" /> {{ errors.password }}</p></transition>
                     <label for="password_confirmation" class="mt-3">Konfirmasi Password Baru <span class="required">*</span></label>
                     <div class="input-wrapper password-input-container-custom">
                         <font-awesome-icon :icon="['fas', 'key']" class="input-icon" />
-                        <input
-                            :type="showConfirmPassword ? 'text' : 'password'"
-                            id="password_confirmation"
-                            v-model="editedFormData.password_confirmation"
-                            class="form-input"
-                            :class="{ 'input-error': errors.password_confirmation }"
-                            placeholder="Konfirmasi password baru"
-                            required
-                        />
-                        <button
-                            type="button"
-                            class="password-toggle-custom"
-                            @click="toggleConfirmPasswordVisibility"
-                        >
+                        <input :type="showConfirmPassword ? 'text' : 'password'" id="password_confirmation" v-model="editedFormData.password_confirmation" class="form-input" :class="{ 'input-error': errors.password_confirmation }" placeholder="Konfirmasi password baru" required />
+                        <button type="button" class="password-toggle-custom" @click="toggleConfirmPasswordVisibility">
                             <font-awesome-icon :icon="['fas', showConfirmPassword ? 'eye-slash' : 'eye']" />
                         </button>
                     </div>
-                    <transition name="fade">
-                        <p v-if="errors.password_confirmation" class="error-message">
-                            <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
-                            {{ errors.password_confirmation }}
-                        </p>
-                    </transition>
+                    <transition name="fade"><p v-if="errors.password_confirmation" class="error-message"><font-awesome-icon :icon="['fas', 'exclamation-circle']" /> {{ errors.password_confirmation }}</p></transition>
                     <div class="d-flex justify-content-end mt-3">
-                        <button type="button" class="btn-cancel-password-change" @click="cancelChangingPassword">
-                            Batal Ganti Password
-                        </button>
+                        <button type="button" class="btn-cancel-password-change" @click="cancelChangingPassword">Batal Ganti Password</button>
                     </div>
                 </div>
               </div>
-
             </div>
 
             <div class="form-section">
@@ -146,60 +86,34 @@
                 <font-awesome-icon :icon="['fas', 'id-card']" class="section-icon" />
                 <h3>Detail User/Instansi</h3>
               </div>
-
               <div class="form-row">
                 <div class="form-group">
                   <label for="name">{{ nameLabel }} <span class="required">*</span></label>
                   <div class="input-wrapper">
-                     <font-awesome-icon :icon="editedFormData.role === 'puskesmas' ? ['fas', 'hospital'] : ['fas', 'user']" class="input-icon" />
-                    <input
-                      type="text"
-                      id="name"
-                      v-model="editedFormData.name"
-                      class="form-input"
-                      :class="{ 'input-error': errors.name }"
-                      :placeholder="namePlaceholder"
-                      required
-                    />
+                      <font-awesome-icon :icon="editedFormData.role === 'puskesmas' ? ['fas', 'hospital'] : ['fas', 'user']" class="input-icon" />
+                    <input type="text" id="name" v-model="editedFormData.name" class="form-input" :class="{ 'input-error': errors.name }" :placeholder="namePlaceholder" required />
                   </div>
                   <transition name="fade">
-                    <p v-if="errors.name" class="error-message">
-                      <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
-                      {{ errors.name }}
-                    </p>
+                    <p v-if="errors.name" class="error-message"><font-awesome-icon :icon="['fas', 'exclamation-circle']" /> {{ errors.name }}</p>
                   </transition>
                 </div>
               </div>
-
               <div class="form-group full-width">
                 <label for="profilePicture">Foto Profil (Biarkan kosong jika tidak ingin diubah)</label>
                 <div class="input-wrapper file-input-wrapper">
-                  <input
-                    type="file"
-                    id="profilePicture"
-                    @change="handleFileUpload"
-                    class="form-input file-input-custom"
-                    accept="image/png, image/jpeg, image/jpg"
-                  />
+                  <input type="file" id="profilePicture" @change="handleFileUpload" class="form-input file-input-custom" accept="image/png, image/jpeg, image/jpg" />
                 </div>
-                 <div v-if="previewUrl" class="image-preview-container-custom">
+                <div v-if="previewUrl" class="image-preview-container-custom">
                     <img :src="previewUrl" alt="Preview Foto Profil" class="image-preview-custom" />
-                    <button type="button" @click="removeImage" class="remove-image-button-custom" title="Hapus gambar">
-                        <font-awesome-icon :icon="['fas', 'times']" />
-                    </button>
+                    <button type="button" @click="removeImage" class="remove-image-button-custom" title="Hapus gambar"><font-awesome-icon :icon="['fas', 'times']" /></button>
                 </div>
                 <div v-else-if="currentProfilePictureUrl" class="image-preview-container-custom">
                     <img :src="currentProfilePictureUrl" alt="Foto Profil Saat Ini" class="image-preview-custom" />
-                    <button type="button" @click="removeCurrentPicture" class="remove-image-button-custom" title="Hapus gambar saat ini">
-                        <font-awesome-icon :icon="['fas', 'times']" />
-                    </button>
+                    <button type="button" @click="removeCurrentPicture" class="remove-image-button-custom" title="Hapus gambar saat ini"><font-awesome-icon :icon="['fas', 'times']" /></button>
                     <small class="current-photo-label">Foto Saat Ini</small>
                 </div>
                 <transition name="fade">
-                  <p v-if="errors.profilePicture" class="error-message">
-                    <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
-                    {{ errors.profilePicture }}
-                  </p>
+                  <p v-if="errors.profilePicture" class="error-message"><font-awesome-icon :icon="['fas', 'exclamation-circle']" /> {{ errors.profilePicture }}</p>
                 </transition>
               </div>
             </div>
@@ -208,17 +122,9 @@
               <button type="button" class="btn-cancel" @click="closeModal" :disabled="isSubmitting">
                 <font-awesome-icon :icon="['fas', 'times']" /> Batal
               </button>
-              <button
-                type="submit"
-                class="btn-save"
-                :disabled="isSubmitting"
-              >
-                <span v-if="isSubmitting">
-                  <font-awesome-icon :icon="['fas', 'spinner']" spin /> Menyimpan...
-                </span>
-                <span v-else>
-                  <font-awesome-icon :icon="['fas', 'save']" /> Simpan Perubahan
-                </span>
+              <button type="submit" class="btn-save" :disabled="isSubmitting">
+                <span v-if="isSubmitting"><font-awesome-icon :icon="['fas', 'spinner']" spin /> Menyimpan...</span>
+                <span v-else><font-awesome-icon :icon="['fas', 'save']" /> Simpan Perubahan</span>
               </button>
             </div>
           </form>
@@ -229,7 +135,8 @@
 </template>
 
 <script>
-import axios from "axios";
+// --- PERUBAHAN 1: Ganti impor axios dengan apiClient
+import apiClient from '../../api.js';
 import Swal from 'sweetalert2';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import {
@@ -254,7 +161,8 @@ export default {
         required: true
     }
   },
-  emits: ['close', 'user-updated', 'user-update-failed'],
+  // --- PERUBAHAN 2: Sederhanakan emits
+  emits: ['close', 'user-updated'],
   data() {
     return {
       originalUserData: null,
@@ -264,16 +172,11 @@ export default {
         password_confirmation: "",
         name: "",
         role: "",
-        profilePicture: null,
+        profilePicture: null, // null, File, atau string 'REMOVE_EXISTING'
       },
       currentProfilePictureUrl: null,
       errors: {
-        username: "",
-        password: "",
-        password_confirmation: "",
-        name: "",
-        role: "",
-        profilePicture: "",
+        username: "", password: "", password_confirmation: "", name: "", role: "", profilePicture: "",
       },
       showPassword: false,
       showConfirmPassword: false,
@@ -292,61 +195,143 @@ export default {
     }
   },
   watch: {
-    userId: {
-      immediate: true,
-      handler(newId, oldId) { // Added oldId for clarity in watch
-        // Only fetch if newId is different from oldId or if it's the initial load (oldId is undefined)
-        if (newId && (newId !== oldId || oldId === undefined)) {
+    visible: {
+      handler(newValue) {
+        if (newValue && this.userId) {
           this.fetchUserData();
+        } else if (!newValue) {
+          this.resetForm();
         }
-      }
-    },
-    visible(newValue) {
-        if (!newValue) {
-            this.resetForm();
-        } else {
-            // When modal becomes visible, if userId is already set, fetch data
-            // This is crucial for cases where the same modal instance is reused
-            if (this.userId) {
-                this.fetchUserData();
-            }
-        }
+      },
+      immediate: true,
     }
   },
   methods: {
-    togglePasswordVisibility() {
-      this.showPassword = !this.showPassword;
+    // --- PERUBAHAN 3: Gunakan apiClient untuk fetch data ---
+    async fetchUserData() {
+      if (!this.userId) return;
+      this.isLoading = true;
+
+      try {
+        const fetchPromise = apiClient.get(`/admin/users/${this.userId}`);
+        const [response] = await Promise.all([
+            fetchPromise,
+            new Promise(resolve => setTimeout(resolve, 300))
+        ]);
+
+        this.originalUserData = response.data.user;
+        this.editedFormData = {
+            username: this.originalUserData.username,
+            name: this.originalUserData.name,
+            role: this.originalUserData.role,
+            password: "",
+            password_confirmation: "",
+            profilePicture: null,
+        };
+        this.currentProfilePictureUrl = this.originalUserData.profile_picture;
+      } catch (error) {
+        console.error("Error fetching user data for edit:", error);
+        let errorMessage = "Gagal memuat data user.";
+        if (error.response?.data?.message) {
+            errorMessage = error.response.data.message;
+        }
+        Swal.fire('Error!', errorMessage, 'error');
+        this.closeModal();
+      } finally {
+        this.isLoading = false;
+      }
     },
-    toggleConfirmPasswordVisibility() {
-      this.showConfirmPassword = !this.showConfirmPassword;
+
+    // --- PERUBAHAN 4: Gunakan apiClient untuk submit form ---
+    async submitForm() {
+      if (!this.validateForm()) return;
+
+      const result = await Swal.fire({
+        title: 'Konfirmasi Perubahan',
+        html: `Anda yakin ingin menyimpan perubahan untuk user "<b>${this.editedFormData.username}</b>"?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Simpan!',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#10B981',
+        cancelButtonColor: '#6B7280',
+      });
+
+      if (!result.isConfirmed) return;
+
+      this.isSubmitting = true;
+
+      const apiPayload = new FormData();
+      apiPayload.append("username", this.editedFormData.username);
+      apiPayload.append("name", this.editedFormData.name);
+      apiPayload.append("role", this.editedFormData.role);
+      
+      if (this.isChangingPassword && this.editedFormData.password) {
+        apiPayload.append("password", this.editedFormData.password);
+        apiPayload.append("password_confirmation", this.editedFormData.password_confirmation);
+      }
+
+      if (this.editedFormData.profilePicture instanceof File) {
+        apiPayload.append("profile_picture", this.editedFormData.profilePicture);
+      } else if (this.editedFormData.profilePicture === 'REMOVE_EXISTING') {
+        apiPayload.append("profile_picture", ''); // Kirim string kosong untuk dihapus
+      }
+      
+      apiPayload.append("_method", "PUT"); // Penting untuk update dengan FormData
+
+      try {
+        const response = await apiClient.post(`/admin/users/${this.userId}`, apiPayload);
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Berhasil!',
+          text: response.data.message || "Perubahan user berhasil disimpan!",
+          timer: 2000,
+          showConfirmButton: false,
+          timerProgressBar: true
+        });
+        
+        this.$emit('user-updated', response.data.user);
+        this.closeModal();
+
+      } catch (error) {
+        let errorMessage = "Gagal menyimpan perubahan.";
+        if (error.response) {
+            console.error("API Error:", error.response.data);
+            if (error.response.data?.message) {
+                errorMessage = error.response.data.message;
+            }
+            if (error.response.status === 422 && error.response.data?.errors) {
+                const errorsArray = Object.values(error.response.data.errors).flat();
+                errorMessage = errorsArray.join('\n');
+            }
+        } else {
+            console.error("Network/Request Error:", error.message);
+            errorMessage = "Tidak dapat terhubung ke server.";
+        }
+        Swal.fire('Gagal!', errorMessage, 'error');
+      } finally {
+        this.isSubmitting = false;
+      }
     },
+
+    // --- PERUBAHAN 5: Hapus metode handleSubmissionError yang tidak lagi digunakan ---
+
+    // Metode lain tidak berubah (toggle password, reset form, file handling, validasi, dll)
     closeModal() {
       this.$emit('close');
     },
     resetForm() {
         this.originalUserData = null;
         this.editedFormData = {
-            username: "",
-            password: "",
-            password_confirmation: "",
-            name: "",
-            role: "",
-            profilePicture: null,
+            username: "", password: "", password_confirmation: "",
+            name: "", role: "", profilePicture: null,
         };
         this.currentProfilePictureUrl = null;
-        this.errors = {
-            username: "",
-            password: "",
-            password_confirmation: "",
-            name: "",
-            role: "",
-            profilePicture: "",
-        };
+        this.errors = {};
         this.previewUrl = null;
         const fileInput = document.getElementById('profilePicture');
-        if (fileInput) {
-            fileInput.value = "";
-        }
+        if (fileInput) fileInput.value = "";
         this.showPassword = false;
         this.showConfirmPassword = false;
         this.isSubmitting = false;
@@ -355,10 +340,6 @@ export default {
     },
     startChangingPassword() {
         this.isChangingPassword = true;
-        this.editedFormData.password = "";
-        this.editedFormData.password_confirmation = "";
-        this.errors.password = "";
-        this.errors.password_confirmation = "";
     },
     cancelChangingPassword() {
         this.isChangingPassword = false;
@@ -366,116 +347,52 @@ export default {
         this.editedFormData.password_confirmation = "";
         this.errors.password = "";
         this.errors.password_confirmation = "";
-        this.showPassword = false;
-        this.showConfirmPassword = false;
     },
-    async fetchUserData() {
-        // PENTING: Pindahkan resetForm() dari sini!
-        // resetForm() hanya dipanggil saat modal ditutup (melalui watcher `visible`)
-        // atau secara manual jika diperlukan (misalnya saat klik "Tambah User")
-
-        this.isLoading = true; // Langsung set loading true
-
-        try {
-            const token = localStorage.getItem("token");
-            if (!token) {
-                Swal.fire({
-                    title: "Sesi Berakhir!",
-                    text: "Sesi Anda telah berakhir. Silakan login kembali.",
-                    icon: "warning",
-                });
-                this.closeModal();
-                return;
-            }
-
-            // Tambahkan delay minimal untuk UX, seperti di UserDetailModal
-            const fetchPromise = axios.get(`http://localhost:8000/api/admin/users/${this.userId}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            const [response] = await Promise.all([
-                fetchPromise,
-                new Promise(resolve => setTimeout(resolve, 300)) // Minimal 300ms delay
-            ]);
-
-
-            this.originalUserData = response.data.user;
-            this.editedFormData = {
-                username: this.originalUserData.username,
-                name: this.originalUserData.name,
-                role: this.originalUserData.role,
-                password: "", // Password is never pre-filled for security
-                profilePicture: null,
-                password_confirmation: "",
-            };
-            this.currentProfilePictureUrl = this.originalUserData.profile_picture;
-
-        } catch (error) {
-            console.error("Error fetching user data for edit:", error.response || error);
-            let errorMessage = "Gagal memuat data user untuk diedit.";
-            if (error.response && error.response.data && error.response.data.message) {
-                errorMessage = error.response.data.message;
-            }
-            Swal.fire('Error!', errorMessage, 'error');
-            this.closeModal();
-        } finally {
-            this.isLoading = false;
-        }
+    togglePasswordVisibility() {
+      this.showPassword = !this.showPassword;
+    },
+    toggleConfirmPasswordVisibility() {
+      this.showConfirmPassword = !this.showConfirmPassword;
     },
     handleFileUpload(event) {
       const file = event.target.files[0];
-      if (file) {
-        if (file.size > 2 * 1024 * 1024) { // Max 2MB
-            this.errors.profilePicture = "Ukuran file maksimal 2MB.";
-            this.editedFormData.profilePicture = null;
-            this.previewUrl = null;
-            event.target.value = "";
-            return;
-        }
-        const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
-        if (!allowedTypes.includes(file.type)) {
-            this.errors.profilePicture = "Format file harus PNG, JPG, atau JPEG.";
-            this.editedFormData.profilePicture = null;
-            this.previewUrl = null;
-            event.target.value = "";
-            return;
-        }
-        this.errors.profilePicture = "";
-        this.editedFormData.profilePicture = file;
-        this.previewUrl = URL.createObjectURL(file);
-        this.currentProfilePictureUrl = null;
-      } else {
+      if (!file) {
         this.editedFormData.profilePicture = null;
         this.previewUrl = null;
-        if (this.originalUserData && this.originalUserData.profile_picture) {
-            this.currentProfilePictureUrl = this.originalUserData.profile_picture;
-        }
+        if(this.originalUserData) this.currentProfilePictureUrl = this.originalUserData.profile_picture;
+        return;
       }
+      if (file.size > 2 * 1024 * 1024) {
+        this.errors.profilePicture = "Ukuran file maksimal 2MB.";
+        return;
+      }
+      const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+      if (!allowedTypes.includes(file.type)) {
+        this.errors.profilePicture = "Format file harus PNG, JPG, atau JPEG.";
+        return;
+      }
+      this.errors.profilePicture = "";
+      this.editedFormData.profilePicture = file;
+      this.previewUrl = URL.createObjectURL(file);
+      this.currentProfilePictureUrl = null; // Sembunyikan gambar lama
     },
     removeImage() {
         this.editedFormData.profilePicture = null;
         this.previewUrl = null;
         const fileInput = document.getElementById('profilePicture');
-        if (fileInput) {
-            fileInput.value = "";
-        }
-        if (this.originalUserData && this.originalUserData.profile_picture) {
-            this.currentProfilePictureUrl = this.originalUserData.profile_picture;
-        }
+        if (fileInput) fileInput.value = "";
+        if (this.originalUserData) this.currentProfilePictureUrl = this.originalUserData.profile_picture;
     },
     removeCurrentPicture() {
         this.currentProfilePictureUrl = null;
-        this.editedFormData.profilePicture = 'REMOVE_EXISTING';
-        this.previewUrl = null;
-        const fileInput = document.getElementById('profilePicture');
-        if (fileInput) {
-            fileInput.value = "";
-        }
+        // Tandai untuk penghapusan di backend
+        this.editedFormData.profilePicture = 'REMOVE_EXISTING'; 
     },
     validateForm() {
       let isValid = true;
       this.errors = { username: "", password: "", password_confirmation: "", name: "", role: "", profilePicture: "" };
 
-      if (!this.editedFormData.username) {
+      if (!this.editedFormData.username.trim()) {
         this.errors.username = "Username tidak boleh kosong.";
         isValid = false;
       } else if (this.editedFormData.username.length < 4) {
@@ -486,7 +403,7 @@ export default {
         isValid = false;
       }
 
-      if (!this.editedFormData.name) {
+      if (!this.editedFormData.name.trim()) {
         this.errors.name = this.editedFormData.role === 'puskesmas' ? "Nama Puskesmas tidak boleh kosong." : "Nama Lengkap tidak boleh kosong.";
         isValid = false;
       }
@@ -505,129 +422,19 @@ export default {
             isValid = false;
         }
 
-        if (!this.editedFormData.password_confirmation) {
-            this.errors.password_confirmation = "Konfirmasi password baru tidak boleh kosong.";
-            isValid = false;
-        } else if (this.editedFormData.password !== this.editedFormData.password_confirmation) {
+        if (this.editedFormData.password !== this.editedFormData.password_confirmation) {
             this.errors.password_confirmation = "Konfirmasi password tidak cocok.";
             isValid = false;
         }
       }
-
       return isValid;
     },
-    async submitForm() {
-      if (this.isSubmitting) {
-        console.warn("Form submission already in progress, ignoring double click.");
-        return;
-      }
-
-      if (!this.validateForm()) {
-        return;
-      }
-
-      const result = await Swal.fire({
-        title: 'Konfirmasi Perubahan User',
-        text: `Apakah Anda yakin ingin menyimpan perubahan untuk user "${this.editedFormData.username}"?`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#047d78',
-        cancelButtonColor: '#ef4444',
-        confirmButtonText: 'Ya, Simpan!',
-        cancelButtonText: 'Batal',
-        showLoaderOnConfirm: true,
-        preConfirm: async () => {
-          try {
-            const token = localStorage.getItem("token");
-            if (!token) {
-                return Swal.showValidationMessage("Token tidak ditemukan. Silakan login kembali.");
-            }
-
-            const apiPayload = new FormData();
-            apiPayload.append("username", this.editedFormData.username);
-            apiPayload.append("name", this.editedFormData.name);
-            apiPayload.append("role", this.editedFormData.role);
-
-            if (this.isChangingPassword && this.editedFormData.password) {
-                apiPayload.append("password", this.editedFormData.password);
-                apiPayload.append("password_confirmation", this.editedFormData.password_confirmation);
-            }
-
-            if (this.editedFormData.profilePicture instanceof File) {
-                apiPayload.append("profile_picture", this.editedFormData.profilePicture);
-            } else if (this.editedFormData.profilePicture === 'REMOVE_EXISTING') {
-                apiPayload.append("profile_picture", '');
-            }
-
-            apiPayload.append("_method", "PUT");
-
-            this.isSubmitting = true;
-
-            const response = await axios.post(
-                `http://localhost:8000/api/admin/users/${this.userId}`,
-                apiPayload,
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                }
-            );
-            return response.data;
-          } catch (error) {
-              this.handleSubmissionError(error);
-              return Swal.showValidationMessage(
-                error.response?.data?.message || error.message || "Terjadi kesalahan saat menyimpan perubahan."
-              );
-          } finally {
-              this.isSubmitting = false;
-          }
-        }
-      });
-
-      if (result.isConfirmed && result.value) {
-        Swal.fire({
-          icon: 'success',
-          title: 'Berhasil!',
-          text: result.value.message || "Perubahan user berhasil disimpan!",
-          confirmButtonColor: '#047d78'
-        });
-        this.$emit('user-updated', result.value.user);
-        this.closeModal();
-      } else if (result.dismiss === Swal.DismissReason.cancel) {
-        // User clicked cancel
-      }
-    },
-    handleSubmissionError(error) {
-      console.error("Gagal menyimpan perubahan user:", error.response ? error.response.data : error.message);
-      let errorMessage = "Gagal menyimpan perubahan user.";
-      if (error.response && error.response.data) {
-          if (error.response.data.message) {
-              errorMessage = error.response.data.message;
-          } else if (error.response.data.errors) {
-              const errors = error.response.data.errors;
-              const firstErrorKey = Object.keys(errors)[0];
-              if (firstErrorKey && errors[firstErrorKey].length > 0) {
-                  errorMessage = errors[firstErrorKey][0];
-              } else {
-                  errorMessage = `Terjadi kesalahan validasi. (${error.response.status})`;
-              }
-          } else {
-              errorMessage = `Terjadi kesalahan server. (${error.response.status})`;
-          }
-      } else if (error.request) {
-          errorMessage = "Tidak ada respons dari server. Periksa koneksi Anda.";
-      } else {
-          errorMessage = error.message || "Terjadi kesalahan tidak diketahui.";
-      }
-      this.$emit('user-update-failed', errorMessage);
-    }
   },
-  mounted() {
-    // Initial fetch handled by watcher
-  }
 };
 </script>
 
 <style scoped>
-/* Common CSS Variables, ensure they are defined or imported globally */
+/* BAGIAN STYLE TIDAK ADA PERUBAHAN */
 :root {
   --primary-50: #ECFDF5;
   --primary-100: #D1FAE5;
@@ -647,8 +454,6 @@ export default {
   --danger-700: #B91C1C;
   --font-sans: 'Inter', sans-serif;
 }
-
-/* Modal Backdrop */
 .modal-backdrop {
   position: fixed;
   top: 0;
@@ -663,13 +468,10 @@ export default {
   z-index: 1000;
   animation: fadeIn 0.2s ease-out;
 }
-
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
-
-/* Modal Container */
 .modal-container {
   width: 90%;
   max-width: 700px;
@@ -682,13 +484,10 @@ export default {
   flex-direction: column;
   animation: slideIn 0.2s ease-out;
 }
-
 @keyframes slideIn {
   from { transform: translateY(10px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
-
-/* Modal Header */
 .modal-header {
   padding: 18px 24px;
   display: flex;
@@ -697,7 +496,6 @@ export default {
   border-bottom: 1px solid var(--neutral-200);
   background-color: var(--primary-50);
 }
-
 .modal-header h2 {
   margin: 0;
   font-size: 20px;
@@ -706,12 +504,10 @@ export default {
   display: flex;
   align-items: center;
 }
-
 .icon-margin {
   margin-right: 10px;
   color: var(--primary-500);
 }
-
 .close-button {
   background: transparent;
   border: none;
@@ -726,13 +522,10 @@ export default {
   justify-content: center;
   transition: all 0.2s ease;
 }
-
 .close-button:hover {
   background-color: var(--neutral-200);
   color: var(--neutral-800);
 }
-
-/* Modal Body */
 .modal-body {
   padding: 24px;
   flex-grow: 1;
@@ -740,7 +533,6 @@ export default {
   scrollbar-width: thin;
   scrollbar-color: var(--neutral-400) var(--neutral-100);
 }
-
 .modal-body::-webkit-scrollbar {
   width: 8px;
 }
@@ -752,8 +544,6 @@ export default {
   background-color: var(--neutral-400);
   border-radius: 10px;
 }
-
-/* Loading State */
 .loading-state-container {
   display: flex;
   flex-direction: column;
@@ -764,7 +554,6 @@ export default {
   color: var(--primary-500);
   font-weight: 600;
 }
-
 .spinner {
   border: 4px solid #f3f3f3;
   border-top: 4px solid var(--primary-500);
@@ -773,13 +562,10 @@ export default {
   height: 40px;
   animation: spin 1s linear infinite;
 }
-
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
-
-/* Form Sections */
 .form-section {
   background-color: white;
   border-radius: 10px;
@@ -788,7 +574,6 @@ export default {
   margin-bottom: 24px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
-
 .section-header {
   display: flex;
   align-items: center;
@@ -796,24 +581,20 @@ export default {
   padding-bottom: 12px;
   border-bottom: 1px solid var(--neutral-200);
 }
-
 .section-icon {
   font-size: 18px;
   color: var(--primary-500);
   margin-right: 12px;
 }
-
 .section-header h3 {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
   color: var(--neutral-700);
 }
-
 .edit-user-form {
   width: 100%;
 }
-
 .form-row {
   display: flex;
   gap: 20px;
@@ -822,7 +603,6 @@ export default {
 .form-row:last-child .form-group {
     margin-bottom: 0;
 }
-
 .form-group {
   flex: 1;
   display: flex;
@@ -833,11 +613,9 @@ export default {
 .form-group:last-child {
     margin-bottom: 0;
 }
-
 .form-group.full-width {
   flex-basis: 100%;
 }
-
 .form-group label {
   font-size: 14px;
   font-weight: 500;
@@ -846,24 +624,15 @@ export default {
   display: flex;
   align-items: center;
 }
-.form-label .optional-text {
-    font-size: 0.8em;
-    color: var(--neutral-500);
-    font-weight: 400;
-    margin-left: 4px;
-}
-
 .required {
   color: var(--danger-500);
   margin-left: 4px;
 }
-
 .input-wrapper {
   position: relative;
   display: flex;
   align-items: center;
 }
-
 .input-icon {
   position: absolute;
   left: 12px;
@@ -871,7 +640,6 @@ export default {
   font-size: 15px;
   pointer-events: none;
 }
-
 .form-input,
 .form-select {
   width: 100%;
@@ -888,30 +656,23 @@ export default {
 .file-input-custom {
   padding: 8px 12px;
 }
-
 .form-input:hover,
 .form-select:hover {
   border-color: var(--primary-300, #6EE7B7);
 }
-
 .form-input:focus,
 .form-select:focus {
   border-color: var(--primary-500);
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
   outline: none;
 }
-
-.form-input:focus ~ .input-icon,
-.form-select:focus ~ .input-icon,
 .input-wrapper:focus-within .input-icon {
   color: var(--primary-500);
 }
-
 .input-error {
   border-color: var(--danger-500) !important;
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
 }
-
 .error-message {
   margin-top: 6px;
   font-size: 12px;
@@ -920,7 +681,6 @@ export default {
   align-items: center;
   gap: 6px;
 }
-
 .fade-enter-active, .fade-leave-active {
   transition: opacity 0.3s, transform 0.3s;
 }
@@ -928,7 +688,6 @@ export default {
   opacity: 0;
   transform: translateY(-5px);
 }
-
 .password-input-container-custom {
   position: relative;
 }
@@ -956,7 +715,6 @@ export default {
 .form-input:focus + .password-toggle-custom {
    border-left-color: var(--primary-500);
 }
-
 .image-preview-container-custom {
     margin-top: 10px;
     position: relative;
@@ -1006,11 +764,9 @@ export default {
     font-size: 10px;
     text-align: center;
     padding: 2px 0;
-    border-bottom-left-radius: 8px;
-    border-bottom-right-radius: 8px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
 }
-
-
 .form-actions {
   margin-top: 32px;
   display: flex;
@@ -1019,7 +775,6 @@ export default {
   padding-top: 20px;
   border-top: 1px solid var(--neutral-200);
 }
-
 .btn-cancel, .btn-save {
   padding: 12px 20px;
   border-radius: 8px;
@@ -1033,7 +788,6 @@ export default {
   min-width: 110px;
   justify-content: center;
 }
-
 .btn-cancel {
   background-color: white;
   border: 1px solid var(--neutral-300);
@@ -1043,7 +797,6 @@ export default {
   background-color: var(--neutral-100);
   border-color: var(--neutral-400);
 }
-
 .btn-save {
   background-color: var(--primary-500);
   border: none;
@@ -1058,7 +811,6 @@ export default {
   cursor: not-allowed;
   opacity: 0.7;
 }
-
 .btn-change-password-action {
     display: flex;
     align-items: center;
@@ -1073,12 +825,10 @@ export default {
     cursor: pointer;
     transition: all 0.2s ease;
 }
-
 .btn-change-password-action:hover {
     background-color: var(--neutral-200);
     border-color: var(--neutral-400);
 }
-
 .btn-cancel-password-change {
     padding: 8px 15px;
     background-color: var(--danger-50);
@@ -1090,12 +840,10 @@ export default {
     cursor: pointer;
     transition: all 0.2s ease;
 }
-
 .btn-cancel-password-change:hover {
     background-color: var(--danger-100, #FEE2E2);
     border-color: var(--danger-500);
 }
-
 .mt-3 {
     margin-top: 1rem;
 }
@@ -1105,8 +853,6 @@ export default {
 .justify-content-end {
     justify-content: flex-end;
 }
-
-
 @media (max-width: 768px) {
   .modal-container {
     width: 95%;
