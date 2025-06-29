@@ -1,5 +1,6 @@
 // src/stores/authStore.js
 import { defineStore } from 'pinia';
+import axios from 'axios';
 import apiClient from '../api'; // Sesuaikan path jika perlu
 import router from '../router'; // Untuk navigasi terprogram
 
@@ -97,8 +98,14 @@ export const useAuthStore = defineStore('auth', {
         async performRefresh() {
             if (!this.refreshTokenVal) {
                 console.warn('AuthStore: No refresh token available');
-                this.logout(); // Langsung logout jika tidak ada refresh token
-                throw new Error('Refresh token tidak ditemukan, logout.');
+                // Jangan logout jika ini dipanggil saat login pertama kali
+                // Hanya logout jika user sudah login sebelumnya
+                if (this.accessToken) {
+                    console.log('AuthStore: Logging out due to missing refresh token');
+                    this.logout();
+                }
+                // Return rejected promise tanpa throw error untuk mencegah unhandled rejection
+                return Promise.reject(new Error('Refresh token tidak ditemukan'));
             }
             if (this.isRefreshingToken) { // Jika sudah ada proses refresh, tunggu promise yang ada
                  return new Promise((resolve, reject) => {
@@ -111,7 +118,16 @@ export const useAuthStore = defineStore('auth', {
             this.isRefreshingToken = true;
             try {
                 console.log("AuthStore: Attempting to refresh token...");
-                const response = await apiClient.post('/refresh', { refresh_token: this.refreshTokenVal });
+                // Gunakan axios langsung untuk menghindari interceptor loop
+                const response = await axios.post('http://localhost:8000/api/refresh', 
+                    { refresh_token: this.refreshTokenVal },
+                    {
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        }
+                    }
+                );
                 console.log("AuthStore: Token refresh successful");
                 this.setUser(response.data); // setUser akan mengupdate accessToken, dll.
                 this.processQueue(null, response.data.access_token);
