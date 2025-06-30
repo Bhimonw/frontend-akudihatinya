@@ -382,16 +382,19 @@ export default {
         }
   
         const formData = new FormData();
+        // Method spoofing for multipart/form-data
+        formData.append('_method', 'PUT');
+        
         // Append profile data
         formData.append('username', userData.value.username);
-        formData.append('name', userData.value.nama_puskesmas); // Use 'name' for puskesmas name if API expects it
+        formData.append('name', userData.value.nama_puskesmas); // Backend expects 'name' field
 
         // Append profile picture if selected
         if (selectedFile.value) {
           formData.append('profile_picture', selectedFile.value);
         }
         
-        const response = await axios.put('http://localhost:8000/api/users/me', 
+        const response = await axios.post('http://localhost:8000/api/users/me', 
           formData,
           {
             headers: {
