@@ -34,9 +34,20 @@
                     <input type="text" id="nik" v-model="form.nik" class="form-input" placeholder="16 digit NIK" maxlength="16" />
                   </div>
                   <small class="helper-text">Kosongkan jika tidak ada</small>
+                  <transition name="fade">
+                    <p v-if="errors.phone_number" class="error-message"><font-awesome-icon :icon="['fas', 'exclamation-circle']" /> Nomor telepon harus 10-15 digit angka</p>
+                  </transition>
                 </div>
               </div>
               <div class="form-row">
+                <div class="form-group">
+                  <label for="phone_number">Nomor Telepon</label>
+                  <div class="input-wrapper">
+                    <font-awesome-icon :icon="['fas', 'phone']" class="input-icon" />
+                    <input type="text" id="phone_number" v-model="form.phone_number" @input="handlePhoneInput" class="form-input" :class="{ 'input-error': errors.phone_number }" placeholder="Contoh: 081234567890" maxlength="15" />
+                  </div>
+                  <small class="helper-text">Kosongkan jika tidak ada</small>
+                </div>
                 <div class="form-group">
                   <label for="bpjs_number">Nomor BPJS</label>
                   <div class="input-wrapper">
@@ -45,6 +56,8 @@
                   </div>
                    <small class="helper-text">Kosongkan jika tidak ada</small>
                 </div>
+              </div>
+              <div class="form-row">
                 <div class="form-group">
                   <label for="gender">Jenis Kelamin <span class="required">*</span></label>
                   <div class="input-wrapper">
@@ -146,6 +159,7 @@ export default {
       form: {
         name: "",
         nik: "",
+        phone_number: "",
         bpjs_number: "",
         gender: "",
         birth_date: "",
@@ -157,6 +171,7 @@ export default {
         gender: false,
         age: false,
         address: false,
+        phone_number: false,
       },
       isAgeDisabled: false,
       isSubmitting: false,
@@ -190,6 +205,7 @@ export default {
           // Normalisasi nilai gender dari 'Laki-Laki'/'Perempuan' ke 'male'/'female'
           gender: this.patientData.gender === 'Perempuan' ? 'female' : (this.patientData.gender === 'Laki-Laki' || this.patientData.gender === 'male' ? 'male' : ''),
           nik: (this.patientData.nik && this.patientData.nik !== '-') ? this.patientData.nik : '',
+          phone_number: (this.patientData.phone_number && this.patientData.phone_number !== '-') ? this.patientData.phone_number : '',
           bpjs_number: (this.patientData.bpjs_number && this.patientData.bpjs_number !== '-') ? this.patientData.bpjs_number : '',
           birth_date: (this.patientData.birth_date && this.patientData.birth_date !== '-') ? this.patientData.birth_date : '',
           age: this.parseAge(this.patientData.age),
@@ -243,6 +259,10 @@ export default {
             Swal.fire('Perhatian', 'NIK harus terdiri dari 16 digit angka jika diisi.', 'warning');
             isValid = false;
         }
+        if (this.form.phone_number && (!/^\d{10,15}$/.test(this.form.phone_number))) {
+            Swal.fire('Perhatian', 'Nomor telepon harus terdiri dari 10-15 digit angka jika diisi.', 'warning');
+            isValid = false;
+        }
          if (this.form.bpjs_number && !/^\d{13}$/.test(this.form.bpjs_number)) {
             Swal.fire('Perhatian', 'Nomor BPJS harus terdiri dari 13 digit angka jika diisi.', 'warning');
             isValid = false;
@@ -254,8 +274,18 @@ export default {
         this.errors[fieldName] = false;
       }
     },
+    handlePhoneInput(event) {
+      // Hanya izinkan angka
+      const value = event.target.value.replace(/\D/g, '');
+      this.form.phone_number = value;
+      
+      // Clear error jika panjang sudah valid
+      if (value.length >= 10) {
+        this.clearError('phone_number');
+      }
+    },
     resetForm() {
-      this.form = { name: "", nik: "", bpjs_number: "", gender: "", birth_date: "", age: null, address: "" };
+      this.form = { name: "", nik: "", phone_number: "", bpjs_number: "", gender: "", birth_date: "", age: null, address: "" };
       Object.keys(this.errors).forEach(key => { this.errors[key] = false; });
       this.isAgeDisabled = false;
       this.isSubmitting = false;
@@ -299,6 +329,7 @@ export default {
       const payload = {
         name: this.form.name,
         nik: this.form.nik || null,
+        phone_number: this.form.phone_number || null,
         bpjs_number: this.form.bpjs_number || null,
         address: this.form.address,
         gender: this.form.gender,

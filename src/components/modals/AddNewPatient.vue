@@ -45,6 +45,20 @@
 
               <div class="form-row">
                 <div class="form-group">
+                  <label for="phone_number">Nomor Telepon</label>
+                  <div class="input-wrapper">
+                    <font-awesome-icon :icon="['fas', 'phone']" class="input-icon" />
+                    <input type="text" id="phone_number" v-model="form.phone_number" @input="handlePhoneInput" class="form-input" :class="{ 'input-error': errors.phone_number }" placeholder="Contoh: 081234567890" maxlength="15" />
+                  </div>
+                  <transition name="fade">
+                    <p v-if="errors.phone_number" class="error-message">
+                      <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
+                      Nomor telepon harus berupa angka dan minimal 10 digit
+                    </p>
+                    <small v-else class="helper-text">Kosongkan jika tidak ada</small>
+                  </transition>
+                </div>
+                <div class="form-group">
                   <label for="bpjs">Nomor BPJS</label>
                   <div class="input-wrapper">
                     <font-awesome-icon :icon="['fas', 'hospital']" class="input-icon" />
@@ -58,6 +72,9 @@
                     <small v-else class="helper-text">Kosongkan jika tidak ada</small>
                   </transition>
                 </div>
+              </div>
+
+              <div class="form-row">
                 <div class="form-group">
                   <label for="gender">Jenis Kelamin <span class="required">*</span></label>
                   <div class="input-wrapper">
@@ -176,197 +193,211 @@ export default {
     show: Boolean,
   },
   data() {
-    return {
-      form: {
-        name: "",
-        nik: "",
-        bpjs: "",
-        gender: "",
-        dob: "",
-        age: "",
-        address: ""
-      },
-      errors: {
-        name: false,
-        gender: false,
-        age: false,
-        address: false,
-        bpjs: false,
-      },
-      isAgeDisabled: false,
-      isSubmitting: false,
-    };
-  },
-  methods: {
-    formatDateForPicker(date) {
-        const day = date.getDate();
-        const month = date.toLocaleString('id-ID', { month: 'long' });
-        const year = date.getFullYear();
-        return `${day} ${month} ${year}`;
-    },
-    handleBpjsInput(event) {
-        this.form.bpjs = event.target.value.replace(/\D/g, '');
-        if(this.form.bpjs.length === 13) {
-            this.clearError('bpjs');
-        }
-    },
-    handleNikInput(event) {
-        this.form.nik = event.target.value.replace(/\D/g, '');
-    },
-    validateForm() {
-      let isValid = true;
-      Object.keys(this.errors).forEach(key => this.errors[key] = false);
+    return {
+      form: {
+        name: "",
+        nik: "",
+        phone_number: "",
+        bpjs: "",
+        gender: "",
+        dob: "",
+        age: "",
+        address: ""
+      },
+      errors: {
+        name: false,
+        gender: false,
+        age: false,
+        address: false,
+        bpjs: false,
+        phone_number: false,
+      },
+      isAgeDisabled: false,
+      isSubmitting: false,
+    };
+  },
+  methods: {
+    formatDateForPicker(date) {
+          const day = date.getDate();
+          const month = date.toLocaleString('id-ID', { month: 'long' });
+          const year = date.getFullYear();
+          return `${day} ${month} ${year}`;
+      },
+      handleBpjsInput(event) {
+          this.form.bpjs = event.target.value.replace(/\D/g, '');
+          if(this.form.bpjs.length === 13) {
+              this.clearError('bpjs');
+          }
+      },
+      handleNikInput(event) {
+           this.form.nik = event.target.value.replace(/\D/g, '');
+       },
+       handlePhoneInput(event) {
+           this.form.phone_number = event.target.value.replace(/\D/g, '');
+           if(this.form.phone_number.length >= 10) {
+               this.clearError('phone_number');
+           }
+       },
+      validateForm() {
+        let isValid = true;
+        Object.keys(this.errors).forEach(key => this.errors[key] = false);
 
-      if (!this.form.name.trim()) {
-        this.errors.name = true;
-        isValid = false;
-        this.scrollToError('name');
-      }
-      if (!this.form.gender) {
-        this.errors.gender = true;
-        isValid = false;
-        if (!this.errors.name) this.scrollToError('gender');
-      }
-      if (!this.form.age && this.form.age !== 0) {
-        this.errors.age = true;
-        isValid = false;
-        if (!this.errors.name && !this.errors.gender) this.scrollToError('age');
-      }
-      if (!this.form.address.trim()) {
-        this.errors.address = true;
-        isValid = false;
-        if (!this.errors.name && !this.errors.gender && !this.errors.age) this.scrollToError('address');
-      }
-      if (this.form.nik && !/^\d{16}$/.test(this.form.nik)) {
-        Swal.fire({
-          icon: 'warning', title: 'Perhatian', text: 'NIK harus terdiri dari 16 digit angka.',
-        });
-        isValid = false;
-        if (!this.errors.name && !this.errors.gender && !this.errors.age && !this.errors.address) this.scrollToError('nik');
-      }
-      if (this.form.bpjs && !/^\d{13}$/.test(this.form.bpjs)) {
-        this.errors.bpjs = true;
-        isValid = false;
-        if (!this.errors.name && !this.errors.gender && !this.errors.age && !this.errors.address && !this.errors.nik) this.scrollToError('bpjs');
-      }
-      return isValid;
-    },
-    scrollToError(fieldId) {
-      this.$nextTick(() => {
-        const element = document.getElementById(fieldId);
-        if(fieldId === 'dob' && element) {
-           element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } else if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          element.focus();
-        }
-      });
-    },
-    calculateAge() {
-      if (this.form.dob) {
-        const today = new Date();
-        const birthDate = new Date(this.form.dob);
-        let age = today.getFullYear() - birthDate.getFullYear();
-        const m = today.getMonth() - birthDate.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-          age--;
-        }
-        this.form.age = age >= 0 ? age : 0;
-        this.isAgeDisabled = true;
-        this.clearError('age');
-      } else {
-        this.form.age = "";
-        this.isAgeDisabled = false;
-      }
-    },
-    async submitForm() {
-      if (!this.validateForm()) return;
-      
-      const result = await Swal.fire({
-        title: 'Konfirmasi Data',
-        text: 'Apakah Anda yakin data yang dimasukkan sudah benar?',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Ya, Simpan',
-        cancelButtonText: 'Batal',
-        confirmButtonColor: '#10B981',
-        cancelButtonColor: '#6B7280',
-      });
+        if (!this.form.name.trim()) {
+          this.errors.name = true;
+          isValid = false;
+          this.scrollToError('name');
+        }
+        if (!this.form.gender) {
+          this.errors.gender = true;
+          isValid = false;
+          if (!this.errors.name) this.scrollToError('gender');
+        }
+        if (!this.form.age && this.form.age !== 0) {
+          this.errors.age = true;
+          isValid = false;
+          if (!this.errors.name && !this.errors.gender) this.scrollToError('age');
+        }
+        if (!this.form.address.trim()) {
+          this.errors.address = true;
+          isValid = false;
+          if (!this.errors.name && !this.errors.gender && !this.errors.age) this.scrollToError('address');
+        }
+        if (this.form.nik && !/^\d{16}$/.test(this.form.nik)) {
+          Swal.fire({
+            icon: 'warning', title: 'Perhatian', text: 'NIK harus terdiri dari 16 digit angka.',
+          });
+          isValid = false;
+          if (!this.errors.name && !this.errors.gender && !this.errors.age && !this.errors.address) this.scrollToError('nik');
+        }
+        if (this.form.bpjs && !/^\d{13}$/.test(this.form.bpjs)) {
+           this.errors.bpjs = true;
+           isValid = false;
+           if (!this.errors.name && !this.errors.gender && !this.errors.age && !this.errors.address && !this.errors.nik) this.scrollToError('bpjs');
+         }
+         if (this.form.phone_number && !/^\d{10,15}$/.test(this.form.phone_number)) {
+           this.errors.phone_number = true;
+           isValid = false;
+           if (!this.errors.name && !this.errors.gender && !this.errors.age && !this.errors.address && !this.errors.nik && !this.errors.bpjs) this.scrollToError('phone_number');
+         }
+         return isValid;
+      },
+      scrollToError(fieldId) {
+        this.$nextTick(() => {
+          const element = document.getElementById(fieldId);
+          if(fieldId === 'dob' && element) {
+             element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          } else if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            element.focus();
+          }
+        });
+    },
+    calculateAge() {
+        if (this.form.dob) {
+          const today = new Date();
+          const birthDate = new Date(this.form.dob);
+          let age = today.getFullYear() - birthDate.getFullYear();
+          const m = today.getMonth() - birthDate.getMonth();
+          if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+          }
+          this.form.age = age >= 0 ? age : 0;
+          this.isAgeDisabled = true;
+          this.clearError('age');
+        } else {
+          this.form.age = "";
+          this.isAgeDisabled = false;
+        }
+    },
+    async submitForm() {
+        if (!this.validateForm()) return;
+        
+        const result = await Swal.fire({
+          title: 'Konfirmasi Data',
+          text: 'Apakah Anda yakin data yang dimasukkan sudah benar?',
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: 'Ya, Simpan',
+          cancelButtonText: 'Batal',
+          confirmButtonColor: '#10B981',
+          cancelButtonColor: '#6B7280',
+        });
 
-      if (!result.isConfirmed) return;
+        if (!result.isConfirmed) return;
 
-      this.isSubmitting = true;
+        this.isSubmitting = true;
 
-      const patientData = {
-        name: this.form.name,
-        nik: this.form.nik || null,
-        bpjs_number: this.form.bpjs || null,
-        address: this.form.address,
-        gender: this.form.gender,
-        birth_date: this.form.dob || null,
-        age: this.form.age ? parseInt(this.form.age) : null,
-      };
+        const patientData = {
+           name: this.form.name,
+           nik: this.form.nik || null,
+           phone_number: this.form.phone_number || null,
+           bpjs_number: this.form.bpjs || null,
+           address: this.form.address,
+           gender: this.form.gender,
+           birth_date: this.form.dob || null,
+           age: this.form.age ? parseInt(this.form.age) : null,
+         };
 
-      try {
-        // Menggunakan apiClient untuk mengirim data
-        const response = await apiClient.post("/puskesmas/patients", patientData);
+        try {
+          // Menggunakan apiClient untuk mengirim data
+          const response = await apiClient.post("/puskesmas/patients", patientData);
 
-        Swal.fire({
-          icon: 'success',
-          title: 'Berhasil!',
-          text: 'Data pasien baru berhasil disimpan.',
-          timer: 2000,
-          timerProgressBar: true,
-          showConfirmButton: false
-        });
+          Swal.fire({
+            icon: 'success',
+            title: 'Berhasil!',
+            text: 'Data pasien baru berhasil disimpan.',
+            timer: 2000,
+            timerProgressBar: true,
+            showConfirmButton: false
+          });
 
-        this.$emit('patient-created', response.data.patient);
-        this.closeModal();
+          this.$emit('patient-created', response.data.patient);
+          this.closeModal();
 
-      } catch (error) {
-        let errorMessage = "Terjadi kesalahan saat menyimpan data pasien.";
-        if (error.response) {
-          console.error("API Error:", error.response.data);
-          if (error.response.data && error.response.data.message) {
-            errorMessage = error.response.data.message;
-          }
-          if (error.response.status === 422 && error.response.data.errors) {
-            const errorsArray = Object.values(error.response.data.errors).flat();
-            errorMessage = errorsArray.join('\n');
-          }
-        } else {
-          console.error("Network/Request Error:", error.message);
-          errorMessage = "Tidak dapat terhubung ke server. Periksa koneksi Anda.";
-        }
-        Swal.fire({
+        } catch (error) {
+          let errorMessage = "Terjadi kesalahan saat menyimpan data pasien.";
+          if (error.response) {
+            console.error("API Error:", error.response.data);
+            if (error.response.data && error.response.data.message) {
+              errorMessage = error.response.data.message;
+            }
+            if (error.response.status === 422 && error.response.data.errors) {
+              const errorsArray = Object.values(error.response.data.errors).flat();
+              errorMessage = errorsArray.join('\n');
+            }
+          } else {
+            console.error("Network/Request Error:", error.message);
+            errorMessage = "Tidak dapat terhubung ke server. Periksa koneksi Anda.";
+          }
+          Swal.fire({
           title: "Gagal Menyimpan!", 
           text: errorMessage, 
           icon: "error",
           confirmButtonColor: '#d33', // Tombol merah untuk error
         });
-      } finally {
-        this.isSubmitting = false;
-      }
-    },
-    closeModal() {
-      this.resetForm();
-      this.$emit("close");
-    },
-    clearError(fieldName) {
-      if (this.errors[fieldName]) {
-        this.errors[fieldName] = false;
-      }
-    },
-    resetForm() {
-      this.form = {
-        name: "", nik: "", bpjs: "", gender: "",
-        dob: "", age: "", address: ""
-      };
-      Object.keys(this.errors).forEach(key => this.errors[key] = false);
-      this.isAgeDisabled = false;
-      this.isSubmitting = false;
-    }
-  },
+        } finally {
+          this.isSubmitting = false;
+        }
+      },
+      closeModal() {
+        this.resetForm();
+        this.$emit("close");
+      },
+      clearError(fieldName) {
+        if (this.errors[fieldName]) {
+          this.errors[fieldName] = false;
+        }
+      },
+      resetForm() {
+         this.form = {
+           name: "", nik: "", phone_number: "", bpjs: "", gender: "",
+           dob: "", age: "", address: ""
+         };
+         Object.keys(this.errors).forEach(key => this.errors[key] = false);
+         this.isAgeDisabled = false;
+         this.isSubmitting = false;
+       }
+    },
 };
 </script>
 
