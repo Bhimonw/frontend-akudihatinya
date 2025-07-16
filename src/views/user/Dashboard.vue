@@ -304,9 +304,8 @@ export default {
         this.monthlyTableData = this.generateMonthlyTableData({});
         this.chartData = { lakiLaki: [], perempuan: [] };
         if (this.chartInstance) {
-            this.chartInstance.data.datasets[0].data = [];
-            this.chartInstance.data.datasets[1].data = [];
-            this.chartInstance.update();
+            this.chartInstance.destroy();
+            this.chartInstance = null;
         }
         if (this.$toast && typeof this.$toast.error === 'function') {
             this.$toast.error("Gagal memuat data: " + (error.response?.data?.message || error.message));
@@ -327,9 +326,8 @@ export default {
         this.monthlyTableData = this.generateMonthlyTableData({});
         this.chartData = { lakiLaki: Array(12).fill(0), perempuan: Array(12).fill(0) };
         if (this.chartInstance) {
-            this.chartInstance.data.datasets[0].data = this.chartData.lakiLaki;
-            this.chartInstance.data.datasets[1].data = this.chartData.perempuan;
-            this.chartInstance.update();
+            this.chartInstance.destroy();
+            this.chartInstance = null;
         }
         return;
       }
@@ -351,8 +349,8 @@ export default {
         this.monthlyTableData = this.generateMonthlyTableData({});
         this.chartData = { lakiLaki: Array(12).fill(0), perempuan: Array(12).fill(0) };
         if (this.chartInstance) {
-            this.chartInstance.data.datasets[0].data = this.chartData.lakiLaki;
-            this.chartInstance.data.datasets[1].data = this.chartData.perempuan;
+            this.chartInstance.data.datasets[0].data = [...(this.chartData.lakiLaki || [])];
+            this.chartInstance.data.datasets[1].data = [...(this.chartData.perempuan || [])];
             this.chartInstance.update();
         }
         return;
@@ -399,7 +397,7 @@ export default {
           datasets: [
             {
               label: "Laki-laki",
-              data: this.chartData.lakiLaki || Array(12).fill(0),
+              data: [...(this.chartData.lakiLaki || Array(12).fill(0))],
               borderColor: "#3B82F6",
               backgroundColor: "rgba(59, 130, 246, 0.1)",
               borderWidth: 3,
@@ -413,7 +411,7 @@ export default {
             },
             {
               label: "Perempuan",
-              data: this.chartData.perempuan || Array(12).fill(0),
+              data: [...(this.chartData.perempuan || Array(12).fill(0))],
               borderColor: "#EC4899",
               backgroundColor: "rgba(236, 72, 153, 0.1)",
               borderWidth: 3,

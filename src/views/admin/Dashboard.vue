@@ -613,9 +613,8 @@ export default {
       this.puskesmasRanking = [];
       this.chartData = { lakiLaki: Array(12).fill(0), perempuan: Array(12).fill(0) }; // Fill with 0 for chart
       if (this.chartInstance) {
-          this.chartInstance.data.datasets[0].data = this.chartData.lakiLaki;
-          this.chartInstance.data.datasets[1].data = this.chartData.perempuan;
-          this.chartInstance.update();
+          this.chartInstance.destroy();
+          this.chartInstance = null;
       }
 
       try {
@@ -803,11 +802,11 @@ export default {
       this.chartInstance = new Chart(context, {
         type: "line",
         data: {
-          labels: this.monthNames,
+          labels: ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"],
           datasets: [
             {
               label: "Laki-laki",
-              data: this.chartData.lakiLaki,
+              data: [...(this.chartData.lakiLaki || [])],
               borderColor: "#3B82F6",
               backgroundColor: "rgba(59, 130, 246, 0.1)",
               borderWidth: 3,
@@ -821,7 +820,7 @@ export default {
             },
             {
               label: "Perempuan",
-              data: this.chartData.perempuan,
+              data: [...(this.chartData.perempuan || [])],
               borderColor: "#EC4899",
               backgroundColor: "rgba(236, 72, 153, 0.1)",
               borderWidth: 3,
