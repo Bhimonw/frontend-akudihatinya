@@ -233,8 +233,12 @@ export default {
            this.form.nik = event.target.value.replace(/\D/g, '');
        },
        handlePhoneInput(event) {
-           this.form.phone_number = event.target.value.replace(/\D/g, '');
-           if(this.form.phone_number.length >= 10) {
+           const value = event.target.value.replace(/\D/g, '');
+           // Prevent infinite loop by checking if value actually changed
+           if (this.form.phone_number !== value) {
+               this.form.phone_number = value;
+           }
+           if(value.length >= 10) {
                this.clearError('phone_number');
            }
        },

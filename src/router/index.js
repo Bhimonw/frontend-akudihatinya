@@ -149,14 +149,23 @@ router.beforeEach(async (to, from, next) => {
   
     if (authStore.isLoadingAuth && (to.meta.requiresAuth || to.meta.requiresGuest !== undefined)) {
         try {
-            await new Promise(resolve => {
+            await new Promise((resolve, reject) => {
+                // Set timeout to prevent infinite waiting
+                const timeout = setTimeout(() => {
+                    reject(new Error('Auth initialization timeout'));
+                }, 10000); // 10 second timeout
+                
                 const unwatch = authStore.$subscribe((mutation, state) => {
                     if (!state.isLoadingAuth) {
+                        clearTimeout(timeout);
                         unwatch();
                         resolve();
                     }
                 });
+                
+                // Check immediately in case state changed before subscription
                 if (!authStore.isLoadingAuth) {
+                    clearTimeout(timeout);
                     unwatch();
                     resolve();
                 }

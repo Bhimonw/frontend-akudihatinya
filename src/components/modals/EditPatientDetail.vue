@@ -277,7 +277,10 @@ export default {
     handlePhoneInput(event) {
       // Hanya izinkan angka
       const value = event.target.value.replace(/\D/g, '');
-      this.form.phone_number = value;
+      // Prevent infinite loop by checking if value actually changed
+      if (this.form.phone_number !== value) {
+        this.form.phone_number = value;
+      }
       
       // Clear error jika panjang sudah valid
       if (value.length >= 10) {

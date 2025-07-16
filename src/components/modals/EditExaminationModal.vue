@@ -289,7 +289,15 @@ export default {
     },
     validateGdp() {
       const val = this.formData.gdp;
-      if (val === null || val === '') { this.errors.gdp = ""; this.formData.gd2jpp = null; this.errors.gd2jpp = ""; return; }
+      if (val === null || val === '') { 
+        this.errors.gdp = ""; 
+        // Prevent infinite loop by checking if value actually changed
+        if (this.formData.gd2jpp !== null) {
+          this.formData.gd2jpp = null; 
+        }
+        this.errors.gd2jpp = ""; 
+        return; 
+      }
       if (val < 40 || val > 650) { this.errors.gdp = "Nilai GDP harus antara 40 dan 650."; } 
       else { this.errors.gdp = ""; }
     },
@@ -302,12 +310,37 @@ export default {
     },
     validateHba1c() {
       let int = this.hba1cInt; let dec = this.hba1cDec;
-      if ((int === null || int === '') && (dec === null || dec === '')) { this.formData.hba1c = null; this.errors.hba1c = ""; return; }
+      if ((int === null || int === '') && (dec === null || dec === '')) { 
+        // Prevent infinite loop by checking if value actually changed
+        if (this.formData.hba1c !== null) {
+          this.formData.hba1c = null; 
+        }
+        this.errors.hba1c = ""; 
+        return; 
+      }
       int = (int === null || int === '') ? 0 : parseFloat(int); dec = (dec === null || dec === '') ? 0 : parseFloat(dec);
-      if (isNaN(int) || isNaN(dec)) { this.errors.hba1c = "Masukkan angka yang valid."; this.formData.hba1c = null; return; }
+      if (isNaN(int) || isNaN(dec)) { 
+        this.errors.hba1c = "Masukkan angka yang valid."; 
+        // Prevent infinite loop by checking if value actually changed
+        if (this.formData.hba1c !== null) {
+          this.formData.hba1c = null; 
+        }
+        return; 
+      }
       const total = parseFloat((int + (dec / 10)).toFixed(1));
-      if (total < 3.0 || total > 15.0) { this.errors.hba1c = "Nilai HbA1c harus antara 3.0 dan 15.0."; this.formData.hba1c = null; } 
-      else { this.formData.hba1c = total; this.errors.hba1c = ""; }
+      if (total < 3.0 || total > 15.0) { 
+        this.errors.hba1c = "Nilai HbA1c harus antara 3.0 dan 15.0."; 
+        // Prevent infinite loop by checking if value actually changed
+        if (this.formData.hba1c !== null) {
+          this.formData.hba1c = null; 
+        }
+      } else { 
+        // Prevent infinite loop by checking if value actually changed
+        if (this.formData.hba1c !== total) {
+          this.formData.hba1c = total; 
+        }
+        this.errors.hba1c = ""; 
+      }
     },
     async handleSubmit() {
       if (!this.validateForm()) return;
