@@ -252,7 +252,7 @@ export default {
           throw new Error('Token tidak ditemukan');
         }
 
-        const response = await axios.get('http://localhost:8000/api/users/me', {
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/users/me`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -394,7 +394,7 @@ export default {
           formData.append('profile_picture', selectedFile.value);
         }
         
-        const response = await axios.post('http://localhost:8000/api/users/me', 
+        const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/users/me`, 
           formData,
           {
             headers: {
@@ -475,7 +475,7 @@ export default {
           throw new Error('Token tidak ditemukan');
         }
   
-        const response = await axios.post('http://localhost:8000/api/change-password', 
+        const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/change-password`, 
           {
             current_password: passwordData.value.current_password,
             password: passwordData.value.password,

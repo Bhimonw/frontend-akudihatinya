@@ -119,7 +119,7 @@ export const useAuthStore = defineStore('auth', {
             try {
                 console.log("AuthStore: Attempting to refresh token...");
                 // Gunakan axios langsung untuk menghindari interceptor loop
-                const response = await axios.post('http://localhost:8000/api/refresh', 
+                const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/refresh`, 
                     { refresh_token: this.refreshTokenVal },
                     {
                         headers: {

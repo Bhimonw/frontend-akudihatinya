@@ -2,6 +2,9 @@
 // src/stores/auth.js
 import axios from 'axios';
 
+// Get API base URL from environment
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+
 class AuthService {
   constructor() {
     this.isRefreshing = false;
@@ -31,7 +34,7 @@ class AuthService {
   // Login method
   async login(username, password) {
     try {
-      const response = await fetch('http://localhost:8000/api/login', {
+      const response = await fetch(`${API_BASE_URL}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
@@ -133,7 +136,7 @@ class AuthService {
       console.log("Attempting to refresh token...");
       
       // Gunakan fetch API yang lebih ringan daripada axios untuk refresh token
-      const response = await fetch('http://localhost:8000/api/auth/refresh', {
+      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -172,7 +175,7 @@ class AuthService {
       }
       
       // Request ke endpoint user untuk memvalidasi token
-      const response = await fetch('http://localhost:8000/api/users/me', {
+      const response = await fetch(`${API_BASE_URL}/users/me`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
