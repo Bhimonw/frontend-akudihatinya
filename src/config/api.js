@@ -2,8 +2,8 @@
 // Centralized API configuration
 
 export const API_CONFIG = {
-  // Base URL from environment variable with fallback
-  BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api',
+  // Base URL from environment variable
+  BASE_URL: import.meta.env.VITE_API_BASE_URL,
   
   // API endpoints
   ENDPOINTS: {

@@ -146,7 +146,7 @@ export default {
           params.puskesmas_id = this.user.puskesmas_detail.id;
         }
         
-        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/admin/users/${this.user.id}`, {
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/users/${this.user.id}`, {
           headers: { Authorization: `Bearer ${token}` },
           params: params
         });

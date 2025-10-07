@@ -2,9 +2,24 @@
 import axios from "axios";
 import { useAuthStore } from "./stores/authStore";
 
-const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api",
-});
+// Hybrid runtime config resolution order:
+// 1. window.__RUNTIME_CONFIG__.API_BASE_URL (injected at deploy time)
+// 2. Vite build-time env (import.meta.env.VITE_API_BASE_URL)
+// 3. Fallback relative /api (same-origin deploy assumption)
+function resolveBaseUrl() {
+    const runtime = typeof window !== 'undefined' && window.__RUNTIME_CONFIG__?.API_BASE_URL;
+    const envVar = import.meta.env.VITE_API_BASE_URL;
+    let candidate = runtime || envVar || `${window.location.origin}/api`;
+    if (candidate.endsWith('/')) candidate = candidate.slice(0, -1);
+    // Warn if obviously misconfigured in production
+    if (import.meta.env.PROD && /localhost|127\.0\.0\.1/.test(candidate)) {
+        // eslint-disable-next-line no-console
+        console.warn('[api] WARNING: API base seems to point to localhost in production build:', candidate);
+    }
+    return candidate;
+}
+
+const apiClient = axios.create({ baseURL: resolveBaseUrl() });
 
 apiClient.interceptors.request.use(
   config => {

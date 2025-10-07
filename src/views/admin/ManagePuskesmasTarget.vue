@@ -120,11 +120,11 @@
             </tr>
             <tr
               v-else
-              v-for="(puskesmas, index) in puskesmasTargets"
+              v-for="(puskesmas, index) in paginatedPuskesmasTargets"
               :key="puskesmas.puskesmas_id"
               :class="{ 'row-dirty': puskesmas.is_dirty }"
             >
-              <td class="narrow-cell">{{ index + 1 }}</td>
+              <td class="narrow-cell">{{ firstItemIndex + index + 1 }}</td>
               <td>{{ puskesmas.puskesmas_name }}</td>
               <td class="td-target-display">
                 {{
@@ -151,6 +151,40 @@
         <div v-if="hasUnsavedChanges" class="unsaved-changes-footer card-shadow-0">
           <font-awesome-icon :icon="['fas', 'exclamation-triangle']" /> Anda memiliki
           perubahan yang belum disimpan.
+        </div>
+        
+        <!-- Pagination -->
+        <div class="pagination-container" v-if="puskesmasTargets.length > 0">
+          <div class="pagination-info">
+            <p class="pagination-text">
+              Baris per halaman:
+              <div class="pagination-dropdown-wrapper">
+                <select v-model.number="itemsPerPage" class="pagination-dropdown-select">
+                  <option value="10">10</option>
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+              Menampilkan {{ firstItemIndex + 1 }} - {{ lastItemIndex }} dari {{ puskesmasTargets.length }} data
+            </p>
+          </div>
+          <nav class="pagination-nav" aria-label="Pagination">
+            <button class="pagination-button prev" @click="prevPage" :disabled="currentPage === 1">
+              <font-awesome-icon :icon="['fas', 'chevron-left']" />
+            </button>
+            
+            <template v-for="(item, index) in paginationItems" :key="index">
+              <button v-if="item !== 'ellipsis'" :class="['pagination-button', { 'active': currentPage === item }]" @click="goToPage(item)">
+                {{ item }}
+              </button>
+              <div v-else class="pagination-ellipsis">...</div>
+            </template>
+            
+            <button class="pagination-button next" @click="nextPage" :disabled="currentPage === totalPages">
+              <font-awesome-icon :icon="['fas', 'chevron-right']" />
+            </button>
+          </nav>
         </div>
       </div>
     </div>
@@ -205,6 +239,14 @@ export default {
       error: null,
       searchQuery: '',
       searchTimeout: null,
+      
+      // Pagination
+      currentPage: 1,
+      itemsPerPage: 10,
+      totalRecords: 0,
+      lastPage: 1,
+      from: 0,
+      to: 0,
     };
   },
   computed: {
@@ -216,7 +258,74 @@ export default {
     },
     hasUnsavedChanges() {
       return this.puskesmasTargets.some(p => p.is_dirty);
-    }
+    },
+    
+    // Pagination computed properties
+    totalPages() {
+      return Math.ceil(this.totalRecords / this.itemsPerPage);
+    },
+    paginatedPuskesmasTargets() {
+      const start = (this.currentPage - 1) * this.itemsPerPage;
+      const end = start + this.itemsPerPage;
+      const paginatedData = this.puskesmasTargets.slice(start, end);
+      
+      console.log('🔢 Pagination calculation:');
+      console.log('  - Total data:', this.puskesmasTargets.length);
+      console.log('  - Current page:', this.currentPage);
+      console.log('  - Items per page:', this.itemsPerPage);
+      console.log('  - Start index:', start);
+      console.log('  - End index:', end);
+      console.log('  - Paginated data length:', paginatedData.length);
+      
+      return paginatedData;
+    },
+    firstItemIndex() {
+      return (this.currentPage - 1) * this.itemsPerPage;
+    },
+    lastItemIndex() {
+      const last = this.currentPage * this.itemsPerPage;
+      return Math.min(last, this.puskesmasTargets.length);
+    },
+    paginationItems() {
+      const result = [];
+      const totalPages = this.totalPages;
+      const currentPage = this.currentPage;
+      
+      if (totalPages <= 7) {
+        for (let i = 1; i <= totalPages; i++) {
+          result.push(i);
+        }
+        return result;
+      }
+      
+      result.push(1);
+      
+      if (currentPage > 4) {
+        result.push('ellipsis');
+      }
+      
+      if (currentPage <= 4) {
+        for (let i = 2; i <= 5; i++) {
+          if (i < totalPages) result.push(i);
+        }
+      } else if (currentPage >= totalPages - 3) {
+        for (let i = totalPages - 4; i < totalPages; i++) {
+          result.push(i);
+        }
+      } else {
+        result.push(currentPage - 1, currentPage, currentPage + 1);
+      }
+      
+      if (currentPage < totalPages - 3) {
+        result.push('ellipsis');
+      }
+      
+      if (totalPages > 1) {
+        result.push(totalPages);
+      }
+      
+      return [...new Set(result)];
+    },
   },
   created() {
     this.fetchPuskesmasTargets();
@@ -228,37 +337,43 @@ export default {
       this.error = null;
       this.initialLoadAttempted = true;
 
-      this.puskesmasTargets = [];
-      this.originalPuskesmasTargetsMap.clear();
-
       try {
         const response = await apiClient.get("/admin/yearly-targets", {
           params: {
             year: this.selectedYear,
             disease_type: this.programTypeKey,
             search: this.searchQuery || undefined,
+            page: this.currentPage,
+            per_page: this.itemsPerPage
           },
         });
 
-        if (response.data && Array.isArray(response.data.data)) {
-          this.puskesmasTargets = response.data.data.map(p => {
-            const currentTarget = p.target_count === null || p.target_count === undefined ? null : Number(p.target_count);
-            this.originalPuskesmasTargetsMap.set(p.puskesmas_id, currentTarget);
-            return {
-              id: p.id,
-              puskesmas_id: p.puskesmas_id,
-              puskesmas_name: p.puskesmas ? p.puskesmas.name : 'Nama Puskesmas Tidak Tersedia',
-              current_target: currentTarget,
-              new_target: currentTarget,
-              is_dirty: false,
-            };
-          });
-          this.apiStatus = 'success';
-        } else {
-          this.puskesmasTargets = [];
-          this.apiStatus = 'success';
-          console.warn("API response data is not an array or missing:", response.data);
-        }
+        const payload = response.data;
+        const rows = payload.data || [];
+        const meta = payload.meta || {};
+
+        this.puskesmasTargets = rows.map(p => {
+          const currentTarget = p.target_count === null || p.target_count === undefined ? null : Number(p.target_count);
+          this.originalPuskesmasTargetsMap.set(p.puskesmas_id, currentTarget);
+          return {
+            id: p.id,
+            puskesmas_id: p.puskesmas_id,
+            puskesmas_name: p.puskesmas?.name || 'Nama Puskesmas Tidak Tersedia',
+            current_target: currentTarget,
+            new_target: currentTarget,
+            is_dirty: false,
+          };
+        });
+
+        // Update pagination meta
+        this.currentPage = meta.current_page || this.currentPage;
+        this.itemsPerPage = meta.per_page || this.itemsPerPage;
+        this.totalRecords = meta.total || this.puskesmasTargets.length;
+        this.lastPage = meta.last_page || 1;
+        this.from = meta.from || 0;
+        this.to = meta.to || 0;
+
+        this.apiStatus = 'success';
       } catch (err) {
         console.error("Error fetching Puskesmas targets:", err);
         this.error = `Gagal memuat data target: ${err.response?.data?.message || err.message || 'Error tidak diketahui.'}`;
@@ -396,6 +511,35 @@ export default {
         p.is_dirty = false;
       });
       Swal.fire('Direset!', 'Semua perubahan berhasil direset.', 'info');
+    },
+    
+    // Pagination methods
+    nextPage() {
+      if (this.currentPage < (this.lastPage || this.totalPages)) {
+        this.currentPage++;
+        this.fetchPuskesmasTargets();
+      }
+    },
+    prevPage() {
+      if (this.currentPage > 1) {
+        this.currentPage--;
+        this.fetchPuskesmasTargets();
+      }
+    },
+    goToPage(page) {
+      if (page !== this.currentPage) {
+        this.currentPage = page;
+        this.fetchPuskesmasTargets();
+      }
+    }
+  },
+  watch: {
+    itemsPerPage() {
+      this.currentPage = 1;
+    },
+    puskesmasTargets() {
+      // Reset to first page when data changes (e.g., after search)
+      this.currentPage = 1;
     }
   },
   beforeUnmount() {
@@ -574,6 +718,128 @@ export default {
   font-size: 12px;
   color: #9aa0a8;
   pointer-events: none;
+}
+
+/* Pagination Styles */
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: white;
+  border-top: 1px solid var(--gray-200);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  margin-top: 0;
+}
+
+.pagination-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pagination-text {
+  font-size: 0.875rem;
+  color: var(--gray-600);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pagination-dropdown-wrapper {
+  position: relative;
+}
+
+.pagination-dropdown-select {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  background: white;
+  cursor: pointer;
+  min-width: 60px;
+}
+
+.pagination-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.pagination-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--gray-300);
+  background: white;
+  color: var(--gray-700);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.pagination-button:hover:not(:disabled) {
+  background: var(--gray-50);
+  border-color: var(--gray-400);
+}
+
+.pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-button.active {
+  background: var(--primary-500);
+  border-color: var(--primary-500);
+  color: white;
+}
+
+.pagination-button.prev,
+.pagination-button.next {
+  width: 2.5rem;
+}
+
+.pagination-ellipsis {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  color: var(--gray-400);
+  font-weight: 500;
+}
+
+/* Responsive pagination */
+@media (max-width: 768px) {
+  .pagination-container {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .pagination-info {
+    justify-content: center;
+  }
+  
+  .pagination-nav {
+    justify-content: center;
+  }
+  
+  .pagination-button {
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.75rem;
+  }
+  
+  .pagination-ellipsis {
+    width: 2rem;
+    height: 2rem;
+  }
 }
 
 .dropdown-select:hover {

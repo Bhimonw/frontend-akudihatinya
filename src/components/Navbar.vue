@@ -99,7 +99,7 @@ export default {
           return;
         }
 
-        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/users/me`, {
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/users/me`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -172,7 +172,7 @@ export default {
         const token = localStorage.getItem('token');
         if (token) {
           await axios.post(
-            `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/logout`,
+            `${import.meta.env.VITE_API_BASE_URL}/logout`,
             {},
             {
               headers: {

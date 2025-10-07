@@ -119,7 +119,12 @@ export const useAuthStore = defineStore('auth', {
             try {
                 console.log("AuthStore: Attempting to refresh token...");
                 // Gunakan axios langsung untuk menghindari interceptor loop
-                const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/refresh`, 
+                const base = import.meta.env.VITE_API_BASE_URL;
+                if (!base) {
+                    console.error('VITE_API_BASE_URL is not defined. Please set it in environment (.env/.env.production).');
+                    throw new Error('API base URL not configured');
+                }
+                const response = await axios.post(`${base}/refresh`, 
                     { refresh_token: this.refreshTokenVal },
                     {
                         headers: {

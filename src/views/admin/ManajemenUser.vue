@@ -314,16 +314,26 @@ export default {
     async fetchUsers() {
       this.isLoading = true;
       try {
-        const response = await apiClient.get("/admin/users");
+        const response = await apiClient.get("/admin/users", {
+          params: {
+            page: this.currentPage,
+            per_page: this.pageSize,
+            role: this.filterRole || undefined,
+            search: this.searchQuery || undefined,
+          }
+        });
 
-        this.users = response.data.data.map((user) => ({
+        // Laravel resource collection shape: { data: [...], meta: {...pagination...} }
+        const payload = response.data;
+        const rows = payload.data || [];
+        const meta = payload.meta || payload; // fallback if pagination structure default
+
+        this.users = rows.map((user) => ({
           id: user.id,
           username: user.username,
           name: user.name,
           role: user.role,
-          address:
-            user.puskesmas?.name ||
-            (user.role === "admin" ? "Kantor Pusat" : "Belum ada data puskesmas"),
+          address: user.puskesmas?.name || (user.role === "admin" ? "Kantor Pusat" : "Belum ada data puskesmas"),
           email: user.email || "",
           phone: user.phone || "",
           profile_picture_url: user.profile_picture_url,
@@ -331,17 +341,23 @@ export default {
           created_at: user.created_at,
           updated_at: user.updated_at,
         }));
+
+        // Update pagination meta from server
+        if (meta) {
+          this.serverTotal = meta.total || this.users.length;
+          this.currentPage = meta.current_page || this.currentPage;
+          this.pageSize = meta.per_page || this.pageSize;
+          this.lastPage = meta.last_page || 1;
+          this.from = meta.from || 0;
+          this.to = meta.to || 0;
+        }
       } catch (error) {
         console.error("Gagal mengambil data pengguna:", error.response || error);
-        // Error handling untuk 401 kemungkinan sudah ditangani oleh interceptor di apiClient.js
-        // Namun, tetap baik untuk memiliki fallback di sini.
         if (error.response && error.response.status === 401) {
           Swal.fire({
             title: "Sesi Tidak Valid",
             text: "Sesi Anda tidak valid. Silakan login ulang.",
             icon: "error",
-          }).then(() => {
-            // this.$router.push({ name: 'Login' });
           });
         } else {
           Swal.fire("Error!", "Gagal memuat data pengguna.", "error");
@@ -411,18 +427,24 @@ export default {
     prevPage() {
       if (this.currentPage > 1) {
         this.currentPage--;
+        this.fetchUsers();
       }
     },
     nextPage() {
-      if (this.currentPage < this.totalPages) {
+      if (this.currentPage < (this.lastPage || this.totalPages)) {
         this.currentPage++;
+        this.fetchUsers();
       }
     },
     goToPage(page) {
-      this.currentPage = page;
+      if (page !== this.currentPage) {
+        this.currentPage = page;
+        this.fetchUsers();
+      }
     },
     resetPagination() {
       this.currentPage = 1;
+      this.fetchUsers();
     },
     viewUserDetails(user) {
       this.selectedUser = user;

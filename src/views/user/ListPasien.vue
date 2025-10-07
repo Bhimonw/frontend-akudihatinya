@@ -151,7 +151,7 @@
 <script>
 import apiClient from "../../api.js"; 
 import Swal from "sweetalert2";
-import AddPatientModal from "../../components/modals/AddNewPatient.vue";
+import AddPatientModal from "../../components/modals/AddPatientModal.vue";
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faSpinner } from '@fortawesome/free-solid-svg-icons';
 
