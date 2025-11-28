@@ -3,7 +3,7 @@
     <div class="page-container">
       <div class="toolbar">
         <div class="left-section">
-          <button class="add-data-button" @click="openAddPatientModal">
+          <button class="add-data-button" @click="openAddGeneralPatientModal">
             <font-awesome-icon :icon="['fas', 'plus']" />
             Tambah Pasien Baru
           </button>
@@ -140,10 +140,11 @@
         </div>
       </div>
     </div>
-    <AddPatientModal
-      v-if="showAddPatientModal"
-      @close="closeAddPatientModal"
-      @patient-created="handlePatientCreated" 
+    <AddGeneralPatientModal
+      v-if="showAddGeneralPatientModal"
+      :show="showAddGeneralPatientModal"
+      @close="closeAddGeneralPatientModal"
+      @patient-created="handleGeneralPatientCreated"
     />
   </div>
 </template>
@@ -151,7 +152,7 @@
 <script>
 import apiClient from "../../api.js"; 
 import Swal from "sweetalert2";
-import AddPatientModal from "../../components/modals/AddPatientModal.vue";
+import AddGeneralPatientModal from "../../components/modals/AddGeneralPatientModal.vue";
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faSpinner } from '@fortawesome/free-solid-svg-icons';
 
@@ -160,7 +161,7 @@ library.add(faSpinner);
 export default {
   name: "ListPasien",
   components: {
-    AddPatientModal,
+    AddGeneralPatientModal,
   },
   data() {
     return {
@@ -168,7 +169,7 @@ export default {
       currentPage: 1,
       pageSize: 10,
       searchQuery: "",
-      showAddPatientModal: false,
+      showAddGeneralPatientModal: false,
       totalPatients: 0,
       totalPages: 0,
       links: {},
@@ -326,13 +327,14 @@ export default {
         this.isDownloading = false;
       }
     },
-    openAddPatientModal() {
-      this.showAddPatientModal = true;
+    openAddGeneralPatientModal() {
+      this.showAddGeneralPatientModal = true;
     },
-    closeAddPatientModal() {
-      this.showAddPatientModal = false;
+    closeAddGeneralPatientModal() {
+      this.showAddGeneralPatientModal = false;
     },
-    handlePatientCreated() {
+    handleGeneralPatientCreated() {
+      // Langsung refresh list tanpa konfirmasi examination
       this.fetchPatients();
     },
     prevPage() {

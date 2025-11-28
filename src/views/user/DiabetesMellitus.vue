@@ -141,6 +141,7 @@
       @submit="handlePatientSubmit"
       :selected-year="selectedYear"
       examination-type="dm"
+      :existing-patient-ids="existingPatientIds"
     />
   </div>
 </template>
@@ -180,6 +181,10 @@ export default {
     };
   },
   computed: {
+    existingPatientIds() {
+      // Ambil semua patient_id dari daftar pasien yang sudah terdaftar
+      return this.patients.map(patient => patient.id).filter(Boolean);
+    },
     filteredPatients() {
       return this.patients;
     },

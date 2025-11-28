@@ -50,7 +50,7 @@
                     </td>
                   </tr>
                   <tr v-else-if="filteredPatients.length > 0" v-for="(patient, index) in filteredPatients" :key="patient.id">
-                    <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
+                    <td>{{ Number((currentPage - 1) * pageSize) + index + 1 }}</td>
                     <td>{{ patient.name || '-' }}</td>
                     <td>{{ patient.nik || '-' }}</td>
                     <td>{{ patient.bpjs_number || '-' }}</td> <td>{{ patient.gender === "male" ? "Laki-laki" : "Perempuan" || '-' }}</td>
@@ -86,8 +86,8 @@
                           <option value="100">100</option>
                         </select>
                       </div>
-                      {{ firstItemIndex + 1 }}-{{ lastItemIndex }} dari
-                      {{ totalPatients }} item
+                      {{ (firstItemIndex + 1) || 1 }}-{{ lastItemIndex || patients.length }} dari
+                      {{ totalPatients || patients.length }} item
                     </p>
                   </div>
                   <nav class="isolate inline-flex -space-x-px rounded-md shadow-xs" aria-label="Pagination">
@@ -170,6 +170,11 @@ export default {
       validator: function (value) {
         return ["dm", "ht"].includes(value); // Menggunakan 'ht' agar konsisten dengan API
       }
+    },
+    existingPatientIds: {
+      type: Array,
+      required: false,
+      default: () => []
     }
   },
   data() {
@@ -185,16 +190,18 @@ export default {
     };
   },
   computed: {
-    // ... Bagian computed tidak ada perubahan ...
     firstItemIndex() {
-      if (this.totalPatients === 0) return -1;
-      return (this.currentPage - 1) * this.pageSize;
+      return Number((this.currentPage - 1) * this.pageSize) || 0;
     },
     lastItemIndex() {
-      return Math.min(this.currentPage * this.pageSize, this.totalPatients);
+      return Math.min(Number(this.currentPage) * Number(this.pageSize), Number(this.totalPatients)) || this.patients.length;
     },
     filteredPatients() {
-      return this.patients;
+      // Filter pasien yang belum terdaftar pada tahun & penyakit
+      if (!Array.isArray(this.existingPatientIds) || this.existingPatientIds.length === 0) {
+        return this.patients;
+      }
+      return this.patients.filter(p => !this.existingPatientIds.includes(p.id));
     },
     paginationItems() {
       const result = [];
@@ -254,10 +261,10 @@ export default {
         
         const { data, meta } = response.data;
         this.patients = data || [];
-        this.totalPatients = meta.total || 0;
-        this.pageSize = meta.per_page || 10;
-        this.currentPage = meta.current_page || 1;
-        this.totalPages = meta.last_page || 0;
+        this.totalPatients = Number(meta?.total) || this.patients.length;
+        this.pageSize = Number(meta?.per_page) || 10;
+        this.currentPage = Number(meta?.current_page) || 1;
+        this.totalPages = Number(meta?.last_page) || 1;
 
       } catch (error) {
         console.error("Error fetching patients:", error);

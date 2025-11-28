@@ -314,6 +314,16 @@
         @close="closeEditExamModal"
         @submit="handleEditExamSubmit"
     />
+
+    <AddPatientModal
+      v-if="isModalOpen"
+      :show="isModalOpen"
+      :selectedYear="selectedYear"
+      :examinationType="selectedDiseaseType === 'DM' ? 'dm' : 'ht'"
+      :existingPatientIds="existingPatientIds"
+      @close="closeModal"
+      @patient-created="handleAddExamSubmit"
+    />
   </div>
 </template>
 
@@ -325,6 +335,7 @@ import AddExaminationDataHT from "../../components/modals/AddExaminationDataHT.v
 import EditPatientDetail from '../../components/modals/EditPatientDetail.vue';
 import EditExaminationModal from '../../components/modals/EditExaminationModal.vue';
 import EditExaminationDataHT from '../../components/modals/EditExaminationDataHT.vue';
+import AddPatientModal from '../../components/modals/AddPatientModal.vue';
 
 export default {
   name: "DetailPasien",
@@ -334,6 +345,7 @@ export default {
     EditPatientDetail,
     EditExaminationModal,
     EditExaminationDataHT,
+    AddPatientModal,
   },
   data() {
     return {
@@ -382,6 +394,10 @@ export default {
       return this.exams.filter(exam => 
         this.formatDate(exam.examination_date).toLowerCase().includes(this.searchQuery.toLowerCase())
       );
+    },
+    existingPatientIds() {
+      // Ambil dari data pemeriksaan, pastikan field patient_id ada di exam
+      return this.exams.map(exam => exam.patient_id).filter(Boolean);
     },
   },
   methods: {
@@ -1088,7 +1104,7 @@ transition: background-color 0.3s ease;
 .data-table td {
 text-align: center;
 padding: 20px;
-border-bottom: 1px solid #e5e7eb;
+border-bottom: 1px solid #e7e7eb;
 }
 .data-table tbody tr:last-child td {
 border-bottom: none;
