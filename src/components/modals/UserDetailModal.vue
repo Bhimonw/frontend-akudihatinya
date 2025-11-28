@@ -94,7 +94,8 @@
 </template>
 
 <script>
-import axios from 'axios';
+// Use centralized api client
+import apiClient from '../../api';
 import Swal from 'sweetalert2';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import {
@@ -146,7 +147,7 @@ export default {
           params.puskesmas_id = this.user.puskesmas_detail.id;
         }
         
-        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/users/${this.user.id}`, {
+        const response = await apiClient.get(`/admin/users/${this.user.id}`, {
           headers: { Authorization: `Bearer ${token}` },
           params: params
         });

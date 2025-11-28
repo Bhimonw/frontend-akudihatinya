@@ -166,7 +166,7 @@
                   <option value="100">100</option>
                 </select>
               </div>
-              Menampilkan {{ firstItemIndex + 1 }} - {{ lastItemIndex }} dari {{ puskesmasTargets.length }} data
+              Menampilkan {{ (from || firstItemIndex) + 1 }} - {{ to || lastItemIndex }} dari {{ totalRecords || puskesmasTargets.length }} data
             </p>
           </div>
           <nav class="pagination-nav" aria-label="Pagination">
@@ -262,29 +262,18 @@ export default {
     
     // Pagination computed properties
     totalPages() {
-      return Math.ceil(this.totalRecords / this.itemsPerPage);
+      return this.lastPage || Math.ceil(this.totalRecords / this.itemsPerPage) || 1;
     },
+    // Use server-provided page data directly; server already paginates
     paginatedPuskesmasTargets() {
-      const start = (this.currentPage - 1) * this.itemsPerPage;
-      const end = start + this.itemsPerPage;
-      const paginatedData = this.puskesmasTargets.slice(start, end);
-      
-      console.log('🔢 Pagination calculation:');
-      console.log('  - Total data:', this.puskesmasTargets.length);
-      console.log('  - Current page:', this.currentPage);
-      console.log('  - Items per page:', this.itemsPerPage);
-      console.log('  - Start index:', start);
-      console.log('  - End index:', end);
-      console.log('  - Paginated data length:', paginatedData.length);
-      
-      return paginatedData;
+      return this.puskesmasTargets;
     },
     firstItemIndex() {
-      return (this.currentPage - 1) * this.itemsPerPage;
+      // Fallback to client calc if server meta missing
+      return (this.from ? this.from - 1 : (this.currentPage - 1) * this.itemsPerPage);
     },
     lastItemIndex() {
-      const last = this.currentPage * this.itemsPerPage;
-      return Math.min(last, this.puskesmasTargets.length);
+      return this.to || Math.min(this.currentPage * this.itemsPerPage, this.totalRecords || this.puskesmasTargets.length);
     },
     paginationItems() {
       const result = [];
@@ -355,10 +344,11 @@ export default {
         this.puskesmasTargets = rows.map(p => {
           const currentTarget = p.target_count === null || p.target_count === undefined ? null : Number(p.target_count);
           this.originalPuskesmasTargetsMap.set(p.puskesmas_id, currentTarget);
+          const derivedName = p.puskesmas_name || p.name || (p.puskesmas && p.puskesmas.name) || 'Nama Puskesmas Tidak Tersedia';
           return {
             id: p.id,
             puskesmas_id: p.puskesmas_id,
-            puskesmas_name: p.puskesmas?.name || 'Nama Puskesmas Tidak Tersedia',
+            puskesmas_name: derivedName,
             current_target: currentTarget,
             new_target: currentTarget,
             is_dirty: false,
@@ -536,10 +526,7 @@ export default {
   watch: {
     itemsPerPage() {
       this.currentPage = 1;
-    },
-    puskesmasTargets() {
-      // Reset to first page when data changes (e.g., after search)
-      this.currentPage = 1;
+      this.fetchPuskesmasTargets();
     }
   },
   beforeUnmount() {

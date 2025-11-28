@@ -1,9 +1,10 @@
 // src/config/api.js
 // Centralized API configuration
+import apiClient from '../api';
 
 export const API_CONFIG = {
-  // Base URL from environment variable
-  BASE_URL: import.meta.env.VITE_API_BASE_URL,
+  // Base URL derived from centralized apiClient (runtime aware)
+  BASE_URL: apiClient.defaults.baseURL,
   
   // API endpoints
   ENDPOINTS: {

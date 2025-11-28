@@ -204,7 +204,8 @@
   
 <script>
 import { ref, onMounted, computed } from 'vue';
-import axios from 'axios';
+// Use centralized apiClient which resolves runtime config instead of build-time env
+import apiClient from '../../api';
 import Swal from 'sweetalert2';
 import defaultProfileImage from '../../assets/profile.jpg'; // Import default profile image
   
@@ -252,8 +253,8 @@ export default {
           throw new Error('Token tidak ditemukan');
         }
 
-        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/users/me`, {
-          headers: {
+        const response = await apiClient.get('/users/me', {
+          headers: { // explicit header for safety though interceptor also adds it
             Authorization: `Bearer ${token}`
           }
         });
@@ -394,11 +395,11 @@ export default {
           formData.append('profile_picture', selectedFile.value);
         }
         
-        const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/me`, 
+        const response = await apiClient.post('/users/me', 
           formData,
           {
             headers: {
-              'Content-Type': 'multipart/form-data', // Important for file uploads
+              'Content-Type': 'multipart/form-data',
               Authorization: `Bearer ${token}`
             }
           }
@@ -475,7 +476,7 @@ export default {
           throw new Error('Token tidak ditemukan');
         }
   
-        const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/change-password`, 
+        const response = await apiClient.post('/change-password', 
           {
             current_password: passwordData.value.current_password,
             password: passwordData.value.password,

@@ -1,9 +1,6 @@
 
 // src/stores/auth.js
-import axios from 'axios';
-
-// Get API base URL from environment
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import apiClient from '../api';
 
 class AuthService {
   constructor() {
@@ -34,18 +31,8 @@ class AuthService {
   // Login method
   async login(username, password) {
     try {
-      const response = await fetch(`${API_BASE_URL}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(JSON.stringify(errorData));
-      }
-
-      const result = await response.json();
+      const response = await apiClient.post('/login', { username, password });
+      const result = response.data;
       console.log('API Login Response:', result);
 
       this.setUser(result);
@@ -136,21 +123,8 @@ class AuthService {
       console.log("Attempting to refresh token...");
       
       // Gunakan fetch API yang lebih ringan daripada axios untuk refresh token
-      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ refresh_token: refreshTokenStored }),
-      });
-  
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Refresh token API error:", errorData);
-        throw new Error('Gagal memperbarui token: ' + (errorData.message || response.statusText));
-      }
-  
-      const result = await response.json();
+      const response = await apiClient.post('/auth/refresh', { refresh_token: refreshTokenStored });
+      const result = response.data;
       console.log("Refresh token successful, new token received");
       
       this.setUser(result);
@@ -175,12 +149,9 @@ class AuthService {
       }
       
       // Request ke endpoint user untuk memvalidasi token
-      const response = await fetch(`${API_BASE_URL}/users/me`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+      const response = await apiClient.get('/users/me', {
+        headers: { Authorization: `Bearer ${token}` }
       });
-      
       return response.status === 200;
     } catch (error) {
       console.error("Validasi token error:", error);

@@ -1,6 +1,6 @@
 // src/stores/authStore.js
 import { defineStore } from 'pinia';
-import axios from 'axios';
+import axios from 'axios'; // kept only for direct refresh if needed
 import apiClient from '../api'; // Sesuaikan path jika perlu
 import router from '../router'; // Untuk navigasi terprogram
 
@@ -119,12 +119,8 @@ export const useAuthStore = defineStore('auth', {
             try {
                 console.log("AuthStore: Attempting to refresh token...");
                 // Gunakan axios langsung untuk menghindari interceptor loop
-                const base = import.meta.env.VITE_API_BASE_URL;
-                if (!base) {
-                    console.error('VITE_API_BASE_URL is not defined. Please set it in environment (.env/.env.production).');
-                    throw new Error('API base URL not configured');
-                }
-                const response = await axios.post(`${base}/refresh`, 
+                // Use apiClient baseURL (already resolved via runtime config) to avoid build-time leakage
+                const response = await axios.post(`${apiClient.defaults.baseURL}/refresh`, 
                     { refresh_token: this.refreshTokenVal },
                     {
                         headers: {

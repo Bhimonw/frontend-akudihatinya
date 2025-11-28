@@ -43,9 +43,26 @@ apiClient.interceptors.response.use(
     const authStore = useAuthStore(); // Akses store
     const originalRequest = error.config;
 
-    if (!error.response || error.response.status !== 401 || originalRequest._retry) {
-      return Promise.reject(error);
-    }
+        if (!error.response || originalRequest._retry) {
+            return Promise.reject(error);
+        }
+
+        // Langsung keluar jika status bukan 401
+        if (error.response.status !== 401) {
+            return Promise.reject(error);
+        }
+
+        const url = originalRequest.url || '';
+        const isLoginAttempt = url.includes('/login');
+        const isRefreshEndpoint = url.includes('/refresh');
+
+        // Jangan coba refresh jika:
+        // - Ini request login yang gagal
+        // - Ini request refresh itu sendiri
+        // - Tidak ada refresh token tersimpan
+        if (isLoginAttempt || isRefreshEndpoint || !authStore.refreshTokenVal) {
+            return Promise.reject(error);
+        }
 
     // Hindari refresh loop untuk endpoint /refresh itu sendiri
     if (originalRequest.url.includes('/refresh')) {

@@ -226,54 +226,39 @@ export default {
       showDetailModal: false,
       isLoading: false,
       searchTimeout: null,
+      // Server-side pagination meta
+      serverTotal: 0,
+      lastPage: 0,
+      from: 0,
+      to: 0,
     };
   },
   computed: {
-    // ... bagian computed tetap sama ...
-    totalUsers() {
-      return this.filteredUsers.length;
-    },
-    totalPages() {
-      if (this.totalUsers === 0) return 0;
-      return Math.ceil(this.totalUsers / this.pageSize);
-    },
-    firstItemIndex() {
-      if (this.totalUsers === 0) return -1;
-      return (this.currentPage - 1) * this.pageSize;
-    },
-    lastItemIndex() {
-      if (this.totalUsers === 0) return 0;
-      const calculatedLastIndex = this.currentPage * this.pageSize;
-      return Math.min(calculatedLastIndex, this.totalUsers);
-    },
-    filteredUsers() {
-      return this.users.filter((user) => {
-        const searchLower = this.searchQuery.toLowerCase();
-        const roleMatch = this.filterRole
-          ? user.role.toLowerCase() === this.filterRole.toLowerCase()
-          : true;
-
-        const searchMatch =
-          (user.username && user.username.toLowerCase().includes(searchLower)) ||
-          (user.name && user.name.toLowerCase().includes(searchLower)) ||
-          (user.role && user.role.toLowerCase().includes(searchLower)) ||
-          (user.address && user.address.toLowerCase().includes(searchLower));
-
-        return searchMatch && roleMatch;
-      });
-    },
-    paginatedUsers() {
-      if (this.totalUsers === 0) return [];
-      if (this.totalPages > 0 && this.currentPage > this.totalPages) {
-        this.currentPage = this.totalPages;
-      }
-      const start = Math.max(0, this.firstItemIndex);
-      const end = Math.max(start, this.lastItemIndex);
-      return this.filteredUsers.slice(start, end);
-    },
+    // Gunakan meta dari server untuk pagination
+    totalUsers() {
+      return this.serverTotal || 0;
+    },
+    totalPages() {
+      return this.lastPage || (this.pageSize > 0 ? Math.ceil((this.serverTotal || 0) / this.pageSize) : 0);
+    },
+    firstItemIndex() {
+      if (this.totalUsers === 0) return -1;
+      // from adalah 1-based index dari server
+      return (this.from ? this.from - 1 : (this.currentPage - 1) * this.pageSize);
+    },
+    lastItemIndex() {
+      if (this.totalUsers === 0) return 0;
+      // to adalah 1-based index akhir dari server
+      return this.to || Math.min(this.currentPage * this.pageSize, this.totalUsers);
+    },
+    // Data yang ditampilkan adalah slice dari server untuk halaman saat ini
+    paginatedUsers() {
+      if (this.totalUsers === 0) return [];
+      return this.users;
+    },
     paginationItems() {
         const result = [];
-        const totalPages = this.totalPages;
+        const totalPages = this.totalPages;
         const currentPage = this.currentPage;
 
         // Jika total halaman sedikit, tampilkan semua
@@ -326,7 +311,7 @@ export default {
         // Laravel resource collection shape: { data: [...], meta: {...pagination...} }
         const payload = response.data;
         const rows = payload.data || [];
-        const meta = payload.meta || payload; // fallback if pagination structure default
+        const meta = payload.meta || payload; // fallback if pagination structure default
 
         this.users = rows.map((user) => ({
           id: user.id,
@@ -344,12 +329,12 @@ export default {
 
         // Update pagination meta from server
         if (meta) {
-          this.serverTotal = meta.total || this.users.length;
-          this.currentPage = meta.current_page || this.currentPage;
-          this.pageSize = meta.per_page || this.pageSize;
-          this.lastPage = meta.last_page || 1;
-          this.from = meta.from || 0;
-          this.to = meta.to || 0;
+          this.serverTotal = Number(meta.total) || this.users.length;
+          this.currentPage = Number(meta.current_page) || this.currentPage;
+          this.pageSize = Number(meta.per_page) || this.pageSize;
+          this.lastPage = Number(meta.last_page) || 1;
+          this.from = Number(meta.from) || 0;
+          this.to = Number(meta.to) || 0;
         }
       } catch (error) {
         console.error("Gagal mengambil data pengguna:", error.response || error);

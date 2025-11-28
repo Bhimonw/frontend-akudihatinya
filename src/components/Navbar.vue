@@ -61,7 +61,8 @@
 
 <script>
 import { ref, onMounted, computed } from 'vue'; // Import computed
-import axios from 'axios';
+// Use centralized apiClient which handles base URL & auth header
+import apiClient from '../api';
 import { useRouter } from 'vue-router';
 import { authService } from '../stores/auth';
 import Swal from 'sweetalert2';
@@ -99,8 +100,8 @@ export default {
           return;
         }
 
-        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/users/me`, {
-          headers: {
+        const response = await apiClient.get('/users/me', {
+          headers: { // explicit header for safety
             Authorization: `Bearer ${token}`,
           },
         });
@@ -171,8 +172,8 @@ export default {
       try {
         const token = localStorage.getItem('token');
         if (token) {
-          await axios.post(
-            `${import.meta.env.VITE_API_BASE_URL}/logout`,
+          await apiClient.post(
+            '/logout',
             {},
             {
               headers: {
